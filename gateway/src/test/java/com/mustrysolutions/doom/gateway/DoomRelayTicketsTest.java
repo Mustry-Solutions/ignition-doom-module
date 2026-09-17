@@ -12,19 +12,30 @@ class DoomRelayTicketsTest {
     @Test
     void aTicketAdmitsItsArenaOnlyAndStaysValidForReconnects() {
         String t = DoomRelayTickets.issue("line3", "session-A", "Player1");
-        assertNotNull(DoomRelayTickets.redeem(t, "line3"));
-        assertNotNull(DoomRelayTickets.redeem(t, "line3"), "the engine reopens its socket mid-game");
-        assertNull(DoomRelayTickets.redeem(t, "other"));
-        assertEquals("Player1", DoomRelayTickets.redeem(t, "line3").player);
-        DoomRelayTickets.revokeSession("session-A");
-        assertNull(DoomRelayTickets.redeem(t, "line3"));
+        assertNotNull(DoomRelayTickets.redeem(t));
+        assertNotNull(DoomRelayTickets.redeem(t), "the engine reopens its socket mid-game");
+        assertEquals("line3", DoomRelayTickets.redeem(t).arena, "the relay routes by the ticket's arena");
+        assertEquals("Player1", DoomRelayTickets.redeem(t).player);
+        DoomRelayTickets.revoke("session-A");
+        assertNull(DoomRelayTickets.redeem(t));
     }
 
     @Test
     void unknownOrEmptyTicketsAreRefused() {
-        assertNull(DoomRelayTickets.redeem(null, "a"));
-        assertNull(DoomRelayTickets.redeem("", "a"));
-        assertNull(DoomRelayTickets.redeem("not-a-ticket", "a"));
+        assertNull(DoomRelayTickets.redeem(null));
+        assertNull(DoomRelayTickets.redeem(""));
+        assertNull(DoomRelayTickets.redeem("not-a-ticket"));
+    }
+
+    @Test
+    void anOlderComponentInTheSameSessionDyingKeepsTheNewerOnesTicket() {
+        // Same Perspective session, two component instances over time (view refresh).
+        String old = DoomRelayTickets.issue("a", "session-1@root/doom#1", "p");
+        String fresh = DoomRelayTickets.issue("a", "session-1@root/doom#2", "p");
+        DoomRelayTickets.revoke("session-1@root/doom#1");
+        assertNull(DoomRelayTickets.redeem(old));
+        assertNotNull(DoomRelayTickets.redeem(fresh));
+        DoomRelayTickets.revoke("session-1@root/doom#2");
     }
 
     @Test
@@ -32,9 +43,9 @@ class DoomRelayTicketsTest {
         String a = DoomRelayTickets.issue("a", "s1", "p1");
         String b = DoomRelayTickets.issue("a", "s2", "p2");
         assertNotEquals(a, b);
-        DoomRelayTickets.revokeSession("s1");
-        assertNull(DoomRelayTickets.redeem(a, "a"));
-        assertNotNull(DoomRelayTickets.redeem(b, "a"), "revoking one session leaves the other's ticket");
-        DoomRelayTickets.revokeSession("s2");
+        DoomRelayTickets.revoke("s1");
+        assertNull(DoomRelayTickets.redeem(a));
+        assertNotNull(DoomRelayTickets.redeem(b), "revoking one session leaves the other's ticket");
+        DoomRelayTickets.revoke("s2");
     }
 }

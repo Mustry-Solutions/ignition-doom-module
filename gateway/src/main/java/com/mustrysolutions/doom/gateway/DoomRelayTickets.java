@@ -11,7 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * authenticated component channel); the relay accepts a WebSocket only when
  * the handshake carries a ticket issued for that arena. Sessions that never
  * went through the component, and anything outside Perspective, get 403.
- * A ticket is valid for its session's whole netgame (the engine reopens the
+ * A ticket is valid for its component's whole netgame (the engine reopens the
  * socket when the server side sends its first reply, so one handshake is not
  * enough); it expires after a while and dies with the session's delegate.
  */
@@ -40,23 +40,36 @@ public final class DoomRelayTickets {
     private DoomRelayTickets() {
     }
 
-    /** Issue a fresh ticket for one arena on behalf of a session. */
-    public static String issue(String arena, String sessionId, String player) {
+    /**
+     * Issue a fresh ticket for one arena. {@code issuer} identifies the
+     * delegate instance that asked (one per component instance), so that a
+     * delegate shutting down revokes only its own tickets: a Perspective
+     * session can hold several component instances over its life (view
+     * refreshes, page changes) and an older one dying must not kick a newer
+     * one out of its arena.
+     */
+    public static String issue(String arena, String issuer, String player) {
         byte[] bytes = new byte[24];
         RANDOM.nextBytes(bytes);
         String token = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
-        TICKETS.put(token, new Ticket(arena, sessionId, player, System.currentTimeMillis() + TTL_MS));
+        TICKETS.put(token, new Ticket(arena, issuer, player, System.currentTimeMillis() + TTL_MS));
         sweep();
         return token;
     }
 
-    /** Check a ticket for an arena; null when unknown, expired, revoked or for another arena. */
-    public static Ticket redeem(String token, String arena) {
+    /**
+     * Check a ticket; null when unknown, expired or revoked. The ticket names
+     * the arena it was issued for and the relay routes by THAT arena: the page
+     * asks for the ticket and builds the URL from one config snapshot, but a
+     * binding-driven arena can still shift under it, and a mismatch must never
+     * strand a marine in a 403 loop.
+     */
+    public static Ticket redeem(String token) {
         if (token == null || token.isBlank()) {
             return null;
         }
         Ticket t = TICKETS.get(token);
-        if (t == null || !t.arena.equals(arena)) {
+        if (t == null) {
             return null;
         }
         if (t.expiresAt < System.currentTimeMillis()) {
@@ -66,9 +79,9 @@ public final class DoomRelayTickets {
         return t;
     }
 
-    /** Drop everything a session was issued (its delegate shut down). */
-    public static void revokeSession(String sessionId) {
-        TICKETS.values().removeIf(t -> t.sessionId.equals(sessionId));
+    /** Drop everything an issuer was issued (its delegate shut down). */
+    public static void revoke(String issuer) {
+        TICKETS.values().removeIf(t -> t.sessionId.equals(issuer));
     }
 
     private static void sweep() {
@@ -78,5 +91,12 @@ public final class DoomRelayTickets {
 
     static int size() {
         return TICKETS.size();
+    }
+
+    /** For diagnostics: which classloader owns this registry. */
+    static String where() {
+        ClassLoader cl = DoomRelayTickets.class.getClassLoader();
+        return (cl == null ? "bootstrap" : cl.getClass().getName() + "@" + Integer.toHexString(System.identityHashCode(cl)))
+            + " tickets=" + TICKETS.size();
     }
 }

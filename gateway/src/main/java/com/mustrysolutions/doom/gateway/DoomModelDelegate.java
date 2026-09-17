@@ -41,7 +41,7 @@ public class DoomModelDelegate extends ComponentModelDelegate {
 
     @Override
     protected void onStartup() {
-        // nothing to do: the store is stateless between events
+        log.infof("delegate startup for %s", issuerId());
     }
 
     @Override
@@ -49,7 +49,13 @@ public class DoomModelDelegate extends ComponentModelDelegate {
         if (tags != null && player != null) {
             tags.offline(player);
         }
-        DoomRelayTickets.revokeSession(sessionId());
+        log.infof("delegate shutdown for %s (player %s): revoking its relay tickets", issuerId(), player);
+        DoomRelayTickets.revoke(issuerId());
+    }
+
+    /** This delegate instance's identity for relay tickets: session + component. */
+    private String issuerId() {
+        return sessionId() + "@" + component.getComponentAddressPath();
     }
 
     private String sessionId() {
@@ -112,7 +118,8 @@ public class DoomModelDelegate extends ComponentModelDelegate {
                 String arena = DoomTagProvider.playerKey(
                     payload != null && payload.has("arena") ? payload.get("arena").getAsString() : "", "default");
                 String requested = payload != null && payload.has("player") ? payload.get("player").getAsString() : "";
-                String ticket = DoomRelayTickets.issue(arena, sessionId(), resolvePlayer(requested));
+                String ticket = DoomRelayTickets.issue(arena, issuerId(), resolvePlayer(requested));
+                log.infof("issued relay ticket %s... for arena %s (registry %s)", ticket.substring(0, 8), arena, DoomRelayTickets.where());
                 JsonObject out = new JsonObject();
                 out.addProperty("arena", arena);
                 out.addProperty("ticket", ticket);

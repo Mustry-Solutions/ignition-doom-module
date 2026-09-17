@@ -6,6 +6,20 @@ are semver. Ignition's module version is numeric only, so releases are plain
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-09-17
+
+### Fixed
+
+- A component whose store Perspective reused from a previous view could
+  start the engine before this view's bindings applied, launching a netgame
+  as the wrong role, in the wrong arena, as the wrong player. The component
+  now waits for its bindings to settle, and restarts the engine if a later
+  binding changes the netgame identity.
+- Relay tickets are revoked per component instance instead of per session,
+  so an older instance shutting down no longer kicks a newer one out of its
+  arena. The relay routes by the arena the ticket was issued for.
+- Gateway JUnit tests cover the save store and the ticket registry.
+
 ## [0.1.0] - 2026-09-17
 
 The first release. Can it run Doom? Yes.

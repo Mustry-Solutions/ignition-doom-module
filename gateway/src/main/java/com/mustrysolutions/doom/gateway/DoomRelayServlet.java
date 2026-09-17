@@ -94,10 +94,11 @@ public class DoomRelayServlet extends JettyWebSocketServlet {
                 arena = "default";
             }
             String token = req.getHttpServletRequest().getParameter("ticket");
-            DoomRelayTickets.Ticket ticket = DoomRelayTickets.redeem(token, arena);
+            DoomRelayTickets.Ticket ticket = DoomRelayTickets.redeem(token);
             if (ticket == null) {
-                log.warnf("arena %s: refused a connection without a valid ticket from %s", arena,
-                    req.getHttpServletRequest().getRemoteAddr());
+                log.warnf("arena %s: refused a connection without a valid ticket from %s (ticket=%s, registry %s)", arena,
+                    req.getHttpServletRequest().getRemoteAddr(), token == null ? "none" : token.substring(0, Math.min(8, token.length())) + "...",
+                    DoomRelayTickets.where());
                 try {
                     resp.sendForbidden("a Doom relay ticket for this arena is required");
                 } catch (java.io.IOException e) {
@@ -105,7 +106,10 @@ public class DoomRelayServlet extends JettyWebSocketServlet {
                 }
                 return null;
             }
-            return new Peer(ARENAS.computeIfAbsent(arena, Arena::new), ticket.player);
+            if (!ticket.arena.equals(arena)) {
+                log.infof("arena %s requested, ticket is for %s: routing %s by the ticket", arena, ticket.arena, ticket.player);
+            }
+            return new Peer(ARENAS.computeIfAbsent(ticket.arena, Arena::new), ticket.player);
         });
     }
 

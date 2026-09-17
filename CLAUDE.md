@@ -72,10 +72,28 @@ The gateway's exact Jetty version (12.0.27) is a compile-only dependency in
 `relayUrl()` derives `ws(s)://<page host>/system/doom-relay/<arena>`;
 `buildArgs()` emits `-wss <url> -server -nodes N [-deathmatch|-altdeath]` or
 `-wss <url> -connect 1`. The host auto-launches at `-nodes` (net_gui.c). Admission: `DoomRelayTickets`
-(per session+arena, reusable because the engine reconnects mid-game, 4 h TTL, revoked on delegate shutdown); the store delegate's
+(per delegate instance = session@componentPath, + arena; reusable because the engine reconnects mid-game; 4 h TTL; revoked when THAT delegate shuts down, never per session: an older component instance dying must not kick a newer one); the store delegate's
 `requestTicket()` -> `doom-relay-ticket` -> `doom-relay-ticket-ok`; the servlet
 creator redeems `?ticket=` and returns null (403) otherwise. Saves: `owner()` is
 null for unauthenticated sessions, the page then keeps slots in the tab.
+
+## Start gating (why Doom.tsx waits before main())
+
+Perspective can hand a NEW view a REUSED component store (same address, e.g.
+`0:4`) and render it once with the previous view's props before this view's
+bindings apply. Starting the engine in that window launches it with schema
+defaults: wrong role/arena/player. Two guards, both needed:
+1. `bindingsPending()`: with bound config props declared in the view's
+   propConfig, `start()` waits for the first props update after mount, or a
+   1.5 s settle window (bindings resolving to the same value never update).
+   Do NOT gate on `props.getQualities()`: a delivered property binding may
+   have no quality entry, which hung the demo view forever.
+2. `netIdentity()`: if a netgame started and a later props update changes
+   multiplayer/arena/player, quit and restart on the new identity. Turns any
+   remaining race into a short delay. Retry only when `p !== prev.props`
+   (a setState round-trip must not retrigger: React error #185).
+Symptom that led here: full e2e suite failed the deathmatch test 5/5 while
+the test alone passed; host ticket issued for arena `default`.
 
 ## Key bindings must agree in three places
 

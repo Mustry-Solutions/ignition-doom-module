@@ -20,6 +20,11 @@ import {
 } from './doomEngine';
 import { DoomProps, mapDoomProps } from './doomProps';
 
+/** What a netgame is keyed on; a change after start means the engine is in the wrong game. */
+function netIdentity(cfg: { multiplayer: string; arena: string; player: string }): string {
+    return `${cfg.multiplayer}|${arenaKey(cfg.arena)}|${cfg.player}`;
+}
+
 // Must match Doom.COMPONENT_ID on the Java side.
 export const COMPONENT_TYPE = 'mustrysolutions.perspective.fun.doom';
 
@@ -49,6 +54,13 @@ export class Doom extends Component<ComponentProps<DoomProps, DoomSavesState>, D
     private statsTimer: number | null = null;
     private lastStats: DoomStats | null = null;
     private unmounting = false;
+    /** A start was asked for while bindings were still settling. */
+    private startRequested = false;
+    /** Set once a props update arrived after mount (or when nothing is bound). */
+    private propsSettled = false;
+    private settleTimer: number | null = null;
+    /** The netgame identity the running engine was started with. */
+    private startedNet: string | null = null;
 
     constructor(props: ComponentProps<DoomProps, DoomSavesState>) {
         super(props);
@@ -57,6 +69,15 @@ export class Doom extends Component<ComponentProps<DoomProps, DoomSavesState>, D
 
     componentDidMount(): void {
         this.writeOutputs('idle', '');
+        // Bound config props that resolve to their current value never produce
+        // an update; after this window we treat the bindings as settled.
+        this.settleTimer = window.setTimeout(() => {
+            this.settleTimer = null;
+            this.propsSettled = true;
+            if (this.startRequested && !this.started) {
+                this.start();
+            }
+        }, 1500);
         if (this.props.props.config.persistSaves) {
             this.saves()?.requestSlots();
         }
@@ -67,8 +88,27 @@ export class Doom extends Component<ComponentProps<DoomProps, DoomSavesState>, D
 
     componentDidUpdate(prev: ComponentProps<DoomProps, DoomSavesState>): void {
         const p = this.props.props;
+        if (p !== prev.props) {
+            this.propsSettled = true;
+        }
         if (p.config.autoStart && !prev.props.config.autoStart && !this.started) {
             this.start();
+        }
+        // Retry a deferred start only when the props object itself changed
+        // (a binding delivered), never on our own setState round-trips.
+        if (this.startRequested && !this.started && p !== prev.props) {
+            this.start();
+        }
+        // A netgame started on stale props (a reused store rendered once with
+        // the previous view's values) would sit in the wrong arena or role.
+        // When the bindings then deliver a different identity, restart on it.
+        if (this.started && this.startedNet !== null && p !== prev.props) {
+            const now = netIdentity(p.config);
+            if (now !== this.startedNet) {
+                this.quit('Restarting for ' + now);
+                this.startRequested = true;
+                this.start();
+            }
         }
         const d = this.props.delegate;
         const pd = prev.delegate;
@@ -96,6 +136,10 @@ export class Doom extends Component<ComponentProps<DoomProps, DoomSavesState>, D
 
     componentWillUnmount(): void {
         this.unmounting = true;
+        if (this.settleTimer !== null) {
+            window.clearTimeout(this.settleTimer);
+            this.settleTimer = null;
+        }
         this.unwatchFrame();
         this.stopStats();
         this.quit();
@@ -196,10 +240,49 @@ export class Doom extends Component<ComponentProps<DoomProps, DoomSavesState>, D
 
     // --- lifecycle ------------------------------------------------------------
 
+    /**
+     * True until the view's config bindings have had a chance to apply. A
+     * bound config prop (declared in the view's propConfig) delivers through
+     * a props update; Perspective can hand a reused component store to a new
+     * view and render it once with the previous values before that update
+     * arrives, and starting on those would launch the engine as the wrong
+     * role, in the wrong arena, as the wrong player. Views with no bound
+     * config props are never held back. A settle timer bounds the wait for
+     * bindings that resolve to the same value and thus never trigger an
+     * update.
+     */
+    private bindingsPending(): boolean {
+        if (this.propsSettled) {
+            return false;
+        }
+        try {
+            const store = this.props.store as unknown as { def?: { propConfig?: Record<string, { binding?: unknown }> } };
+            const cfgs = (store.def && store.def.propConfig) || {};
+            const bound = Object.keys(cfgs).some((k) => k.startsWith('props.config.') && !!(cfgs[k] && cfgs[k].binding));
+            if (!bound) {
+                this.propsSettled = true;
+            }
+        } catch {
+            this.propsSettled = true;
+        }
+        return !this.propsSettled;
+    }
+
     private start = (): void => {
         if (this.started || !this.canvas) {
             return;
         }
+        if (this.bindingsPending()) {
+            // Bindings still settling: retry once they deliver (componentDidUpdate
+            // calls start() again when the props change, or the settle timer fires).
+            if (!this.startRequested) {
+                this.startRequested = true;
+                this.setMessage('waiting for bindings');
+            }
+            return;
+        }
+        this.startRequested = false;
+        this.startedNet = this.props.props.config.multiplayer === 'off' ? null : netIdentity(this.props.props.config);
         if (!claimEngine(this)) {
             this.setPhase('busy', 'Another Doom component already owns this page. One marine per tab.');
             return;
@@ -243,9 +326,11 @@ export class Doom extends Component<ComponentProps<DoomProps, DoomSavesState>, D
             .then(([m, relayTicket]) => {
                 this.module = m;
                 this.watchTitle();
-                const cfg = this.props.props.config;
-                const relay = cfg.multiplayer === 'off' ? undefined : relayUrl(cfg, window.location, relayTicket);
-                m.callMain(buildArgs(cfg, size, relay));
+                // Same snapshot the ticket was issued for: a binding-driven arena
+                // that changes between the request and main() must not produce
+                // a ticket for one arena and a URL for another.
+                const relay = cfg0.multiplayer === 'off' ? undefined : relayUrl(cfg0, window.location, relayTicket);
+                m.callMain(buildArgs(cfg0, size, relay));
                 this.watchFrame();
                 // Chocolate Doom is up as soon as main returns to the browser loop;
                 // the protocol's "game started" (10) confirms the first tic ran.
@@ -300,6 +385,7 @@ export class Doom extends Component<ComponentProps<DoomProps, DoomSavesState>, D
         this.stopStats();
         this.module = null;
         this.started = false;
+        this.startedNet = null;
         this.enginePaused = false;
         this.appliedControls = null;
         releaseEngine(this);
