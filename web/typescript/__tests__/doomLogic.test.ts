@@ -4,7 +4,7 @@ import {
 import { mapDoomProps, PropReader } from '../components/doom/doomProps';
 
 const baseConfig = {
-    autoStart: false, statsIntervalMs: 250, persistSaves: true, sound: true, music: false, skill: 3, warp: true, episode: 1, map: 1,
+    autoStart: false, statsIntervalMs: 250, persistSaves: true, player: '', publishTelemetry: true, sound: true, music: false, skill: 3, warp: true, episode: 1, map: 1,
     keyboard: true, mouse: false, pixelated: true, showHud: true, playLabel: '', extraArgs: ''
 };
 

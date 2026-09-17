@@ -137,16 +137,11 @@ They are ordinary props, so they bind like anything else.
 
 ### Recipes
 
-**Historize the marine.** Bind an output to a memory tag *bidirectionally*
-(the component writes the prop, the binding pushes it to the tag), enable
-history on the tag, and the marine's health is in your historian next to the
-pump pressures. The verify project does exactly this into the Mustry
-TimescaleDB Historian:
-
-```json
-"props.output.health": { "binding": { "type": "tag", "config": {
-  "mode": "direct", "tagPath": "[default]Doom/Health", "bidirectional": true } } }
-```
+**Historize the marine.** The component already writes its telemetry into
+the module's `[Doom]` provider. Enable history on `[Doom]Players/<player>/Health`
+in the Designer, or mirror it with an expression tag the way the verify project does,
+and the marine's health is in your historian next to the pump pressures. The
+`output.*` props stay available for bindings on the view itself.
 
 **Production stops, Doom stops.** Bind `state.paused` to an expression on a
 line-status tag (or on an alarm's active count) and the game freezes with
@@ -230,8 +225,8 @@ chart shows an "unknown component" placeholder.
 
 | Path | What |
 |---|---|
-| `[default]_types_/Doom/Marine` | UDT with parameter `Player`: Health, Armor, Ammo, Weapon, Kills, TotalKills, Items, Secrets, Episode, Map, LevelSeconds, InLevel, Dead (alarm "Marine down", Critical), Session. All historized. |
-| `[default]Doom/Players/Player1` | One instance per marine. The view's `player` param picks the instance through indirect bindings, so a second player is a second instance and a second session. |
+| `[Doom]Players/<player>/*` | The module's **own tag provider**. The component streams its telemetry to the gateway and the module writes Health, Armor, Ammo, Weapon, Kills, Items, Secrets, their totals, Episode, Map, LevelSeconds, InLevel, Dead, plus Online, Session and LastSeen. No bindings, no scripts: drop the component on any view and the folder appears. `config.player` names the folder (default: the session's user, else `anonymous-<session>`). Tags are customisable in the Designer (history, alarms). |
+| `[default]Doom/Players/<player>/*` | The plant-side mirror: expression tags onto `[Doom]Players/<player>/...` adding what a plant wants on top, history to the TimescaleDB profile, the "Marine down" alarm (Critical), documentation. Built per player by `doom.setupPlayer(name)` from the view's `player` param, so a second player is a second session with another param and the folder appears by itself. (Not a UDT: parameter substitution in types created through `system.tag.configure` did not resolve on 8.3.6.) |
 | `[default]Doom/Line/Running` | Pretend production line with the "Line stopped" alarm (High). |
 
 `state.paused` is a tag binding on `[default]Doom/Line/Running.AlarmActiveUnackCount`

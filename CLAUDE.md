@@ -43,6 +43,20 @@ The engine calls `Module.onDoomSaveGame(slot)` (EM_JS in `mustry_stats.c`,
 called from `G_DoSaveGame`) after a slot file lands in `-savedir /saves`.
 Event names live in both `doomSaves.ts` and `DoomModelDelegate.java`; change both.
 
+## Telemetry → the [Doom] tag provider
+
+`DoomTagProvider` (gateway) owns a ManagedTagProvider named `Doom`
+(persistTags + allowTagCustomization). The component's `publishStats` sends the
+changed output keys as a `doom-telemetry` event through the same store/model
+delegate pair as the saves; `DoomModelDelegate` resolves the player
+(`config.player` → session user → `anonymous-<session>`), creates
+`Players/<player>/*` on first sight and updates values; on delegate shutdown
+the player goes `Online=false`. The verify project mirrors it per player with
+expression tags (`doom.setupPlayer(name)`), NOT a UDT: UDT parameter
+substitution (`{Player}`, even `{InstanceName}`) never resolved in types made
+through `system.tag.configure` on 8.3.6, and a reference tag onto the managed
+provider stayed at Uncertain_InitialValue while an expression tag works.
+
 ## Key bindings must agree in three places
 
 `gateway/.../default.cfg` (DOS scancodes the engine reads),
@@ -79,10 +93,10 @@ inside the container is a symlink to stdout: use `docker logs`, not `grep`.
 
 ## Verify project tags
 
-The `[default]Doom/*` tag model (Marine UDT, Player1 instance, line tag with
-alarm) is created by `doom.setupTags()` in the project library
-(`ops/verify/project/ignition/script-python/doom/code.py`), called from the
-DoomDemo view root's `events.system.onStartup`. Idempotent. A gateway
+The `[default]Doom/*` tag model (line tag with alarm, one expression-tag folder
+per player) is created by `doom.setupTags()` + `doom.setupPlayer(name)` in the
+project library (`ops/verify/project/ignition/script-python/doom/code.py`),
+called from the DoomDemo view root's `events.system.onStartup`. Idempotent. A gateway
 event-script resource (`ignition/event-scripts/startup.py`) was tried and
 proven NOT to run on a fresh 8.3.6 gateway with the project mounted from first
 boot, so do not reintroduce it without confirming the 8.3 format.

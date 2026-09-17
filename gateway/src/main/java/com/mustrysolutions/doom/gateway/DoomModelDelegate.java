@@ -21,11 +21,17 @@ public class DoomModelDelegate extends ComponentModelDelegate {
     static final String EVT_PUT = "doom-saves-put";
     static final String EVT_SLOTS = "doom-saves-slots";
     static final String EVT_ERROR = "doom-saves-error";
+    static final String EVT_TELEMETRY = "doom-telemetry";
+    static final String EVT_PLAYER = "doom-player";
 
     private final DoomSaveStore store;
+    private final DoomTagProvider tags;
+    /** The [Doom]Players/<player> folder this session feeds, once telemetry named it. */
+    private volatile String player;
 
-    public DoomModelDelegate(Component component) {
+    public DoomModelDelegate(Component component, DoomTagProvider tags) {
         super(component);
+        this.tags = tags;
         this.store = new DoomSaveStore(
             component.getSession().getGatewayContext().getSystemManager().getDataDir().toPath());
     }
@@ -37,7 +43,19 @@ public class DoomModelDelegate extends ComponentModelDelegate {
 
     @Override
     protected void onShutdown() {
-        // nothing to release
+        if (tags != null && player != null) {
+            tags.offline(player);
+        }
+    }
+
+    /** config.player, else the authenticated user, else anonymous-<session>. */
+    private String resolvePlayer(String requested) {
+        String session = component.getSession().getSessionId().toString();
+        String fallback = component.getSession().getWebAuthStatus().getUser()
+            .map(WebAuthUser::getUserName)
+            .map(u -> DoomTagProvider.playerKey(u, "anonymous-" + session.substring(0, 8)))
+            .orElse("anonymous-" + session.substring(0, 8));
+        return DoomTagProvider.playerKey(requested, fallback);
     }
 
     private String owner() {
@@ -51,7 +69,27 @@ public class DoomModelDelegate extends ComponentModelDelegate {
     public void handleEvent(EventFiredMsg message) {
         String name = message.getEventName();
         try {
-            if (EVT_LIST.equals(name)) {
+            if (EVT_TELEMETRY.equals(name)) {
+                if (tags == null) {
+                    return;
+                }
+                JsonObject payload = message.getEvent();
+                String requested = payload != null && payload.has("player") ? payload.get("player").getAsString() : "";
+                String resolved = resolvePlayer(requested);
+                if (!resolved.equals(player)) {
+                    if (player != null) {
+                        tags.offline(player);
+                    }
+                    player = resolved;
+                    JsonObject out = new JsonObject();
+                    out.addProperty("player", resolved);
+                    fireEvent(EVT_PLAYER, out);
+                }
+                boolean running = payload != null && payload.has("running") && payload.get("running").getAsBoolean();
+                JsonObject stats = payload != null && payload.has("stats") && payload.get("stats").isJsonObject()
+                    ? payload.getAsJsonObject("stats") : null;
+                tags.update(resolved, component.getSession().getSessionId().toString(), running, stats);
+            } else if (EVT_LIST.equals(name)) {
                 sendSlots();
             } else if (EVT_PUT.equals(name)) {
                 JsonObject payload = message.getEvent();

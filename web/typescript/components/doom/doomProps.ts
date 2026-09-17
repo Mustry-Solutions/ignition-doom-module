@@ -26,6 +26,8 @@ export function mapDoomProps(tree: PropReader): DoomProps {
             autoStart: tree.readBoolean('config.autoStart', false),
             statsIntervalMs: tree.readNumber('config.statsIntervalMs', 250),
             persistSaves: tree.readBoolean('config.persistSaves', true),
+            player: tree.readString('config.player', ''),
+            publishTelemetry: tree.readBoolean('config.publishTelemetry', true),
             sound: tree.readBoolean('config.sound', true),
             music: tree.readBoolean('config.music', false),
             skill: tree.readNumber('config.skill', 3),

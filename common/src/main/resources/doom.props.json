@@ -90,6 +90,16 @@
           "type": "boolean",
           "default": true,
           "description": "Keep Doom's six save-game slots on the gateway per Perspective user (data/modules/com.mustrysolutions.doom/saves/<user>/). Slots are restored into the engine before it starts, so Doom's own Load Game menu shows them. Off = saves live only in the tab and vanish on reload."
+        },
+        "player": {
+          "type": "string",
+          "default": "",
+          "description": "Who this marine is, for the module's own [Doom] tag provider: telemetry lands in [Doom]Players/<player>/*. Empty = the session's authenticated user name, or anonymous-<session> when there is none."
+        },
+        "publishTelemetry": {
+          "type": "boolean",
+          "default": true,
+          "description": "Send the live telemetry to the gateway, which writes it into the module's [Doom] tag provider (Players/<player>/Health, Armor, Ammo, ...). No bindings needed."
         }
       }
     },
@@ -294,6 +304,11 @@
           "type": "string",
           "default": "",
           "description": "Name the player typed for the most recent save in this session."
+        },
+        "player": {
+          "type": "string",
+          "default": "",
+          "description": "The player name the gateway resolved for this session (the [Doom]Players/<player> folder)."
         }
       }
     }

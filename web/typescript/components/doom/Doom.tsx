@@ -76,6 +76,9 @@ export class Doom extends Component<ComponentProps<DoomProps, DoomSavesState>, D
             this.props.store.props.write('output.savedSlots', d.slots.length);
             this.props.store.props.write('output.saveOwner', d.owner);
         }
+        if (d && (!pd || d.player !== pd.player)) {
+            this.props.store.props.write('output.player', d.player);
+        }
         // state.running is two-way: a binding flipping it starts or quits the
         // engine; the component writes it back as the engine comes and goes.
         if (p.running && !prev.props.running && !this.started) {
@@ -136,10 +139,20 @@ export class Doom extends Component<ComponentProps<DoomProps, DoomSavesState>, D
 
     private publishStats(stats: DoomStats): void {
         const w = this.props.store.props;
-        for (const [path, value] of statWrites(this.lastStats, stats)) {
+        const writes = statWrites(this.lastStats, stats);
+        for (const [path, value] of writes) {
             w.write(path, value);
         }
         this.lastStats = { ...stats };
+        // The gateway mirrors these into its own [Doom] tag provider; only the
+        // changed keys travel, and a zeroed snapshot when the engine stops.
+        if (writes.length > 0 && this.props.props.config.publishTelemetry) {
+            const changed: Record<string, number | boolean> = {};
+            for (const [path, value] of writes) {
+                changed[path.replace(/^output\./, '')] = value;
+            }
+            this.saves()?.publishTelemetry(this.props.props.config.player, this.module !== null, changed);
+        }
     }
 
     // --- sizing -----------------------------------------------------------------

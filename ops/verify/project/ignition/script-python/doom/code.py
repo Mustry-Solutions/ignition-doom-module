@@ -2,21 +2,34 @@
 # "m" merges). Called from the DoomDemo view root's onStartup as doom.setupTags(). Historized by the "Doom Historian" TimescaleDB profile seeded by
 # ops/fresh.sh; without that module the tags still work, history just fails.
 #
-# Model (multiplayer-ready: one Marine UDT instance per player):
-#   [default]_types_/Doom/Marine         UDT, parameter Player
-#   [default]Doom/Players/<Player>       instances (Player1 today)
+# Model (multiplayer-ready: one folder per player, created on demand):
+#   [Doom]Players/<player>/*             module-owned provider, written by the component's
+#                                        telemetry channel (Health, Armor, ..., Online, LastSeen)
+#   [default]Doom/Players/<player>/*     plant-side mirror: expression tags onto [Doom] with
+#                                        history to the TimescaleDB profile + the "Marine down" alarm,
+#                                        built by setupPlayer(name) from the view's player param
 #   [default]Doom/Line/Running           pretend production line + alarm
+#
+# Not a UDT: parameter substitution ({Player}, even {InstanceName}) never
+# resolved in types created through system.tag.configure on 8.3.6, so the
+# per-player folder is generated with literal paths instead.
 
 HISTORIAN = "Doom Historian"
 
 
-def member(name, data_type, doc, alarms=None):
+def member(player, name, data_type, doc, alarms=None):
+    # Mirrors the module's own [Doom] provider, which the component feeds
+    # directly (no bindings). Event-driven expression rather than reference
+    # tag: a reference onto the managed provider stayed at
+    # Uncertain_InitialValue on 8.3.6. This layer adds history, alarms and
+    # documentation, i.e. what a plant wants on top of raw telemetry.
     t = {
         "name": name,
         "tagType": "AtomicTag",
-        "valueSource": "memory",
+        "valueSource": "expr",
+        "expression": "{[Doom]Players/" + player + "/" + name + "}",
+        "executionMode": "EventDriven",
         "dataType": data_type,
-        "value": 0 if data_type != "String" else "",
         "documentation": doc,
         "historyEnabled": True,
         "historyProvider": HISTORIAN,
@@ -30,44 +43,39 @@ def member(name, data_type, doc, alarms=None):
     return t
 
 
-marine_udt = {
-    "name": "Marine",
-    "tagType": "UdtType",
-    "parameters": {"Player": {"dataType": "String", "value": "Player1"}},
-    "tags": [
-        member("Health", "Int4", "Marine health, 0-200 (output.health)."),
-        member("Armor", "Int4", "Armor points, 0-200 (output.armor)."),
-        member("Ammo", "Int4", "Ammo for the ready weapon, -1 = melee (output.ammo)."),
-        member("Weapon", "Int4", "Ready weapon slot 0-7 (output.weapon)."),
-        member("Kills", "Int4", "Monsters killed on this map (output.kills)."),
-        member("TotalKills", "Int4", "Monsters on this map (output.totalKills)."),
-        member("Items", "Int4", "Items picked up (output.items)."),
-        member("Secrets", "Int4", "Secrets found (output.secrets)."),
-        member("Episode", "Int4", "Episode (output.episode)."),
-        member("Map", "Int4", "Map (output.map)."),
-        member("LevelSeconds", "Int4", "Seconds on this map (output.levelSeconds)."),
-        member("InLevel", "Boolean", "True while a map is being played (output.inLevel)."),
-        member(
-            "Dead", "Boolean", "True while the marine is dead (output.dead).",
-            alarms=[{
-                "name": "Marine down",
-                "mode": "Equality",
-                "setpointA": 1,
-                "priority": "Critical",
-                "label": "Marine {Player} is down",
-                "notes": "The player died. Acknowledge to confirm you laughed.",
-            }],
-        ),
-        {
-            "name": "Session",
-            "tagType": "AtomicTag",
-            "valueSource": "memory",
-            "dataType": "String",
-            "value": "",
-            "documentation": "Perspective session id currently driving this marine (multiplayer bookkeeping).",
-        },
-    ],
-}
+def marine_folder(player):
+    """The [default]Doom/Players/<player> folder: one expression tag per telemetry member."""
+    return {
+        "name": player,
+        "tagType": "Folder",
+        "tags": [
+            member(player, "Health", "Int4", "Marine health, 0-200 (output.health)."),
+            member(player, "Armor", "Int4", "Armor points, 0-200 (output.armor)."),
+            member(player, "Ammo", "Int4", "Ammo for the ready weapon, -1 = melee (output.ammo)."),
+            member(player, "Weapon", "Int4", "Ready weapon slot 0-7 (output.weapon)."),
+            member(player, "Kills", "Int4", "Monsters killed on this map (output.kills)."),
+            member(player, "TotalKills", "Int4", "Monsters on this map (output.totalKills)."),
+            member(player, "Items", "Int4", "Items picked up (output.items)."),
+            member(player, "Secrets", "Int4", "Secrets found (output.secrets)."),
+            member(player, "Episode", "Int4", "Episode (output.episode)."),
+            member(player, "Map", "Int4", "Map (output.map)."),
+            member(player, "LevelSeconds", "Int4", "Seconds on this map (output.levelSeconds)."),
+            member(player, "InLevel", "Boolean", "True while a map is being played (output.inLevel)."),
+            member(
+                player, "Dead", "Boolean", "True while the marine is dead (output.dead).",
+                alarms=[{
+                    "name": "Marine down",
+                    "mode": "Equality",
+                    "setpointA": 1,
+                    "priority": "Critical",
+                    "label": "Marine %s is down" % player,
+                    "notes": "The player died. Acknowledge to confirm you laughed.",
+                }],
+            ),
+            member(player, "Online", "Boolean", "A session is driving this marine (from [Doom])."),
+        ],
+    }
+
 
 line = {
     "name": "Line",
@@ -90,21 +98,26 @@ line = {
     }],
 }
 
-players = {
-    "name": "Players",
-    "tagType": "Folder",
-    "tags": [{
-        "name": "Player1",
-        "tagType": "UdtInstance",
-        "typeId": "Doom/Marine",
-        "parameters": {"Player": "Player1"},
-    }],
-}
-
 
 def setupTags():
-    """Create/merge the Doom tag model (UDT, Player1 instance, line tag). Idempotent."""
+    """Create/merge the plant-side model: the line tag and the Players folder. Idempotent."""
     log = system.util.getLogger("MustryDoom.verify")
-    r1 = system.tag.configure("[default]_types_", [{"name": "Doom", "tagType": "Folder", "tags": [marine_udt]}], "m")
-    r2 = system.tag.configure("[default]", [{"name": "Doom", "tagType": "Folder", "tags": [line, players]}], "m")
-    log.info("Doom tag model configured: types=%s tags=%s" % (",".join(str(r) for r in r1), ",".join(str(r) for r in r2)))
+    # Leftovers from earlier model versions (a Marine UDT, probe tags) would
+    # block the per-player folders below; removing missing paths is harmless.
+    system.tag.deleteTags(["[default]_types_/Doom", "[default]Doom/Probe"])
+    r = system.tag.configure("[default]", [{"name": "Doom", "tagType": "Folder", "tags": [line, {"name": "Players", "tagType": "Folder", "tags": []}]}], "m")
+    log.info("Doom tag model configured: %s" % ",".join(str(x) for x in r))
+
+
+def setupPlayer(player):
+    """Create/refresh [default]Doom/Players/<player>: expression tags mirroring [Doom]Players/<player>."""
+    player = (player or "").strip()
+    if not player:
+        return
+    log = system.util.getLogger("MustryDoom.verify")
+    # Recreated, not merged: the folder holds no operator data, a changed
+    # member definition must win, and an old UDT instance of the same name
+    # cannot be overwritten in place ("Cannot move/rename inherited tag").
+    system.tag.deleteTags(["[default]Doom/Players/" + player])
+    r = system.tag.configure("[default]Doom/Players", [marine_folder(player)], "o")
+    log.info("Doom player folder configured for %s: %s" % (player, ",".join(str(x) for x in r)))

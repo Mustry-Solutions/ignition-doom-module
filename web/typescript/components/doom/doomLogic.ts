@@ -5,6 +5,8 @@ export interface DoomConfig {
     autoStart: boolean;
     statsIntervalMs: number;
     persistSaves: boolean;
+    player: string;
+    publishTelemetry: boolean;
     sound: boolean;
     music: boolean;
     skill: number;

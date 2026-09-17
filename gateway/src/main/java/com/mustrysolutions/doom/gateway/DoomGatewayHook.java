@@ -27,6 +27,7 @@ public class DoomGatewayHook extends AbstractGatewayModuleHook {
     private GatewayContext gatewayContext;
     private ComponentRegistry componentRegistry;
     private ComponentModelDelegateRegistry delegateRegistry;
+    private DoomTagProvider tagProvider;
 
     @Override
     public void setup(GatewayContext context) {
@@ -43,12 +44,20 @@ public class DoomGatewayHook extends AbstractGatewayModuleHook {
         } else {
             log.error("Perspective component registry not found; Doom not registered.");
         }
-        // Save games: one gateway-side delegate per Doom component instance.
+        // The module's own [Doom] tag provider, fed by the component's telemetry.
+        try {
+            this.tagProvider = new DoomTagProvider(this.gatewayContext);
+        } catch (RuntimeException e) {
+            log.error("Could not create the [Doom] tag provider; telemetry tags disabled.", e);
+            this.tagProvider = null;
+        }
+        // Save games + telemetry: one gateway-side delegate per Doom component instance.
         this.delegateRegistry = perspectiveContext.getComponentModelDelegateRegistry();
         if (this.delegateRegistry != null) {
-            this.delegateRegistry.register(Doom.COMPONENT_ID, DoomModelDelegate::new);
+            final DoomTagProvider tags = this.tagProvider;
+            this.delegateRegistry.register(Doom.COMPONENT_ID, c -> new DoomModelDelegate(c, tags));
         } else {
-            log.warn("Component model delegate registry not found; save games will not persist.");
+            log.warn("Component model delegate registry not found; save games and telemetry tags disabled.");
         }
     }
 
@@ -59,6 +68,10 @@ public class DoomGatewayHook extends AbstractGatewayModuleHook {
         }
         if (this.componentRegistry != null) {
             Components.ALL.forEach(d -> this.componentRegistry.removeComponent(d.id()));
+        }
+        if (this.tagProvider != null) {
+            this.tagProvider.shutdown();
+            this.tagProvider = null;
         }
     }
 

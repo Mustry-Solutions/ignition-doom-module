@@ -17,11 +17,17 @@ export const SAVE_EVENTS = {
     /** gateway -> page: { owner, slots: [{ slot, description, savedAt, data? }] } */
     SLOTS: 'doom-saves-slots',
     /** gateway -> page: { error } */
-    ERROR: 'doom-saves-error'
+    ERROR: 'doom-saves-error',
+    /** page -> gateway: { player, running, stats: {...changed} } -> module tag provider */
+    TELEMETRY: 'doom-telemetry',
+    /** gateway -> page: { player } the resolved [Doom]Players/<player> name */
+    PLAYER: 'doom-player'
 } as const;
 
 export interface DoomSavesState {
     owner: string;
+    /** The player folder the gateway writes telemetry to, once it told us. */
+    player: string;
     /** Slots the gateway holds for this user, with data when they came from LIST. */
     slots: SavedSlot[];
     loaded: boolean;
@@ -30,6 +36,7 @@ export interface DoomSavesState {
 
 export class DoomStoreDelegate extends ComponentStoreDelegate {
     private owner = '';
+    private player = '';
     private slots: SavedSlot[] = [];
     private loaded = false;
     private lastError = '';
@@ -39,7 +46,7 @@ export class DoomStoreDelegate extends ComponentStoreDelegate {
     }
 
     mapStateToProps(): DoomSavesState {
-        return { owner: this.owner, slots: this.slots, loaded: this.loaded, lastError: this.lastError };
+        return { owner: this.owner, player: this.player, slots: this.slots, loaded: this.loaded, lastError: this.lastError };
     }
 
     requestSlots(): void {
@@ -48,6 +55,11 @@ export class DoomStoreDelegate extends ComponentStoreDelegate {
 
     putSlot(slot: number, description: string, data: string): void {
         this.fireEvent(SAVE_EVENTS.PUT, { slot, description, data });
+    }
+
+    /** Push telemetry (only the changed stats) for the gateway's [Doom] provider. */
+    publishTelemetry(player: string, running: boolean, stats: Record<string, number | boolean>): void {
+        this.fireEvent(SAVE_EVENTS.TELEMETRY, { player, running, stats });
     }
 
     handleEvent(eventName: string, eventObject: JsObject): void {
@@ -68,6 +80,10 @@ export class DoomStoreDelegate extends ComponentStoreDelegate {
                 this.notify();
                 break;
             }
+            case SAVE_EVENTS.PLAYER:
+                this.player = String((eventObject && eventObject.player) || '');
+                this.notify();
+                break;
             case SAVE_EVENTS.ERROR:
                 this.lastError = String((eventObject && eventObject.error) || 'unknown error');
                 this.notify();

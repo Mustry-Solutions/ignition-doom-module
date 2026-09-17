@@ -28,7 +28,7 @@
           "type": "script",
           "scope": "G",
           "config": {
-            "script": "\t# Tag model (UDT, Player1 instance, line tag) lives in the project library.\n\tdoom.setupTags()"
+            "script": "\t# Plant-side tag model lives in the project library; one folder per player.\n\tdoom.setupTags()\n\tdoom.setupPlayer(self.view.params.player)"
           }
         }
       }
@@ -82,7 +82,7 @@
         "type": "ia.display.label",
         "version": 0,
         "props": {
-          "text": "Can it run Doom? Telemetry \u2192 tags \u2192 TimescaleDB. An unacknowledged line alarm pauses the game.",
+          "text": "Can it run Doom? Telemetry \u2192 the module's [Doom] tag provider \u2192 plant tags with history and alarms \u2192 TimescaleDB. An unacknowledged line alarm pauses the game.",
           "style": {
             "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
             "color": "#8b95a5",
@@ -182,188 +182,6 @@
           }
         },
         "propConfig": {
-          "props.output.health": {
-            "binding": {
-              "type": "tag",
-              "config": {
-                "mode": "indirect",
-                "tagPath": "[default]Doom/Players/{player}/Health",
-                "references": {
-                  "player": "{view.params.player}"
-                },
-                "fallbackDelay": 2.5,
-                "bidirectional": true
-              }
-            }
-          },
-          "props.output.armor": {
-            "binding": {
-              "type": "tag",
-              "config": {
-                "mode": "indirect",
-                "tagPath": "[default]Doom/Players/{player}/Armor",
-                "references": {
-                  "player": "{view.params.player}"
-                },
-                "fallbackDelay": 2.5,
-                "bidirectional": true
-              }
-            }
-          },
-          "props.output.ammo": {
-            "binding": {
-              "type": "tag",
-              "config": {
-                "mode": "indirect",
-                "tagPath": "[default]Doom/Players/{player}/Ammo",
-                "references": {
-                  "player": "{view.params.player}"
-                },
-                "fallbackDelay": 2.5,
-                "bidirectional": true
-              }
-            }
-          },
-          "props.output.weapon": {
-            "binding": {
-              "type": "tag",
-              "config": {
-                "mode": "indirect",
-                "tagPath": "[default]Doom/Players/{player}/Weapon",
-                "references": {
-                  "player": "{view.params.player}"
-                },
-                "fallbackDelay": 2.5,
-                "bidirectional": true
-              }
-            }
-          },
-          "props.output.kills": {
-            "binding": {
-              "type": "tag",
-              "config": {
-                "mode": "indirect",
-                "tagPath": "[default]Doom/Players/{player}/Kills",
-                "references": {
-                  "player": "{view.params.player}"
-                },
-                "fallbackDelay": 2.5,
-                "bidirectional": true
-              }
-            }
-          },
-          "props.output.totalKills": {
-            "binding": {
-              "type": "tag",
-              "config": {
-                "mode": "indirect",
-                "tagPath": "[default]Doom/Players/{player}/TotalKills",
-                "references": {
-                  "player": "{view.params.player}"
-                },
-                "fallbackDelay": 2.5,
-                "bidirectional": true
-              }
-            }
-          },
-          "props.output.items": {
-            "binding": {
-              "type": "tag",
-              "config": {
-                "mode": "indirect",
-                "tagPath": "[default]Doom/Players/{player}/Items",
-                "references": {
-                  "player": "{view.params.player}"
-                },
-                "fallbackDelay": 2.5,
-                "bidirectional": true
-              }
-            }
-          },
-          "props.output.secrets": {
-            "binding": {
-              "type": "tag",
-              "config": {
-                "mode": "indirect",
-                "tagPath": "[default]Doom/Players/{player}/Secrets",
-                "references": {
-                  "player": "{view.params.player}"
-                },
-                "fallbackDelay": 2.5,
-                "bidirectional": true
-              }
-            }
-          },
-          "props.output.episode": {
-            "binding": {
-              "type": "tag",
-              "config": {
-                "mode": "indirect",
-                "tagPath": "[default]Doom/Players/{player}/Episode",
-                "references": {
-                  "player": "{view.params.player}"
-                },
-                "fallbackDelay": 2.5,
-                "bidirectional": true
-              }
-            }
-          },
-          "props.output.map": {
-            "binding": {
-              "type": "tag",
-              "config": {
-                "mode": "indirect",
-                "tagPath": "[default]Doom/Players/{player}/Map",
-                "references": {
-                  "player": "{view.params.player}"
-                },
-                "fallbackDelay": 2.5,
-                "bidirectional": true
-              }
-            }
-          },
-          "props.output.levelSeconds": {
-            "binding": {
-              "type": "tag",
-              "config": {
-                "mode": "indirect",
-                "tagPath": "[default]Doom/Players/{player}/LevelSeconds",
-                "references": {
-                  "player": "{view.params.player}"
-                },
-                "fallbackDelay": 2.5,
-                "bidirectional": true
-              }
-            }
-          },
-          "props.output.inLevel": {
-            "binding": {
-              "type": "tag",
-              "config": {
-                "mode": "indirect",
-                "tagPath": "[default]Doom/Players/{player}/InLevel",
-                "references": {
-                  "player": "{view.params.player}"
-                },
-                "fallbackDelay": 2.5,
-                "bidirectional": true
-              }
-            }
-          },
-          "props.output.dead": {
-            "binding": {
-              "type": "tag",
-              "config": {
-                "mode": "indirect",
-                "tagPath": "[default]Doom/Players/{player}/Dead",
-                "references": {
-                  "player": "{view.params.player}"
-                },
-                "fallbackDelay": 2.5,
-                "bidirectional": true
-              }
-            }
-          },
           "props.state.paused": {
             "binding": {
               "type": "tag",
@@ -379,6 +197,14 @@
                   "expression": "coalesce({value}, 0) > 0"
                 }
               ]
+            }
+          },
+          "props.config.player": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "view.params.player"
+              }
             }
           }
         },
@@ -1215,7 +1041,7 @@
             "binding": {
               "type": "expr",
               "config": {
-                "expression": "\"output.state: \" + {../doom.props.output.state} + \"  \u00b7  output.message: \" + {../doom.props.output.message} + \"\\noutput.inLevel: \" + {../doom.props.output.inLevel} + \"  \u00b7  output.health: \" + {../doom.props.output.health} + \"  \u00b7  output.armor: \" + {../doom.props.output.armor} + \"\\noutput.ammo: \" + {../doom.props.output.ammo} + \"  \u00b7  output.kills: \" + {../doom.props.output.kills} + \"/\" + {../doom.props.output.totalKills} + \"  \u00b7  output.map: E\" + {../doom.props.output.episode} + \"M\" + {../doom.props.output.map} + \"\\ntag \" + {view.params.player} + \"/Health: \" + coalesce(tag(\"[default]Doom/Players/\" + {view.params.player} + \"/Health\"), 0) + \"  \u00b7  tag \" + {view.params.player} + \"/Kills: \" + coalesce(tag(\"[default]Doom/Players/\" + {view.params.player} + \"/Kills\"), 0) + \"\\nline running: \" + {[default]Doom/Line/Running} + \"  \u00b7  line alarm unacked: \" + coalesce({view.custom.lineUnacked}, 0) + \"  \u00b7  paused: \" + coalesce({../doom.props.state.paused}, false) + \"\\noutput.savedSlots: \" + coalesce({../doom.props.output.savedSlots}, 0) + \"  \u00b7  output.saveOwner: \" + coalesce({../doom.props.output.saveOwner}, \"\") + \"  \u00b7  last save: \" + coalesce({../doom.props.output.lastSaveSlot}, 0) + \" \\\"\" + coalesce({../doom.props.output.lastSaveDescription}, \"\") + \"\\\"\""
+                "expression": "\"output.state: \" + {../doom.props.output.state} + \"  \u00b7  output.message: \" + {../doom.props.output.message} + \"\\noutput.inLevel: \" + {../doom.props.output.inLevel} + \"  \u00b7  output.health: \" + {../doom.props.output.health} + \"  \u00b7  output.armor: \" + {../doom.props.output.armor} + \"\\noutput.ammo: \" + {../doom.props.output.ammo} + \"  \u00b7  output.kills: \" + {../doom.props.output.kills} + \"/\" + {../doom.props.output.totalKills} + \"  \u00b7  output.map: E\" + {../doom.props.output.episode} + \"M\" + {../doom.props.output.map} + \"\\ntag \" + {view.params.player} + \"/Health: \" + coalesce(tag(\"[default]Doom/Players/\" + {view.params.player} + \"/Health\"), 0) + \"  \u00b7  [Doom]Players/\" + {view.params.player} + \"/Online: \" + coalesce(tag(\"[Doom]Players/\" + {view.params.player} + \"/Online\"), false) + \"  \u00b7  output.player: \" + coalesce({../doom.props.output.player}, \"\") + \"\\nline running: \" + {[default]Doom/Line/Running} + \"  \u00b7  line alarm unacked: \" + coalesce({view.custom.lineUnacked}, 0) + \"  \u00b7  paused: \" + coalesce({../doom.props.state.paused}, false) + \"\\noutput.savedSlots: \" + coalesce({../doom.props.output.savedSlots}, 0) + \"  \u00b7  output.saveOwner: \" + coalesce({../doom.props.output.saveOwner}, \"\") + \"  \u00b7  last save: \" + coalesce({../doom.props.output.lastSaveSlot}, 0) + \" \\\"\" + coalesce({../doom.props.output.lastSaveDescription}, \"\") + \"\\\"\""
               }
             }
           }

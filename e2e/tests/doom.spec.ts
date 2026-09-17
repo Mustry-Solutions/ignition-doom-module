@@ -90,7 +90,11 @@ test('doom: live telemetry reaches the outputs and the bound tags', async ({ pag
     await expect(page.getByText(/output\.health: 100/)).toBeVisible({ timeout: 20_000 });
     await expect(page.getByText(/output\.ammo: 50/)).toBeVisible();
     await expect(page.getByText(/output\.inLevel: true/)).toBeVisible();
+    // Health reaches [default]Doom/Players/Player1/Health through a reference tag onto
+    // the module's own [Doom] provider, which the component feeds with no bindings.
     await expect(page.getByText(/tag Player1\/Health: 100/)).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText(/\[Doom\]Players\/Player1\/Online: true/)).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText(/output\.player: Player1/)).toBeVisible();
 });
 
 test('doom: quitting from the in-game menu leaves a restartable component, Restart brings it back', async ({ page }) => {
