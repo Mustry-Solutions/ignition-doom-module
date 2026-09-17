@@ -9,6 +9,10 @@ deathmatch each other through the gateway.
 
 It is of no industrial value whatsoever. That is the point.
 
+![Doom paused inside a Perspective view: the line stopped, the alarm is active, the marine waits.](docs/images/hero-paused.png)
+
+*Line 3 stopped. The alarm is unacknowledged. The marine waits.*
+
 - Ignition **8.3.6+**, Perspective
 - One component: `Doom`, under the `Mustry Solutions` palette category
 - Free, no trial, no activation. GPL-2.0.
@@ -43,6 +47,32 @@ keep their saves in the tab, so nobody shares a folder by accident.
 sessions. Host in one browser, join from another. The host's game launches
 when everyone is in the lobby. Only sessions running the component get into
 an arena: the gateway hands each one a ticket.
+
+---
+
+## In pictures
+
+The demo project that ships with the repository, running on a plain 8.3.6
+gateway with the Mustry TimescaleDB Historian and Embr Charts installed.
+
+![The control room: the game, health/armor/ammo/kills tiles fed by the [Doom] tag provider, the line alarm table, tag-bound controls and a five-minute health trend from the historian.](docs/images/control-room.png)
+
+*The control room. Tiles and chart are ordinary tags: the component writes
+its telemetry into the module's own `[Doom]` provider and the plant side
+mirrors it with history and alarms. Those breaks in the trend are engine
+restarts, not network loss.*
+
+![The line is stopped: the header pill turns red, the "Line stopped" alarm sits unacknowledged in the table, and Doom shows its pause banner.](docs/images/alarm-pause.png)
+
+*Someone stopped line 3. The alarm went active, `state.paused` followed it,
+and the marine stopped mid-corridor. Acknowledge the alarm and he carries on.*
+
+| Host | Joiner |
+|---|---|
+| ![The host's view in a deathmatch: the FRAG counter replaced ARMS on the status bar, two players in the game.](docs/images/deathmatch-host.png) | ![The second player's view of the same arena, in another browser.](docs/images/deathmatch-join.png) |
+
+*Two Perspective sessions, one arena, relayed by the gateway. Note the status
+bar: FRAG where ARMS used to be, and two player markers.*
 
 ---
 

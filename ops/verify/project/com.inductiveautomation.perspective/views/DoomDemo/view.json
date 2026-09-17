@@ -82,7 +82,7 @@
         "type": "ia.display.label",
         "version": 0,
         "props": {
-          "text": "Can it run Doom? Telemetry \u2192 the module's [Doom] tag provider \u2192 plant tags with history and alarms \u2192 TimescaleDB. An unacknowledged line alarm pauses the game.",
+          "text": "Telemetry \u2192 the module's [Doom] tag provider \u2192 plant tags with history and alarms \u2192 TimescaleDB. An unacknowledged line alarm pauses the game.",
           "style": {
             "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
             "color": "#8b95a5",
@@ -95,7 +95,7 @@
         "position": {
           "x": 170,
           "y": 42,
-          "width": 700,
+          "width": 860,
           "height": 18
         }
       },
@@ -120,7 +120,7 @@
         },
         "position": {
           "x": 1056,
-          "y": 14,
+          "y": 18,
           "width": 200,
           "height": 32
         },
@@ -1230,7 +1230,7 @@
           "text": "",
           "style": {
             "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
-            "fontSize": "12px",
+            "fontSize": "11px",
             "color": "#8b95a5",
             "textAlign": "right",
             "cursor": "pointer",
@@ -1262,10 +1262,10 @@
           "name": "loginLink"
         },
         "position": {
-          "x": 840,
-          "y": 44,
+          "x": 1056,
+          "y": 58,
           "width": 200,
-          "height": 18
+          "height": 14
         }
       }
     ]
