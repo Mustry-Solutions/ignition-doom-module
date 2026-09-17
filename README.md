@@ -20,6 +20,65 @@ It is free, GPL-2.0, and of no industrial value whatsoever.
 
 The module is free: no trial, no activation.
 
+## How it works
+
+```mermaid
+flowchart TB
+    subgraph GW[Ignition gateway]
+        RES["Module resources at /res/mustry-doom/<br/>MustryDoom.js · websockets-doom.wasm · doom1.wad · default.cfg"]
+    end
+
+    subgraph BR[Browser · one Perspective session]
+        direction LR
+        TAGS["Tag bindings<br/>data.controls · state.paused"]
+        KEYS["Keyboard<br/>only while the canvas is focused"]
+        COMP["Doom component<br/>React class component"]
+        OUT["Outputs<br/>output.state · output.message · onGameEvent"]
+        ENG["Chocolate Doom<br/>wasm + SDL2, WAD in memory"]
+        CANVAS["Canvas id=canvas<br/>SDL draws frames"]
+    end
+
+    RES -->|bundle + engine over HTTP| COMP
+    TAGS -->|prop changes| COMP
+    COMP -->|"callMain(args)"| ENG
+    COMP -->|synthetic KeyboardEvent| CANVAS
+    KEYS -->|real KeyboardEvent| CANVAS
+    CANVAS -->|SDL keyboard target| ENG
+    ENG -->|frames| CANVAS
+    ENG -->|stdout lines| COMP
+    COMP --> OUT
+```
+
+The gateway does almost nothing: the gateway hook mounts a static folder and
+Perspective registers the component. Everything else happens in the browser
+page.
+
+1. **Start.** On click (or `config.autoStart`) the component injects the
+   engine's script tag, calls the returned factory with its canvas, a file
+   locator pointing back at the mount path, and a pre-run hook that fetches
+   `doom1.wad` and `default.cfg` into the engine's in-memory filesystem. Then
+   it calls `main` with a command line built from `config.*` (skill, warp
+   target, sound, window size).
+2. **SDL is the seam.** Chocolate Doom believes it draws to a window. SDL's
+   Emscripten backend maps that window onto the canvas with id `canvas`, sizes
+   the backing store from the canvas's CSS box times `devicePixelRatio`, and
+   listens for keyboard events on that same canvas. The component only sets the
+   canvas's CSS size to its frame and nudges SDL with a `resize` event when the
+   frame changes.
+3. **Tags become key presses.** A tag bound to `data.controls.fire` flips a
+   prop; the component diffs old and new controls and dispatches a synthetic
+   `KeyboardEvent` for Space at the canvas. SDL cannot tell it from a real key.
+   Releasing the tag sends the key-up; `weapon` presses a digit; `state.paused`
+   presses Doom's own Pause key.
+4. **Information flows back through stdout.** The engine prints lines, some
+   with a `doom: <code>, <text>` prefix. The component mirrors the last line
+   into `output.message`, tracks the phase in `output.state`, fires
+   `onGameEvent` for coded lines, and restores the tab title whenever SDL
+   renames it.
+
+Two guards: one engine per page (a second component reports `busy`), and on
+unmount the component calls the engine's `I_Quit` so the main loop stops.
+
 ## The component
 
 | Group | Prop | What |
