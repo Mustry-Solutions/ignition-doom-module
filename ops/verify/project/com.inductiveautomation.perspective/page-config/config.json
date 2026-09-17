@@ -3,6 +3,24 @@
   "/": {
    "viewPath": "DoomDemo",
    "viewParams": {}
+  },
+  "/arena/:role/:player": {
+   "viewPath": "DoomArena",
+   "viewParams": {
+    "role": "host",
+    "player": "Player1",
+    "arena": "default",
+    "players": 2
+   }
+  },
+  "/arena/:role/:player/:arena": {
+   "viewPath": "DoomArena",
+   "viewParams": {
+    "role": "host",
+    "player": "Player1",
+    "arena": "default",
+    "players": 2
+   }
   }
  }
 }

@@ -83,10 +83,10 @@ index f23586b..dbc3d8e 100644
  
 diff --git a/src/doom/mustry_stats.c b/src/doom/mustry_stats.c
 new file mode 100644
-index 0000000..85ed118
+index 0000000..8cd452e
 --- /dev/null
 +++ b/src/doom/mustry_stats.c
-@@ -0,0 +1,97 @@
+@@ -0,0 +1,112 @@
 +//
 +// Mustry Doom: read-only player telemetry for the host page.
 +//
@@ -102,6 +102,7 @@ index 0000000..85ed118
 +#include "d_player.h"
 +#include "d_items.h"
 +#include "p_local.h"
++#include "../net_client.h"
 +
 +enum
 +{
@@ -120,7 +121,10 @@ index 0000000..85ed118
 +    MSTAT_MAP = 12,
 +    MSTAT_LEVEL_SECONDS = 13,
 +    MSTAT_DEAD = 14,      // 1 while the player is dead
-+    MSTAT_PAUSED = 15
++    MSTAT_PAUSED = 15,
++    MSTAT_NETGAME = 16,      // 1 in a multiplayer game
++    MSTAT_IN_LOBBY = 17,     // 1 while waiting in the netgame lobby
++    MSTAT_NET_PLAYERS = 18   // players in the netgame (0 single player)
 +};
 +
 +int Mustry_Stat(int id)
@@ -128,7 +132,7 @@ index 0000000..85ed118
 +    player_t *p;
 +    int in_level;
 +
-+    in_level = (gamestate == GS_LEVEL) ? 1 : 0;
++    in_level = (gamestate == GS_LEVEL && gametic > 0 && !net_waiting_for_launch) ? 1 : 0;
 +    p = &players[consoleplayer];
 +
 +    switch (id)
@@ -169,6 +173,17 @@ index 0000000..85ed118
 +            return (in_level && p->playerstate == PST_DEAD) ? 1 : 0;
 +        case MSTAT_PAUSED:
 +            return paused ? 1 : 0;
++        case MSTAT_NETGAME:
++            return netgame ? 1 : 0;
++        case MSTAT_IN_LOBBY:
++            return net_waiting_for_launch ? 1 : 0;
++        case MSTAT_NET_PLAYERS:
++        {
++            int n = 0, i;
++            if (!netgame) return 0;
++            for (i = 0; i < MAXPLAYERS; i++) if (playeringame[i]) n++;
++            return n;
++        }
 +        default:
 +            return 0;
 +    }

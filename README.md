@@ -108,6 +108,7 @@ unmount the component calls the engine's `I_Quit` so the main loop stops.
 | `state.paused` | | Two-way. True pauses the game (Doom's own pause). Bind it to an alarm. |
 | `state.running` | | Two-way. True starts the engine, false quits it; written back as the engine comes and goes, so a binding can restart the game without a reload. |
 | `config.persistSaves` | | Keep Doom's six save slots on the gateway per Perspective user (default on). |
+| `config.multiplayer`, `arena`, `players`, `deathmatch`, `relayUrl` | | Host or join a deathmatch through the gateway relay (see below). |
 | `output.savedSlots`, `output.saveOwner`, `output.lastSaveSlot`, `output.lastSaveDescription` | | How many slots the gateway holds for this user, who that user is, and the most recent save made in this session. |
 | `output.state` | | `idle`, `loading`, `running`, `paused`, `exited`, `error`, `busy` (another Doom already owns the page). |
 | `output.message` | | The last line the engine printed. |
@@ -126,6 +127,24 @@ user, or `anonymous`. Before the engine starts, the component asks for the
 user's slots and writes them back into the in-memory filesystem, so Doom's own
 Load Game menu lists them. Slots are capped at 512 KB; a session can only ever
 read or write its own user's folder. Turn it off with `config.persistSaves`.
+
+### Deathmatch over the gateway
+
+The engine's WebSockets netcode is compiled in, and the module mounts a relay
+at `/system/doom-relay/<arena>` on the gateway. Set `config.multiplayer` to
+`host` on one component and `join` on the others, same `config.arena`, and
+the gateway becomes the Doom server's network: the host launches the game the
+moment `config.players` marines are in the lobby. Rules come from the host's
+`config.deathmatch` (coop, deathmatch, altdeath). The relay only looks at the
+8-byte frame header (destination and source ids) and forwards; nothing about
+the game is interpreted on the gateway.
+
+The verify project has an arena page: open
+`/data/perspective/client/verify/arena/host/Player1` in one browser and
+`.../arena/join/Player2` in another (an optional third segment picks the
+arena). Each marine's
+telemetry lands in its own `[Doom]Players/<player>` folder, so the historian
+records both sides of the fight.
 
 ### Live telemetry
 

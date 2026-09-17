@@ -1,0 +1,321 @@
+{
+  "custom": {},
+  "params": {
+    "role": "host",
+    "arena": "default",
+    "players": 2,
+    "player": "Player1"
+  },
+  "props": {
+    "defaultSize": {
+      "width": 1280,
+      "height": 640
+    }
+  },
+  "root": {
+    "type": "ia.container.coord",
+    "version": 0,
+    "props": {
+      "style": {
+        "backgroundColor": "#0b0d10"
+      }
+    },
+    "meta": {
+      "name": "root"
+    },
+    "events": {
+      "system": {
+        "onStartup": {
+          "type": "script",
+          "scope": "G",
+          "config": {
+            "script": "\tdoom.setupTags()\n\tdoom.setupPlayer(self.view.params.player)"
+          }
+        }
+      }
+    },
+    "children": [
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "DOOM",
+          "style": {
+            "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+            "color": "#e24b4a",
+            "fontSize": "34px",
+            "fontWeight": "800",
+            "letterSpacing": "0.12em"
+          }
+        },
+        "meta": {
+          "name": "title"
+        },
+        "position": {
+          "x": 24,
+          "y": 18,
+          "width": 140,
+          "height": 44
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+            "color": "#8b95a5",
+            "fontSize": "13px"
+          }
+        },
+        "meta": {
+          "name": "subtitle"
+        },
+        "position": {
+          "x": 170,
+          "y": 22,
+          "width": 700,
+          "height": 20
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "\"Arena \" + {view.params.arena} + \" \u00b7 \" + if({view.params.role} = \"host\", \"HOSTING for \" + {view.params.players} + \" marines\", \"JOINING as \" + {view.params.player}) + \" \u00b7 deathmatch over the gateway relay\""
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "Open /arena/join/Player2 in a second browser (host first). The host's game launches when everyone is in the lobby.",
+          "style": {
+            "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+            "color": "#8b95a5",
+            "fontSize": "12px"
+          }
+        },
+        "meta": {
+          "name": "subtitle2"
+        },
+        "position": {
+          "x": 170,
+          "y": 42,
+          "width": 900,
+          "height": 18
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+            "color": "#04342c",
+            "fontSize": "12px",
+            "fontWeight": "700",
+            "letterSpacing": "0.1em",
+            "textAlign": "center",
+            "borderRadius": "16px",
+            "backgroundColor": "#2ecc71"
+          }
+        },
+        "meta": {
+          "name": "rolePill"
+        },
+        "position": {
+          "x": 1056,
+          "y": 22,
+          "width": 200,
+          "height": 32
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "upper({view.params.role})"
+              }
+            }
+          },
+          "props.style.backgroundColor": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if({view.params.role} = \"host\", \"#f1c40f\", \"#2ecc71\")"
+              }
+            }
+          },
+          "props.style.color": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if({view.params.role} = \"host\", \"#412402\", \"#04342c\")"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "mustrysolutions.perspective.fun.doom",
+        "version": 0,
+        "props": {
+          "config": {
+            "autoStart": false,
+            "showHud": true,
+            "warp": true,
+            "multiplayer": "join",
+            "arena": "default",
+            "players": 2,
+            "deathmatch": "deathmatch",
+            "player": ""
+          },
+          "data": {
+            "controls": {
+              "forward": false,
+              "backward": false,
+              "strafeLeft": false,
+              "strafeRight": false,
+              "turnLeft": false,
+              "turnRight": false,
+              "fire": false,
+              "use": false,
+              "run": false,
+              "menu": false,
+              "confirm": false,
+              "weapon": 0
+            }
+          },
+          "state": {},
+          "style": {
+            "borderRadius": "12px",
+            "overflow": "hidden"
+          }
+        },
+        "propConfig": {
+          "props.config.multiplayer": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "view.params.role"
+              }
+            }
+          },
+          "props.config.arena": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "view.params.arena"
+              }
+            }
+          },
+          "props.config.players": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "view.params.players"
+              }
+            }
+          },
+          "props.config.player": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "view.params.player"
+              }
+            }
+          }
+        },
+        "custom": {},
+        "meta": {
+          "name": "doom"
+        },
+        "position": {
+          "x": 24,
+          "y": 76,
+          "width": 800,
+          "height": 528
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+            "color": "#e6e9ef",
+            "backgroundColor": "#0f1318",
+            "borderRadius": "12px"
+          }
+        },
+        "meta": {
+          "name": "termCard"
+        },
+        "position": {
+          "x": 848,
+          "y": 76,
+          "width": 408,
+          "height": 528
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "fontFamily": "ui-monospace, Menlo, Consolas, monospace",
+            "color": "#7ee787",
+            "fontSize": "11px",
+            "whiteSpace": "pre-wrap",
+            "lineHeight": "1.35"
+          }
+        },
+        "meta": {
+          "name": "outputs"
+        },
+        "position": {
+          "x": 862,
+          "y": 86,
+          "width": 380,
+          "height": 510
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "\"output.state: \" + {../doom.props.output.state} + \"\\noutput.message: \" + {../doom.props.output.message} + \"\\noutput.player: \" + coalesce({../doom.props.output.player}, \"\") + \"\\noutput.inLobby: \" + {../doom.props.output.inLobby} + \"  \u00b7  netPlayers: \" + {../doom.props.output.netPlayers} + \"\\noutput.inLevel: \" + {../doom.props.output.inLevel} + \"  \u00b7  health: \" + {../doom.props.output.health} + \"  \u00b7  kills: \" + {../doom.props.output.kills} + \"\\n\\nHost tab:  /arena/host/Player1\\nJoin tab:  /arena/join/Player2\\nOptional third segment picks the arena: /arena/host/Player1/line3\""
+              }
+            }
+          }
+        }
+      }
+    ]
+  },
+  "propConfig": {
+    "params.role": {
+      "paramDirection": "input",
+      "persistent": true
+    },
+    "params.player": {
+      "paramDirection": "input",
+      "persistent": true
+    },
+    "params.arena": {
+      "paramDirection": "input",
+      "persistent": true
+    },
+    "params.players": {
+      "paramDirection": "input",
+      "persistent": true
+    }
+  }
+}

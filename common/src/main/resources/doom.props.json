@@ -100,6 +100,43 @@
           "type": "boolean",
           "default": true,
           "description": "Send the live telemetry to the gateway, which writes it into the module's [Doom] tag provider (Players/<player>/Health, Armor, Ammo, ...). No bindings needed."
+        },
+        "multiplayer": {
+          "type": "string",
+          "enum": [
+            "off",
+            "host",
+            "join"
+          ],
+          "default": "off",
+          "description": "Deathmatch over the gateway's relay (/system/doom-relay/<arena>). 'host' starts a server that launches the game once config.players marines have joined; 'join' connects to the arena's host. Everyone in an arena must use the same settings. Off = single player."
+        },
+        "arena": {
+          "type": "string",
+          "default": "default",
+          "description": "Which relay arena to host or join. One host per arena; players in different arenas never meet."
+        },
+        "players": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 4,
+          "default": 2,
+          "description": "Host only: how many marines (host included) before the game launches on its own."
+        },
+        "deathmatch": {
+          "type": "string",
+          "enum": [
+            "coop",
+            "deathmatch",
+            "altdeath"
+          ],
+          "default": "deathmatch",
+          "description": "Netgame rules: cooperative, deathmatch (weapons stay), or altdeath (weapons respawn, no suicide penalty)."
+        },
+        "relayUrl": {
+          "type": "string",
+          "default": "",
+          "description": "Override the relay WebSocket URL. Empty derives ws(s)://<this gateway>/system/doom-relay/<arena> from the page's own address."
         }
       }
     },
@@ -309,6 +346,21 @@
           "type": "string",
           "default": "",
           "description": "The player name the gateway resolved for this session (the [Doom]Players/<player> folder)."
+        },
+        "netgame": {
+          "type": "boolean",
+          "default": false,
+          "description": "True in a multiplayer game."
+        },
+        "inLobby": {
+          "type": "boolean",
+          "default": false,
+          "description": "True while the netgame lobby waits for players (host: until config.players have joined)."
+        },
+        "netPlayers": {
+          "type": "integer",
+          "default": 0,
+          "description": "Marines in the netgame (0 in single player)."
         }
       }
     }

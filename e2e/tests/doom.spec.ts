@@ -168,3 +168,30 @@ test('doom: a save game made in Doom\'s menu survives a page reload via the gate
     await expect(page.getByText(/output\.state: running/)).toBeVisible();
     await expect(page.getByText(/output\.inLevel: true/)).toBeVisible({ timeout: 15_000 });
 });
+
+test('deathmatch: two sessions meet through the gateway relay and both reach the map', async ({ browser, page: hostPage }) => {
+    // Host in this test's page, joiner in a second browser context (its own
+    // Perspective session). The host auto-launches at -nodes 2.
+    const joinCtx = await browser.newContext();
+    const joinPage = await joinCtx.newPage();
+    try {
+        const hostRoot = await openRoute(hostPage, '/arena/host/Player1/e2e', '.mustry-doom');
+        await hostRoot.locator('.mustry-doom__splash').click();
+        await expect(hostRoot).toHaveClass(/mustry-doom--running/, { timeout: 60_000 });
+        // The host sits in the lobby until the second marine arrives.
+        await expect(hostPage.getByText(/output\.inLobby: true/)).toBeVisible({ timeout: 30_000 });
+
+        const joinRoot = await openRoute(joinPage, '/arena/join/Player2/e2e', '.mustry-doom');
+        await joinRoot.locator('.mustry-doom__splash').click();
+        await expect(joinRoot).toHaveClass(/mustry-doom--running/, { timeout: 60_000 });
+
+        // Both engines leave the lobby and enter E1M1 together.
+        await expect(hostPage.getByText(/output\.inLevel: true/)).toBeVisible({ timeout: 60_000 });
+        await expect(joinPage.getByText(/output\.inLevel: true/)).toBeVisible({ timeout: 60_000 });
+        await expect(hostPage.getByText(/output\.player: Player1/)).toBeVisible();
+        await expect(joinPage.getByText(/output\.player: Player2/)).toBeVisible();
+        await expect(hostPage.getByText(/netPlayers: 2/)).toBeVisible({ timeout: 30_000 });
+    } finally {
+        await joinCtx.close();
+    }
+});

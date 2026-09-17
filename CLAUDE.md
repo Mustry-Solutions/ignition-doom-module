@@ -57,6 +57,20 @@ substitution (`{Player}`, even `{InstanceName}`) never resolved in types made
 through `system.tag.configure` on 8.3.6, and a reference tag onto the managed
 provider stayed at Uncertain_InitialValue while an expression tag works.
 
+## Deathmatch relay
+
+`DoomRelayServlet` (Jetty EE10 `JettyWebSocketServlet`, registered through
+`WebResourceManager.addServlet("doom-relay", ...)` so it answers at
+`/system/doom-relay/<arena>`). Frame = `[to:u32 LE][from:u32 LE][doom packet]`
+(doom-wasm `net_websockets.c`); the `-server` engine is id 1 and announces
+with `to=0`; `-connect 1` joiners pick random ids. The hub routes by `to`,
+tracks the server socket per arena, and closes joiners when the host leaves.
+The gateway's exact Jetty version (12.0.27) is a compile-only dependency in
+`gateway/build.gradle.kts`; bump it together with the Ignition image. Browser:
+`relayUrl()` derives `ws(s)://<page host>/system/doom-relay/<arena>`;
+`buildArgs()` emits `-wss <url> -server -nodes N [-deathmatch|-altdeath]` or
+`-wss <url> -connect 1`. The host auto-launches at `-nodes` (net_gui.c).
+
 ## Key bindings must agree in three places
 
 `gateway/.../default.cfg` (DOS scancodes the engine reads),

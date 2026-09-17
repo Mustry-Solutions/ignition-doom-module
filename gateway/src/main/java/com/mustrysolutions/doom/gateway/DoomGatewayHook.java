@@ -8,6 +8,7 @@ import com.inductiveautomation.ignition.common.licensing.LicenseState;
 import com.inductiveautomation.ignition.common.util.LoggerEx;
 import com.inductiveautomation.ignition.gateway.model.AbstractGatewayModuleHook;
 import com.inductiveautomation.ignition.gateway.model.GatewayContext;
+import com.inductiveautomation.ignition.gateway.web.WebResourceManager;
 import com.inductiveautomation.perspective.common.api.ComponentRegistry;
 import com.inductiveautomation.perspective.gateway.api.ComponentModelDelegateRegistry;
 import com.inductiveautomation.perspective.gateway.api.PerspectiveContext;
@@ -29,6 +30,9 @@ public class DoomGatewayHook extends AbstractGatewayModuleHook {
     private ComponentModelDelegateRegistry delegateRegistry;
     private DoomTagProvider tagProvider;
 
+    /** The relay servlet's name; it answers at /system/<name>/<arena>. */
+    static final String RELAY_SERVLET = "doom-relay";
+
     @Override
     public void setup(GatewayContext context) {
         this.gatewayContext = context;
@@ -43,6 +47,14 @@ public class DoomGatewayHook extends AbstractGatewayModuleHook {
             Components.ALL.forEach(this.componentRegistry::registerComponent);
         } else {
             log.error("Perspective component registry not found; Doom not registered.");
+        }
+        // Deathmatch relay: a WebSocket hub at /system/doom-relay/<arena>.
+        try {
+            WebResourceManager web = this.gatewayContext.getWebResourceManager();
+            web.addServlet(RELAY_SERVLET, DoomRelayServlet.class);
+            log.info("Doom deathmatch relay mounted at /system/" + RELAY_SERVLET + "/<arena>");
+        } catch (RuntimeException e) {
+            log.error("Could not mount the Doom relay servlet; multiplayer disabled.", e);
         }
         // The module's own [Doom] tag provider, fed by the component's telemetry.
         try {
@@ -72,6 +84,11 @@ public class DoomGatewayHook extends AbstractGatewayModuleHook {
         if (this.tagProvider != null) {
             this.tagProvider.shutdown();
             this.tagProvider = null;
+        }
+        try {
+            this.gatewayContext.getWebResourceManager().removeServlet(RELAY_SERVLET);
+        } catch (RuntimeException e) {
+            log.warn("Could not unmount the Doom relay servlet", e);
         }
     }
 

@@ -7,6 +7,11 @@ export interface DoomConfig {
     persistSaves: boolean;
     player: string;
     publishTelemetry: boolean;
+    multiplayer: Multiplayer;
+    arena: string;
+    players: number;
+    deathmatch: NetRules;
+    relayUrl: string;
     sound: boolean;
     music: boolean;
     skill: number;
@@ -19,6 +24,36 @@ export interface DoomConfig {
     showHud: boolean;
     playLabel: string;
     extraArgs: string;
+}
+
+export type Multiplayer = 'off' | 'host' | 'join';
+export type NetRules = 'coop' | 'deathmatch' | 'altdeath';
+
+export function normMultiplayer(s: string): Multiplayer {
+    return s === 'host' || s === 'join' ? s : 'off';
+}
+
+export function normNetRules(s: string): NetRules {
+    return s === 'coop' || s === 'altdeath' ? s : 'deathmatch';
+}
+
+/** A folder/URL-safe arena name; empty or junk falls back to "default". */
+export function arenaKey(raw: string): string {
+    const s = (raw || '').trim().replace(/[^A-Za-z0-9._-]/g, '_');
+    return s === '' || s.startsWith('.') ? 'default' : s.slice(0, 64);
+}
+
+/**
+ * The relay's WebSocket URL for an arena, derived from the page's own origin
+ * (the gateway that serves the session), unless overridden.
+ */
+export function relayUrl(cfg: { relayUrl: string; arena: string }, location: { protocol: string; host: string }): string {
+    const override = (cfg.relayUrl || '').trim();
+    if (override !== '') {
+        return override.replace(/\/+$/, '') + '/' + arenaKey(cfg.arena);
+    }
+    const scheme = location.protocol === 'https:' ? 'wss' : 'ws';
+    return `${scheme}://${location.host}/system/doom-relay/${arenaKey(cfg.arena)}`;
 }
 
 /** The boolean "hold this key" controls, in schema order. */
@@ -127,7 +162,7 @@ export function engineSize(frameWidth: number, frameHeight: number): PixelSize {
 }
 
 /** Chocolate Doom command line for a config and window size. */
-export function buildArgs(cfg: DoomConfig, size: PixelSize = { width: RENDER_WIDTH, height: RENDER_HEIGHT }): string[] {
+export function buildArgs(cfg: DoomConfig, size: PixelSize = { width: RENDER_WIDTH, height: RENDER_HEIGHT }, relay?: string): string[] {
     const args = [
         '-iwad', 'doom1.wad',
         '-config', 'default.cfg',
@@ -148,6 +183,22 @@ export function buildArgs(cfg: DoomConfig, size: PixelSize = { width: RENDER_WID
     args.push('-skill', String(skill));
     if (cfg.warp) {
         args.push('-warp', String(clampInt(cfg.episode, 1, 1, 1)), String(clampInt(cfg.map, 1, 9, 1)));
+    }
+    // Netgame over the gateway relay (doom-wasm's -wss transport). The host
+    // is the Doom server (id 1) and launches once -nodes players are in the
+    // lobby; joiners connect to id 1. Rules apply on the host's side.
+    if (cfg.multiplayer !== 'off' && relay) {
+        args.push('-wss', relay);
+        if (cfg.multiplayer === 'host') {
+            args.push('-server', '-nodes', String(clampInt(cfg.players, 2, 4, 2)));
+            if (cfg.deathmatch === 'deathmatch') {
+                args.push('-deathmatch');
+            } else if (cfg.deathmatch === 'altdeath') {
+                args.push('-altdeath');
+            }
+        } else {
+            args.push('-connect', '1');
+        }
     }
     args.push(...splitArgs(cfg.extraArgs));
     return args;
@@ -199,7 +250,8 @@ export const DEFAULT_PLAY_LABEL = 'Click to play';
 
 export const STAT_IDS = {
     inLevel: 0, health: 1, armor: 2, ammo: 3, weapon: 4, kills: 5, items: 6, secrets: 7,
-    totalKills: 8, totalItems: 9, totalSecrets: 10, episode: 11, map: 12, levelSeconds: 13, dead: 14
+    totalKills: 8, totalItems: 9, totalSecrets: 10, episode: 11, map: 12, levelSeconds: 13, dead: 14,
+    netgame: 16, inLobby: 17, netPlayers: 18
 } as const;
 export type StatKey = keyof typeof STAT_IDS;
 export const STAT_KEYS = Object.keys(STAT_IDS) as StatKey[];
@@ -227,7 +279,7 @@ export function statWrites(prev: DoomStats | null, next: DoomStats): Array<[stri
     for (const k of STAT_KEYS) {
         if (!prev || prev[k] !== next[k]) {
             const v = next[k];
-            writes.push([`output.${k}`, k === 'inLevel' || k === 'dead' ? v !== 0 : v]);
+            writes.push([`output.${k}`, k === 'inLevel' || k === 'dead' || k === 'netgame' || k === 'inLobby' ? v !== 0 : v]);
         }
     }
     return writes;

@@ -1,10 +1,10 @@
 import {
-    base64ToBytes, buildArgs, bytesToBase64, diffControls, EMPTY_CONTROLS, engineSize, heldKeys, isFatalLine, isValidSlot, parseEngineLine, readStats, saveDescription, saveSlotPath, splitArgs, STAT_IDS, statWrites, weaponKey, ZERO_STATS
+    arenaKey, base64ToBytes, buildArgs, bytesToBase64, diffControls, EMPTY_CONTROLS, engineSize, heldKeys, isFatalLine, isValidSlot, parseEngineLine, readStats, relayUrl, saveDescription, saveSlotPath, splitArgs, STAT_IDS, statWrites, weaponKey, ZERO_STATS
 } from '../components/doom/doomLogic';
 import { mapDoomProps, PropReader } from '../components/doom/doomProps';
 
 const baseConfig = {
-    autoStart: false, statsIntervalMs: 250, persistSaves: true, player: '', publishTelemetry: true, sound: true, music: false, skill: 3, warp: true, episode: 1, map: 1,
+    autoStart: false, statsIntervalMs: 250, persistSaves: true, player: '', publishTelemetry: true, multiplayer: 'off' as const, arena: 'default', players: 2, deathmatch: 'deathmatch' as const, relayUrl: '', sound: true, music: false, skill: 3, warp: true, episode: 1, map: 1,
     keyboard: true, mouse: false, pixelated: true, showHud: true, playLabel: '', extraArgs: ''
 };
 
@@ -158,5 +158,28 @@ describe('save games', () => {
     it('round-trips bytes through base64', () => {
         const bytes = new Uint8Array(70000).map((_, i) => (i * 7) % 256);
         expect(base64ToBytes(bytesToBase64(bytes))).toEqual(bytes);
+    });
+});
+
+describe('multiplayer', () => {
+    it('derives the relay URL from the page origin and sanitises the arena', () => {
+        expect(relayUrl({ relayUrl: '', arena: 'line 3' }, { protocol: 'http:', host: 'gw:9188' })).toBe('ws://gw:9188/system/doom-relay/line_3');
+        expect(relayUrl({ relayUrl: '', arena: '' }, { protocol: 'https:', host: 'gw' })).toBe('wss://gw/system/doom-relay/default');
+        expect(relayUrl({ relayUrl: 'wss://relay.example/x/', arena: 'a' }, { protocol: 'http:', host: 'gw' })).toBe('wss://relay.example/x/a');
+        expect(arenaKey('../etc')).toBe('default');
+    });
+    it('adds host arguments: -wss, -server, -nodes and the rules', () => {
+        const args = buildArgs({ ...baseConfig, multiplayer: 'host', players: 3, deathmatch: 'altdeath' }, undefined, 'ws://gw/system/doom-relay/a');
+        expect(args).toEqual(expect.arrayContaining(['-wss', 'ws://gw/system/doom-relay/a', '-server', '-nodes', '3', '-altdeath']));
+        expect(args).not.toContain('-connect');
+    });
+    it('adds join arguments: -wss and -connect 1, never rules', () => {
+        const args = buildArgs({ ...baseConfig, multiplayer: 'join' }, undefined, 'ws://gw/system/doom-relay/a');
+        expect(args.slice(args.indexOf('-connect'), args.indexOf('-connect') + 2)).toEqual(['-connect', '1']);
+        expect(args).not.toContain('-server');
+        expect(args).not.toContain('-deathmatch');
+    });
+    it('stays single player without a relay URL', () => {
+        expect(buildArgs({ ...baseConfig, multiplayer: 'host' })).not.toContain('-wss');
     });
 });

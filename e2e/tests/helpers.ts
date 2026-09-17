@@ -31,6 +31,7 @@ export { expect };
  */
 export async function openRoute(page: Page, route: string, rootSelector: string) {
     await page.goto(`${SESSION}${route}`);
+    // A route with a query string still lands on the same session project.
     const root = page.locator(rootSelector).first();
     const trial = page.getByText('Trial Expired');
     await expect(root.or(trial).first()).toBeVisible({ timeout: 30_000 });

@@ -12,7 +12,7 @@ import {
 import {
     base64ToBytes, buildArgs, bytesToBase64, clampInt, CODE_ERROR, CODE_GAME_STARTED, DEFAULT_PLAY_LABEL, diffControls,
     DoomControls, DoomStats, engineSize, heldKeys, isFatalLine, isValidSlot, MAX_SAVE_BYTES, parseEngineLine, PAUSE_KEY,
-    Phase, PixelSize, readStats, SAVE_DIR, saveDescription, saveSlotPath, statWrites, ZERO_STATS
+    Phase, PixelSize, readStats, relayUrl, SAVE_DIR, saveDescription, saveSlotPath, statWrites, ZERO_STATS
 } from './doomLogic';
 import { DoomSavesState, DoomStoreDelegate } from './doomSaves';
 import {
@@ -236,7 +236,9 @@ export class Doom extends Component<ComponentProps<DoomProps, DoomSavesState>, D
             .then((m) => {
                 this.module = m;
                 this.watchTitle();
-                m.callMain(buildArgs(this.props.props.config, size));
+                const cfg = this.props.props.config;
+                const relay = cfg.multiplayer === 'off' ? undefined : relayUrl(cfg, window.location);
+                m.callMain(buildArgs(cfg, size, relay));
                 this.watchFrame();
                 // Chocolate Doom is up as soon as main returns to the browser loop;
                 // the protocol's "game started" (10) confirms the first tic ran.
