@@ -9,9 +9,11 @@ import com.inductiveautomation.ignition.common.util.LoggerEx;
 import com.inductiveautomation.ignition.gateway.model.AbstractGatewayModuleHook;
 import com.inductiveautomation.ignition.gateway.model.GatewayContext;
 import com.inductiveautomation.perspective.common.api.ComponentRegistry;
+import com.inductiveautomation.perspective.gateway.api.ComponentModelDelegateRegistry;
 import com.inductiveautomation.perspective.gateway.api.PerspectiveContext;
 
 import com.mustrysolutions.doom.common.comp.Components;
+import com.mustrysolutions.doom.common.comp.Doom;
 
 /**
  * Gateway-scope hook. Registers the Doom component with Perspective and serves
@@ -24,6 +26,7 @@ public class DoomGatewayHook extends AbstractGatewayModuleHook {
 
     private GatewayContext gatewayContext;
     private ComponentRegistry componentRegistry;
+    private ComponentModelDelegateRegistry delegateRegistry;
 
     @Override
     public void setup(GatewayContext context) {
@@ -40,10 +43,20 @@ public class DoomGatewayHook extends AbstractGatewayModuleHook {
         } else {
             log.error("Perspective component registry not found; Doom not registered.");
         }
+        // Save games: one gateway-side delegate per Doom component instance.
+        this.delegateRegistry = perspectiveContext.getComponentModelDelegateRegistry();
+        if (this.delegateRegistry != null) {
+            this.delegateRegistry.register(Doom.COMPONENT_ID, DoomModelDelegate::new);
+        } else {
+            log.warn("Component model delegate registry not found; save games will not persist.");
+        }
     }
 
     @Override
     public void shutdown() {
+        if (this.delegateRegistry != null) {
+            this.delegateRegistry.remove(Doom.COMPONENT_ID);
+        }
         if (this.componentRegistry != null) {
             Components.ALL.forEach(d -> this.componentRegistry.removeComponent(d.id()));
         }

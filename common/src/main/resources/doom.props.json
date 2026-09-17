@@ -85,6 +85,11 @@
           "maximum": 5000,
           "default": 250,
           "description": "How often (ms) the live telemetry outputs are refreshed while the game runs."
+        },
+        "persistSaves": {
+          "type": "boolean",
+          "default": true,
+          "description": "Keep Doom's six save-game slots on the gateway per Perspective user (data/modules/com.mustrysolutions.doom/saves/<user>/). Slots are restored into the engine before it starts, so Doom's own Load Game menu shows them. Off = saves live only in the tab and vanish on reload."
         }
       }
     },
@@ -269,6 +274,26 @@
           "type": "boolean",
           "default": false,
           "description": "True while the marine is dead."
+        },
+        "savedSlots": {
+          "type": "integer",
+          "default": 0,
+          "description": "How many save-game slots the gateway holds for this user (0-6)."
+        },
+        "saveOwner": {
+          "type": "string",
+          "default": "",
+          "description": "The user whose save games are loaded ('anonymous' for unauthenticated sessions)."
+        },
+        "lastSaveSlot": {
+          "type": "integer",
+          "default": 0,
+          "description": "Slot (1-6) of the most recent save in this session; 0 = none yet."
+        },
+        "lastSaveDescription": {
+          "type": "string",
+          "default": "",
+          "description": "Name the player typed for the most recent save in this session."
         }
       }
     }

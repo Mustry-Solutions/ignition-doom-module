@@ -24,7 +24,12 @@ export interface DoomModule {
     canvas: HTMLCanvasElement;
     callMain(args: string[]): void;
     ccall(name: string, returnType: string | null, argTypes: string[], args: unknown[]): unknown;
-    FS: { createPreloadedFile(parent: string, name: string, url: string, canRead: boolean, canWrite: boolean): void };
+    FS: {
+        createPreloadedFile(parent: string, name: string, url: string, canRead: boolean, canWrite: boolean): void;
+        mkdir(path: string): void;
+        writeFile(path: string, data: Uint8Array): void;
+        readFile(path: string): Uint8Array;
+    };
     ENV: Record<string, string>;
 }
 
@@ -37,6 +42,8 @@ export interface DoomModuleConfig {
     preRun: Array<(m: DoomModule) => void>;
     onExit?(code: number): void;
     onAbort?(what: unknown): void;
+    /** Called by the engine's Mustry_SaveGameWritten hook after a slot is written. */
+    onDoomSaveGame?(slot: number): void;
 }
 
 export type DoomFactory = (config: DoomModuleConfig) => Promise<DoomModule>;

@@ -106,9 +106,26 @@ unmount the component calls the engine's `I_Quit` so the main loop stops.
 | `data.controls` | `forward`, `backward`, `strafeLeft`, `strafeRight`, `turnLeft`, `turnRight`, `fire`, `use`, `run`, `menu`, `confirm` | Booleans: true holds the key down for as long as it stays true. Bind them to tags. |
 | | `weapon` | Selects weapon slot 1–7 when the value changes; 0 = no change. |
 | `state.paused` | | Two-way. True pauses the game (Doom's own pause). Bind it to an alarm. |
+| `state.running` | | Two-way. True starts the engine, false quits it; written back as the engine comes and goes, so a binding can restart the game without a reload. |
+| `config.persistSaves` | | Keep Doom's six save slots on the gateway per Perspective user (default on). |
+| `output.savedSlots`, `output.saveOwner`, `output.lastSaveSlot`, `output.lastSaveDescription` | | How many slots the gateway holds for this user, who that user is, and the most recent save made in this session. |
 | `output.state` | | `idle`, `loading`, `running`, `paused`, `exited`, `error`, `busy` (another Doom already owns the page). |
 | `output.message` | | The last line the engine printed. |
 | event `onGameEvent` | `{ code, message }` | Engine lifecycle messages; `10` is "game started". |
+
+### Save games
+
+Doom saves the way it always did: Escape, Save Game, pick a slot, type a name.
+The engine writes the slot into its in-memory filesystem and calls a small hook
+compiled into it; the component reads the file and sends it to the gateway
+through Perspective's component-to-gateway message channel. A gateway-side
+model delegate stores it under
+`data/modules/com.mustrysolutions.doom/saves/<user>/slot<N>.dsg` (plus an
+`index.json` with names and timestamps), keyed by the session's authenticated
+user, or `anonymous`. Before the engine starts, the component asks for the
+user's slots and writes them back into the in-memory filesystem, so Doom's own
+Load Game menu lists them. Slots are capped at 512 KB; a session can only ever
+read or write its own user's folder. Turn it off with `config.persistSaves`.
 
 ### Live telemetry
 

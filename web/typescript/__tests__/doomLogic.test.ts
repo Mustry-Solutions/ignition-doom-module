@@ -1,17 +1,17 @@
 import {
-    buildArgs, diffControls, EMPTY_CONTROLS, engineSize, heldKeys, isFatalLine, parseEngineLine, readStats, splitArgs, STAT_IDS, statWrites, weaponKey, ZERO_STATS
+    base64ToBytes, buildArgs, bytesToBase64, diffControls, EMPTY_CONTROLS, engineSize, heldKeys, isFatalLine, isValidSlot, parseEngineLine, readStats, saveDescription, saveSlotPath, splitArgs, STAT_IDS, statWrites, weaponKey, ZERO_STATS
 } from '../components/doom/doomLogic';
 import { mapDoomProps, PropReader } from '../components/doom/doomProps';
 
 const baseConfig = {
-    autoStart: false, statsIntervalMs: 250, sound: true, music: false, skill: 3, warp: true, episode: 1, map: 1,
+    autoStart: false, statsIntervalMs: 250, persistSaves: true, sound: true, music: false, skill: 3, warp: true, episode: 1, map: 1,
     keyboard: true, mouse: false, pixelated: true, showHud: true, playLabel: '', extraArgs: ''
 };
 
 describe('buildArgs', () => {
     it('builds the default command line', () => {
         expect(buildArgs(baseConfig)).toEqual([
-            '-iwad', 'doom1.wad', '-config', 'default.cfg', '-window', '-nogui',
+            '-iwad', 'doom1.wad', '-config', 'default.cfg', '-savedir', '/saves', '-window', '-nogui',
             '-width', '640', '-height', '400', '-nomusic', '-nomouse', '-skill', '3', '-warp', '1', '1'
         ]);
     });
@@ -132,5 +132,31 @@ describe('telemetry', () => {
         const next = { ...ZERO_STATS, inLevel: 1, health: 87, dead: 0 };
         expect(statWrites(ZERO_STATS, next)).toEqual([['output.inLevel', true], ['output.health', 87]]);
         expect(statWrites(next, next)).toEqual([]);
+    });
+});
+
+describe('save games', () => {
+    it('names slot files the way Chocolate Doom does', () => {
+        expect(saveSlotPath(0)).toBe('/saves/doomsav0.dsg');
+        expect(saveSlotPath(5)).toBe('/saves/doomsav5.dsg');
+    });
+    it('accepts only the six vanilla slots', () => {
+        expect(isValidSlot(0)).toBe(true);
+        expect(isValidSlot(5)).toBe(true);
+        expect(isValidSlot(6)).toBe(false);
+        expect(isValidSlot(-1)).toBe(false);
+        expect(isValidSlot('1')).toBe(false);
+    });
+    it('reads the 24-byte NUL-padded description from a save header', () => {
+        const header = new Uint8Array(40);
+        const text = 'E1M1 before the bridge';
+        for (let i = 0; i < text.length; i++) header[i] = text.charCodeAt(i);
+        expect(saveDescription(header)).toBe(text);
+        const long = new Uint8Array(40).fill(65);
+        expect(saveDescription(long)).toHaveLength(24);
+    });
+    it('round-trips bytes through base64', () => {
+        const bytes = new Uint8Array(70000).map((_, i) => (i * 7) % 256);
+        expect(base64ToBytes(bytesToBase64(bytes))).toEqual(bytes);
     });
 });

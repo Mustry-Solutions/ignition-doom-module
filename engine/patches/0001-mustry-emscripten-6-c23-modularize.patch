@@ -57,12 +57,36 @@ index 89ca2b4..94378c8 100644
  p_ceilng.c                      \
  p_doors.c                       \
  p_enemy.c                       \
+diff --git a/src/doom/g_game.c b/src/doom/g_game.c
+index f23586b..dbc3d8e 100644
+--- a/src/doom/g_game.c
++++ b/src/doom/g_game.c
+@@ -92,6 +92,9 @@ void G_DoSaveGame(void);
+ gamestate_t oldgamestate;
+ 
+ gameaction_t gameaction;
++
++// Mustry Doom host hook (mustry_stats.c).
++void Mustry_SaveGameWritten(int slot);
+ gamestate_t gamestate;
+ skill_t gameskill;
+ boolean respawnmonsters;
+@@ -1483,6 +1486,9 @@ void G_DoSaveGame(void)
+     remove(savegame_file);
+     rename(temp_savegame_file, savegame_file);
+ 
++    // Mustry Doom: let the host page persist the slot (see mustry_stats.c).
++    Mustry_SaveGameWritten(savegameslot);
++
+     gameaction = ga_nothing;
+     M_StringCopy(savedescription, "", sizeof(savedescription));
+ 
 diff --git a/src/doom/mustry_stats.c b/src/doom/mustry_stats.c
 new file mode 100644
-index 0000000..a465122
+index 0000000..85ed118
 --- /dev/null
 +++ b/src/doom/mustry_stats.c
-@@ -0,0 +1,84 @@
+@@ -0,0 +1,97 @@
 +//
 +// Mustry Doom: read-only player telemetry for the host page.
 +//
@@ -71,6 +95,8 @@ index 0000000..a465122
 +// component outputs, which Ignition can then bind to tags and historize.
 +// Everything here is a plain read of engine globals; nothing is mutated.
 +//
++
++#include <emscripten.h>
 +
 +#include "doomstat.h"
 +#include "d_player.h"
@@ -147,6 +173,17 @@ index 0000000..a465122
 +            return 0;
 +    }
 +}
++
++//
++// Save-game hook: G_DoSaveGame calls this after the slot file is renamed
++// into place. The host page (the Perspective component) reads the file from
++// the in-memory filesystem and persists it on the gateway per user.
++//
++EM_JS(void, Mustry_SaveGameWritten, (int slot), {
++    if (typeof Module.onDoomSaveGame === 'function') {
++        Module.onDoomSaveGame(slot);
++    }
++});
 diff --git a/src/doomtype.h b/src/doomtype.h
 index 9947a07..2f6f20f 100644
 --- a/src/doomtype.h

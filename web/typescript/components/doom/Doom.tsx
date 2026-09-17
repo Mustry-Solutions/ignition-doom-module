@@ -1,16 +1,20 @@
 import * as React from 'react';
 import {
+    AbstractUIElementStore,
     Component,
     ComponentMeta,
     ComponentProps,
+    ComponentStoreDelegate,
     PComponent,
     PropertyTree,
     Size2d
 } from '@inductiveautomation/perspective-client';
 import {
-    buildArgs, clampInt, CODE_ERROR, CODE_GAME_STARTED, DEFAULT_PLAY_LABEL, diffControls, DoomControls, DoomStats, engineSize,
-    heldKeys, isFatalLine, parseEngineLine, PAUSE_KEY, Phase, PixelSize, readStats, statWrites, ZERO_STATS
+    base64ToBytes, buildArgs, bytesToBase64, clampInt, CODE_ERROR, CODE_GAME_STARTED, DEFAULT_PLAY_LABEL, diffControls,
+    DoomControls, DoomStats, engineSize, heldKeys, isFatalLine, isValidSlot, MAX_SAVE_BYTES, parseEngineLine, PAUSE_KEY,
+    Phase, PixelSize, readStats, SAVE_DIR, saveDescription, saveSlotPath, statWrites, ZERO_STATS
 } from './doomLogic';
+import { DoomSavesState, DoomStoreDelegate } from './doomSaves';
 import {
     CANVAS_ID, claimEngine, dispatchKey, DoomModule, ENGINE_PATH, KEYBOARD_ELEMENT, loadEngine, pressKey, releaseEngine
 } from './doomEngine';
@@ -30,7 +34,7 @@ interface DoomState {
  * on a canvas the component owns; the component only starts it, feeds it keys
  * (physical keyboard when the canvas is focused, synthetic ones from
  * data.controls) and mirrors its stdout into output.*/
-export class Doom extends Component<ComponentProps<DoomProps>, DoomState> {
+export class Doom extends Component<ComponentProps<DoomProps, DoomSavesState>, DoomState> {
 
     private canvas: HTMLCanvasElement | null = null;
     private frame: HTMLDivElement | null = null;
@@ -46,22 +50,31 @@ export class Doom extends Component<ComponentProps<DoomProps>, DoomState> {
     private lastStats: DoomStats | null = null;
     private unmounting = false;
 
-    constructor(props: ComponentProps<DoomProps>) {
+    constructor(props: ComponentProps<DoomProps, DoomSavesState>) {
         super(props);
         this.state = { phase: 'idle', message: '', focused: false };
     }
 
     componentDidMount(): void {
         this.writeOutputs('idle', '');
+        if (this.props.props.config.persistSaves) {
+            this.saves()?.requestSlots();
+        }
         if (this.props.props.config.autoStart) {
             this.start();
         }
     }
 
-    componentDidUpdate(prev: ComponentProps<DoomProps>): void {
+    componentDidUpdate(prev: ComponentProps<DoomProps, DoomSavesState>): void {
         const p = this.props.props;
         if (p.config.autoStart && !prev.props.config.autoStart && !this.started) {
             this.start();
+        }
+        const d = this.props.delegate;
+        const pd = prev.delegate;
+        if (d && (!pd || d.slots !== pd.slots || d.owner !== pd.owner)) {
+            this.props.store.props.write('output.savedSlots', d.slots.length);
+            this.props.store.props.write('output.saveOwner', d.owner);
         }
         // state.running is two-way: a binding flipping it starts or quits the
         // engine; the component writes it back as the engine comes and goes.
@@ -198,7 +211,12 @@ export class Doom extends Component<ComponentProps<DoomProps>, DoomState> {
                     m.ENV.SDL_EMSCRIPTEN_KEYBOARD_ELEMENT = KEYBOARD_ELEMENT;
                     m.FS.createPreloadedFile('', 'doom1.wad', ENGINE_PATH + 'doom1.wad', true, true);
                     m.FS.createPreloadedFile('', 'default.cfg', ENGINE_PATH + 'default.cfg', true, true);
+                    // Save games: restore the user's slots from the gateway into the
+                    // -savedir directory so Doom's Load Game menu lists them.
+                    m.FS.mkdir(SAVE_DIR);
+                    this.restoreSlots(m);
                 }],
+                onDoomSaveGame: (slot: number) => this.onSaveGame(slot),
                 onExit: () => this.onExit(),
                 onAbort: (what) => this.onFatal(`Engine aborted: ${String(what)}`)
             }))
@@ -319,6 +337,59 @@ export class Doom extends Component<ComponentProps<DoomProps>, DoomState> {
         this.enginePaused = paused;
         this.props.store.props.write('state.paused', paused);
         this.setPhase(paused ? 'paused' : 'running', paused ? 'Paused' : 'Running');
+    }
+
+    // --- save games -----------------------------------------------------------
+
+    private saves(): DoomStoreDelegate | null {
+        const d = this.props.store.delegate;
+        return d instanceof DoomStoreDelegate ? d : null;
+    }
+
+    private restoreSlots(m: DoomModule): void {
+        if (!this.props.props.config.persistSaves) {
+            return;
+        }
+        const slots = (this.props.delegate && this.props.delegate.slots) || [];
+        for (const s of slots) {
+            if (!s.data || !isValidSlot(s.slot)) {
+                continue;
+            }
+            try {
+                m.FS.writeFile(saveSlotPath(s.slot), base64ToBytes(s.data));
+            } catch (e) {
+                this.setMessage(`Could not restore save slot ${s.slot + 1}: ${String(e)}`);
+            }
+        }
+    }
+
+    /** Engine hook (mustry_stats.c): a slot file was just written. */
+    private onSaveGame(slot: number): void {
+        const m = this.module;
+        if (!m || !isValidSlot(slot)) {
+            return;
+        }
+        let bytes: Uint8Array;
+        try {
+            bytes = m.FS.readFile(saveSlotPath(slot));
+        } catch (e) {
+            this.setMessage(`Save slot ${slot + 1} written but unreadable: ${String(e)}`);
+            return;
+        }
+        if (bytes.length > MAX_SAVE_BYTES) {
+            this.setMessage(`Save slot ${slot + 1} is ${bytes.length} bytes, too large to persist`);
+            return;
+        }
+        const description = saveDescription(bytes);
+        this.props.store.props.write('output.lastSaveSlot', slot + 1);
+        this.props.store.props.write('output.lastSaveDescription', description);
+        const saves = this.props.props.config.persistSaves ? this.saves() : null;
+        if (saves) {
+            saves.putSlot(slot, description, bytesToBase64(bytes));
+            this.setMessage(`Saved slot ${slot + 1} "${description}" to the gateway`);
+        } else {
+            this.setMessage(`Saved slot ${slot + 1} "${description}" (this tab only)`);
+        }
     }
 
     // --- page title guard -----------------------------------------------------
@@ -462,5 +533,9 @@ export class DoomMeta implements ComponentMeta {
 
     getPropsReducer(tree: PropertyTree): DoomProps {
         return mapDoomProps(tree);
+    }
+
+    createDelegate(component: AbstractUIElementStore): ComponentStoreDelegate {
+        return new DoomStoreDelegate(component);
     }
 }

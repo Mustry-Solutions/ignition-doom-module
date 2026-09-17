@@ -112,3 +112,55 @@ test('doom: quitting from the in-game menu leaves a restartable component, Resta
     await expect(root).toHaveClass(/mustry-doom--running/, { timeout: 60_000 });
     await expect(page.getByText(/output\.state: running/)).toBeVisible();
 });
+
+test('doom: a save game made in Doom\'s menu survives a page reload via the gateway', async ({ page }) => {
+    await startGame(page);
+    const canvas = page.locator('#canvas');
+    await canvas.click();
+    // Escape -> menu; Save Game is the fourth entry; Enter opens the slots; Enter
+    // on slot 1 starts editing its name; type a name; Enter saves. Doom handles
+    // menu keys once per 35 Hz tick and only enables text input while the slot
+    // editor is open, so each step gets a short pause or the typed keys are lost.
+    const step = () => page.waitForTimeout(400);
+    await page.keyboard.press('Escape');
+    await step();
+    for (let i = 0; i < 3; i++) {
+        await page.keyboard.press('ArrowDown');
+    }
+    await step();
+    await page.keyboard.press('Enter');
+    await step();
+    await page.keyboard.press('Enter');
+    await step();
+    // The slot editor starts with the previous name (Doom upper-cases it); clear it first.
+    for (let i = 0; i < 24; i++) {
+        await page.keyboard.press('Backspace');
+    }
+    await step();
+    await page.keyboard.type('e2e save', { delay: 40 });
+    await step();
+    await page.keyboard.press('Enter');
+    // The gateway answered with the user's slots: at least this one, owned by the
+    // (unauthenticated) session's "anonymous" bucket.
+    await expect(page.getByText(/last save: 1 "E2E SAVE"/)).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText(/output\.savedSlots: [1-6]/)).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText(/output\.saveOwner: anonymous/)).toBeVisible();
+
+    // A fresh session: the gateway hands the slots back before the engine starts.
+    await page.reload();
+    const root = await openRoute(page, '/', '.mustry-doom');
+    await expect(page.getByText(/output\.savedSlots: [1-6]/)).toBeVisible({ timeout: 20_000 });
+    await root.locator('.mustry-doom__splash').click();
+    await expect(root).toHaveClass(/mustry-doom--running/, { timeout: 60_000 });
+    // The restored slot is readable by the engine: Load Game lists a non-empty slot 1.
+    await canvas.click();
+    await page.keyboard.press('Escape');
+    for (let i = 0; i < 2; i++) {
+        await page.keyboard.press('ArrowDown');
+    }
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(500);
+    await page.keyboard.press('Enter'); // load slot 1
+    await expect(page.getByText(/output\.state: running/)).toBeVisible();
+    await expect(page.getByText(/output\.inLevel: true/)).toBeVisible({ timeout: 15_000 });
+});

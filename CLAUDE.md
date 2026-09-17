@@ -32,6 +32,17 @@ side, Java scopes for registration). Read README.md first.
   size to the frame; SDL derives the backing store (× devicePixelRatio) and
   re-reads the CSS size on a window resize event. Never set canvas.width/height.
 
+## Save games (component ⇄ gateway)
+
+Browser: `doomSaves.ts` (a `ComponentStoreDelegate`, created by `DoomMeta.createDelegate`)
+fires `doom-saves-list` / `doom-saves-put` and receives `doom-saves-slots` /
+`doom-saves-error`. Gateway: `DoomModelDelegate` (registered per component id in
+the hook's `ComponentModelDelegateRegistry`) answers them and persists files via
+`DoomSaveStore` under `data/modules/com.mustrysolutions.doom/saves/<user>/`.
+The engine calls `Module.onDoomSaveGame(slot)` (EM_JS in `mustry_stats.c`,
+called from `G_DoSaveGame`) after a slot file lands in `-savedir /saves`.
+Event names live in both `doomSaves.ts` and `DoomModelDelegate.java`; change both.
+
 ## Key bindings must agree in three places
 
 `gateway/.../default.cfg` (DOS scancodes the engine reads),

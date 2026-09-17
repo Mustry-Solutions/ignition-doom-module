@@ -4,6 +4,7 @@
 export interface DoomConfig {
     autoStart: boolean;
     statsIntervalMs: number;
+    persistSaves: boolean;
     sound: boolean;
     music: boolean;
     skill: number;
@@ -128,6 +129,7 @@ export function buildArgs(cfg: DoomConfig, size: PixelSize = { width: RENDER_WID
     const args = [
         '-iwad', 'doom1.wad',
         '-config', 'default.cfg',
+        '-savedir', SAVE_DIR,
         '-window', '-nogui',
         '-width', String(size.width), '-height', String(size.height)
     ];
@@ -227,4 +229,63 @@ export function statWrites(prev: DoomStats | null, next: DoomStats): Array<[stri
         }
     }
     return writes;
+}
+
+// --- save games ---------------------------------------------------------------
+// Chocolate Doom writes slot files doomsav<N>.dsg into the -savedir directory
+// (SAVE_DIR below, in the engine's in-memory filesystem). A save begins with a
+// 24-byte, NUL-padded description typed by the player.
+
+export const SAVE_DIR = '/saves';
+export const SAVE_SLOTS = 6;
+export const SAVE_STRING_SIZE = 24;
+/** Upper bound accepted for one slot; vanilla saves are tens of KB. */
+export const MAX_SAVE_BYTES = 512 * 1024;
+
+export function saveSlotPath(slot: number): string {
+    return `${SAVE_DIR}/doomsav${slot}.dsg`;
+}
+
+export function isValidSlot(slot: unknown): slot is number {
+    return typeof slot === 'number' && Number.isInteger(slot) && slot >= 0 && slot < SAVE_SLOTS;
+}
+
+/** The player's description from a save file's header (first 24 bytes, NUL-terminated). */
+export function saveDescription(bytes: Uint8Array): string {
+    let s = '';
+    for (let i = 0; i < Math.min(SAVE_STRING_SIZE, bytes.length); i++) {
+        const c = bytes[i];
+        if (c === 0) {
+            break;
+        }
+        s += String.fromCharCode(c);
+    }
+    return s.trim();
+}
+
+export function bytesToBase64(bytes: Uint8Array): string {
+    let bin = '';
+    const chunk = 0x8000;
+    for (let i = 0; i < bytes.length; i += chunk) {
+        bin += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + chunk)));
+    }
+    return btoa(bin);
+}
+
+export function base64ToBytes(b64: string): Uint8Array {
+    const bin = atob(b64);
+    const out = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) {
+        out[i] = bin.charCodeAt(i);
+    }
+    return out;
+}
+
+/** A slot as the gateway hands it to the page. */
+export interface SavedSlot {
+    slot: number;
+    description: string;
+    savedAt: string;
+    /** Base64 file contents; absent in listings that only carry metadata. */
+    data?: string;
 }

@@ -1185,7 +1185,7 @@
           "x": 848,
           "y": 786,
           "width": 408,
-          "height": 96
+          "height": 110
         }
       },
       {
@@ -1208,14 +1208,14 @@
           "x": 862,
           "y": 792,
           "width": 380,
-          "height": 86
+          "height": 100
         },
         "propConfig": {
           "props.text": {
             "binding": {
               "type": "expr",
               "config": {
-                "expression": "\"output.state: \" + {../doom.props.output.state} + \"  \u00b7  output.message: \" + {../doom.props.output.message} + \"\\noutput.inLevel: \" + {../doom.props.output.inLevel} + \"  \u00b7  output.health: \" + {../doom.props.output.health} + \"  \u00b7  output.armor: \" + {../doom.props.output.armor} + \"\\noutput.ammo: \" + {../doom.props.output.ammo} + \"  \u00b7  output.kills: \" + {../doom.props.output.kills} + \"/\" + {../doom.props.output.totalKills} + \"  \u00b7  output.map: E\" + {../doom.props.output.episode} + \"M\" + {../doom.props.output.map} + \"\\ntag \" + {view.params.player} + \"/Health: \" + coalesce(tag(\"[default]Doom/Players/\" + {view.params.player} + \"/Health\"), 0) + \"  \u00b7  tag \" + {view.params.player} + \"/Kills: \" + coalesce(tag(\"[default]Doom/Players/\" + {view.params.player} + \"/Kills\"), 0) + \"\\nline running: \" + {[default]Doom/Line/Running} + \"  \u00b7  line alarm unacked: \" + coalesce({view.custom.lineUnacked}, 0) + \"  \u00b7  paused: \" + coalesce({../doom.props.state.paused}, false)"
+                "expression": "\"output.state: \" + {../doom.props.output.state} + \"  \u00b7  output.message: \" + {../doom.props.output.message} + \"\\noutput.inLevel: \" + {../doom.props.output.inLevel} + \"  \u00b7  output.health: \" + {../doom.props.output.health} + \"  \u00b7  output.armor: \" + {../doom.props.output.armor} + \"\\noutput.ammo: \" + {../doom.props.output.ammo} + \"  \u00b7  output.kills: \" + {../doom.props.output.kills} + \"/\" + {../doom.props.output.totalKills} + \"  \u00b7  output.map: E\" + {../doom.props.output.episode} + \"M\" + {../doom.props.output.map} + \"\\ntag \" + {view.params.player} + \"/Health: \" + coalesce(tag(\"[default]Doom/Players/\" + {view.params.player} + \"/Health\"), 0) + \"  \u00b7  tag \" + {view.params.player} + \"/Kills: \" + coalesce(tag(\"[default]Doom/Players/\" + {view.params.player} + \"/Kills\"), 0) + \"\\nline running: \" + {[default]Doom/Line/Running} + \"  \u00b7  line alarm unacked: \" + coalesce({view.custom.lineUnacked}, 0) + \"  \u00b7  paused: \" + coalesce({../doom.props.state.paused}, false) + \"\\noutput.savedSlots: \" + coalesce({../doom.props.output.savedSlots}, 0) + \"  \u00b7  output.saveOwner: \" + coalesce({../doom.props.output.saveOwner}, \"\") + \"  \u00b7  last save: \" + coalesce({../doom.props.output.lastSaveSlot}, 0) + \" \\\"\" + coalesce({../doom.props.output.lastSaveDescription}, \"\") + \"\\\"\""
               }
             }
           }
