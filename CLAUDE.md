@@ -3,7 +3,9 @@
 Ignition 8.3 Perspective module with ONE component: Doom (Chocolate Doom →
 WebAssembly). Structure and conventions mirror mustry-perspective-component-module
 (Gradle + io.ia.sdk.modl, React 16 class component + TypeScript strict on the web
-side, Java scopes for registration). Read README.md first.
+side, Java scopes for registration). README.md is the product page; the
+engineering detail (architecture, props, tag model, build, dev gateway, tests)
+is docs/reference.md. Keep new technical detail there, not in the README.
 
 ## Licences — non-negotiable
 
