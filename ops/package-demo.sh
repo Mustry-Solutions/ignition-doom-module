@@ -9,6 +9,8 @@ set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "${HERE}/.." && pwd)"
 OUT="${1:-${ROOT}/build/Mustry-Doom-Demo-Project.zip}"
+# The zip is written from inside a temp dir: make a relative output absolute.
+case "${OUT}" in /*) ;; *) OUT="$(pwd)/${OUT}" ;; esac
 SRC="${ROOT}/ops/verify/project"
 
 tmp="$(mktemp -d)"
