@@ -6,6 +6,8 @@ are semver. Ignition's module version is numeric only, so releases are plain
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-09-17
+
 ### Added
 
 - `Mustry-Doom-Demo-Project.zip` on every release: the control-room and
