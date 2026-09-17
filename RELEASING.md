@@ -33,8 +33,11 @@ Use it once after adding the secrets, before the first real tag.
 
 ## Signing secrets
 
-Signing runs only in the Release workflow, from repository secrets
-(**Settings → Secrets and variables → Actions**). Add all five:
+Signing runs only in the Release workflow. The five secrets are
+**organisation secrets** of Mustry-Solutions with a "selected repositories"
+policy; a new module repo must be added to each secret's repository list
+(**Organisation → Settings → Secrets and variables → Actions → the secret →
+Repository access**) or the release fails at the signing step. The names:
 
 | Secret | What |
 |---|---|

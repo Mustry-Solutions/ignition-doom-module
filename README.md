@@ -48,7 +48,7 @@ an arena: the gateway hands each one a ticket.
 
 ## Install
 
-1. Download `Mustry-Doom.modl` from the releases page.
+1. Download `Mustry-Doom.modl` from the [releases page](https://github.com/Mustry-Solutions/ignition-doom-module/releases).
 2. Gateway, Config, Modules, install. Accept the certificate and the licence.
 3. Designer: drag **Doom** from the palette into a view. Save. Open the
    session. Click to play.
