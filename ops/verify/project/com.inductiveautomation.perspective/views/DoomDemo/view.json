@@ -543,24 +543,24 @@
                 "tags": [
                   {
                     "path": "[default]Doom/Health",
-                    "aggregate": "default",
+                    "aggregate": "LastValue",
                     "alias": "Health"
                   }
                 ],
                 "returnFormat": "Wide",
-                "aggregateMode": "default",
-                "range": {
-                  "type": "realtime",
-                  "mostRecent": 5,
-                  "mostRecentUnits": "MINUTE"
-                },
+                "aggregateMode": "LastValue",
                 "polling": {
                   "enabled": true,
                   "rate": 2
                 },
                 "ignoreBadQuality": false,
                 "preventInterpolation": false,
-                "valueFormat": "DATASET"
+                "valueFormat": "DATASET",
+                "dateRange": {
+                  "rangeType": "realtime",
+                  "mostRecent": 5,
+                  "mostRecentUnits": "MIN"
+                }
               }
             }
           },
@@ -571,24 +571,24 @@
                 "tags": [
                   {
                     "path": "[default]Doom/Armor",
-                    "aggregate": "default",
+                    "aggregate": "LastValue",
                     "alias": "Armor"
                   }
                 ],
                 "returnFormat": "Wide",
-                "aggregateMode": "default",
-                "range": {
-                  "type": "realtime",
-                  "mostRecent": 5,
-                  "mostRecentUnits": "MINUTE"
-                },
+                "aggregateMode": "LastValue",
                 "polling": {
                   "enabled": true,
                   "rate": 2
                 },
                 "ignoreBadQuality": false,
                 "preventInterpolation": false,
-                "valueFormat": "DATASET"
+                "valueFormat": "DATASET",
+                "dateRange": {
+                  "rangeType": "realtime",
+                  "mostRecent": 5,
+                  "mostRecentUnits": "MIN"
+                }
               }
             }
           },
@@ -599,24 +599,24 @@
                 "tags": [
                   {
                     "path": "[default]Doom/Ammo",
-                    "aggregate": "default",
+                    "aggregate": "LastValue",
                     "alias": "Ammo"
                   }
                 ],
                 "returnFormat": "Wide",
-                "aggregateMode": "default",
-                "range": {
-                  "type": "realtime",
-                  "mostRecent": 5,
-                  "mostRecentUnits": "MINUTE"
-                },
+                "aggregateMode": "LastValue",
                 "polling": {
                   "enabled": true,
                   "rate": 2
                 },
                 "ignoreBadQuality": false,
                 "preventInterpolation": false,
-                "valueFormat": "DATASET"
+                "valueFormat": "DATASET",
+                "dateRange": {
+                  "rangeType": "realtime",
+                  "mostRecent": 5,
+                  "mostRecentUnits": "MIN"
+                }
               }
             }
           }
