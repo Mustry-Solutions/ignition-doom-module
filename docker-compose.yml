@@ -1,0 +1,56 @@
+# Local development gateway for the Mustry Doom module.
+#
+# Runs a disposable Ignition 8.3.6 gateway in Docker. DEVELOPMENT ONLY: it accepts
+# the EULA automatically and uses a fixed weak admin password. Do NOT use in production.
+# Drive it with the scripts in ./ops (setup.sh / deploy.sh / fresh.sh / teardown.sh).
+
+services:
+  # One-shot volume prep so the verify bind-mount's parent is owned by the
+  # ignition user before the gateway first starts (see the component module).
+  init:
+    image: inductiveautomation/ignition:8.3.6
+    user: root
+    entrypoint:
+      - sh
+      - -c
+      - mkdir -p /usr/local/bin/ignition/data/projects
+        && chown ignition:ignition /usr/local/bin/ignition/data/projects
+    volumes:
+      - gateway-data:/usr/local/bin/ignition/data
+    restart: "no"
+
+  gateway:
+    image: inductiveautomation/ignition:8.3.6
+    container_name: mdoom-ignition
+    depends_on:
+      init:
+        condition: service_completed_successfully
+    ports:
+      - "${GATEWAY_HTTP_PORT:-9188}:8088"
+      - "${GATEWAY_HTTPS_PORT:-9143}:8043"
+    environment:
+      ACCEPT_IGNITION_EULA: "Y"
+      GATEWAY_ADMIN_USERNAME: "admin"
+      GATEWAY_ADMIN_PASSWORD: "password"
+      IGNITION_EDITION: "standard"
+      TZ: "${GATEWAY_TZ:-UTC}"
+    volumes:
+      - gateway-data:/usr/local/bin/ignition/data
+      - ./ops/modules:/external-modules
+      # Verification project: a Perspective page with the Doom component.
+      - ./ops/verify/project:/usr/local/bin/ignition/data/projects/verify
+    command:
+      - "-n"
+      - "mdoom-dev"
+      - "--"
+      - "-Dignition.gateway.externalModulesFolder=/external-modules"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8088/StatusPing"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    restart: "no"
+
+volumes:
+  gateway-data:

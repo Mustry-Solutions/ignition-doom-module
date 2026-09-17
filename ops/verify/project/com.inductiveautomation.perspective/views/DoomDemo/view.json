@@ -1,0 +1,116 @@
+{
+  "custom": {},
+  "params": {},
+  "props": {
+    "defaultSize": { "width": 1100, "height": 700 }
+  },
+  "root": {
+    "type": "ia.container.coord",
+    "version": 0,
+    "props": {},
+    "meta": { "name": "root" },
+    "children": [
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": { "text": "Can it run Doom? Click the game to start. Click it again to give it the keyboard (WASD move, arrows turn, Space fire, E use, Shift run, Esc menu). The toggles on the right drive data.controls, i.e. what a tag binding would do.", "style": { "fontSize": "13px" } },
+        "meta": { "name": "help" },
+        "position": { "x": 16, "y": 10, "width": 1060, "height": 40 }
+      },
+      {
+        "type": "mustrysolutions.perspective.fun.doom",
+        "version": 0,
+        "props": {
+          "config": { "autoStart": false },
+          "data": {
+            "controls": {
+              "forward": false, "backward": false, "strafeLeft": false, "strafeRight": false,
+              "turnLeft": false, "turnRight": false, "fire": false, "use": false, "run": false,
+              "menu": false, "confirm": false, "weapon": 0
+            }
+          },
+          "state": { "paused": false }
+        },
+        "custom": {},
+        "meta": { "name": "doom" },
+        "position": { "x": 16, "y": 56, "width": 800, "height": 528 }
+      },
+      {
+        "type": "ia.input.toggle-switch",
+        "version": 0,
+        "props": { "selected": false },
+        "propConfig": {
+          "props.selected": { "binding": { "type": "property", "config": { "path": "../doom.props.data.controls.fire", "bidirectional": true } } }
+        },
+        "meta": { "name": "fire" },
+        "position": { "x": 840, "y": 60, "width": 60, "height": 28 }
+      },
+      { "type": "ia.display.label", "version": 0, "props": { "text": "fire (tag → Space)" }, "meta": { "name": "fireLabel" }, "position": { "x": 910, "y": 60, "width": 170, "height": 28 } },
+      {
+        "type": "ia.input.toggle-switch",
+        "version": 0,
+        "props": { "selected": false },
+        "propConfig": {
+          "props.selected": { "binding": { "type": "property", "config": { "path": "../doom.props.data.controls.forward", "bidirectional": true } } }
+        },
+        "meta": { "name": "forward" },
+        "position": { "x": 840, "y": 100, "width": 60, "height": 28 }
+      },
+      { "type": "ia.display.label", "version": 0, "props": { "text": "forward (W)" }, "meta": { "name": "forwardLabel" }, "position": { "x": 910, "y": 100, "width": 170, "height": 28 } },
+      {
+        "type": "ia.input.toggle-switch",
+        "version": 0,
+        "props": { "selected": false },
+        "propConfig": {
+          "props.selected": { "binding": { "type": "property", "config": { "path": "../doom.props.data.controls.turnLeft", "bidirectional": true } } }
+        },
+        "meta": { "name": "turnLeft" },
+        "position": { "x": 840, "y": 140, "width": 60, "height": 28 }
+      },
+      { "type": "ia.display.label", "version": 0, "props": { "text": "turn left (←)" }, "meta": { "name": "turnLeftLabel" }, "position": { "x": 910, "y": 140, "width": 170, "height": 28 } },
+      {
+        "type": "ia.input.toggle-switch",
+        "version": 0,
+        "props": { "selected": false },
+        "propConfig": {
+          "props.selected": { "binding": { "type": "property", "config": { "path": "../doom.props.data.controls.use", "bidirectional": true } } }
+        },
+        "meta": { "name": "use" },
+        "position": { "x": 840, "y": 180, "width": 60, "height": 28 }
+      },
+      { "type": "ia.display.label", "version": 0, "props": { "text": "use (E)" }, "meta": { "name": "useLabel" }, "position": { "x": 910, "y": 180, "width": 170, "height": 28 } },
+      {
+        "type": "ia.input.toggle-switch",
+        "version": 0,
+        "props": { "selected": false },
+        "propConfig": {
+          "props.selected": { "binding": { "type": "property", "config": { "path": "../doom.props.state.paused", "bidirectional": true } } }
+        },
+        "meta": { "name": "paused" },
+        "position": { "x": 840, "y": 220, "width": 60, "height": 28 }
+      },
+      { "type": "ia.display.label", "version": 0, "props": { "text": "state.paused" }, "meta": { "name": "pausedLabel" }, "position": { "x": 910, "y": 220, "width": 170, "height": 28 } },
+      {
+        "type": "ia.input.numeric-entry-field",
+        "version": 0,
+        "props": { "value": 0, "format": "0" },
+        "propConfig": {
+          "props.value": { "binding": { "type": "property", "config": { "path": "../doom.props.data.controls.weapon", "bidirectional": true } } }
+        },
+        "meta": { "name": "weapon" },
+        "position": { "x": 840, "y": 260, "width": 60, "height": 32 }
+      },
+      { "type": "ia.display.label", "version": 0, "props": { "text": "weapon slot (1-7)" }, "meta": { "name": "weaponLabel" }, "position": { "x": 910, "y": 262, "width": 170, "height": 28 } },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": { "text": "", "style": { "fontFamily": "monospace", "fontSize": "11px", "whiteSpace": "pre-wrap", "overflowWrap": "anywhere" } },
+        "propConfig": {
+          "props.text": { "binding": { "type": "expr", "config": { "expression": "\"output.state: \" + {../doom.props.output.state} + \"\\noutput.message: \" + {../doom.props.output.message}" } } }
+        },
+        "meta": { "name": "outputs" },
+        "position": { "x": 840, "y": 310, "width": 240, "height": 120 }
+      }
+    ]
+  }
+}

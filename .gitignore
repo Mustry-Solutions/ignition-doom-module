@@ -1,0 +1,51 @@
+# --- Ignition module generator tool (kept on disk for convenience, not part of this repo) ---
+ignition-module-tools/
+
+# --- Local Claude Code tooling ---
+# Ignore local Claude state, but DO commit project skills under .claude/skills/<name>.
+.claude/*
+!.claude/skills
+.claude/skills/*
+
+
+# --- Gradle ---
+.gradle/
+build/
+**/build/
+
+# --- Node / web front-end ---
+node_modules/
+**/node_modules/
+web/.gradle/
+
+# --- Staged module artifacts for the local dev gateway ---
+ops/modules/*.modl
+
+# --- Designer write-back noise in the bind-mounted verify project ---
+# The dev gateway saves these on its own; none carry project content we keep.
+ops/verify/project/**/thumbnail.png
+ops/verify/project/com.inductiveautomation.perspective/session-props/
+ops/verify/project/com.inductiveautomation.vision/
+
+# --- Local dev signing material (NEVER commit keystores/certs/keys) ---
+ops/signing/
+# Belt-and-suspenders: any stray signing dir + common keystore/cert extensions.
+signing/
+*.p12
+*.jks
+*.keystore
+
+# --- IDE / editor ---
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+# Eclipse/Buildship Java compile output (common/bin, designer/bin, gateway/bin)
+bin/
+
+# --- macOS ---
+.DS_Store
+
+# --- engine rebuild workspace (engine/build.sh clones upstream here) ---
+engine/build/

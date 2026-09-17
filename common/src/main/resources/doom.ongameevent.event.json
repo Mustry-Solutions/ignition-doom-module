@@ -1,0 +1,14 @@
+{
+  "type": "object",
+  "description": "An engine lifecycle message.",
+  "properties": {
+    "code": {
+      "type": "integer",
+      "description": "doom-wasm stdout protocol code (10 = game started, 9 = disconnected, 8 = uid assigned, ...). 0 = a free-text line, -1 = fatal engine error."
+    },
+    "message": {
+      "type": "string",
+      "description": "The message text."
+    }
+  }
+}

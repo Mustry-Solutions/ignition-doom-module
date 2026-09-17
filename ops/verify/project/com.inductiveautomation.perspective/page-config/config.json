@@ -1,0 +1,8 @@
+{
+ "pages": {
+  "/": {
+   "viewPath": "DoomDemo",
+   "viewParams": {}
+  }
+ }
+}

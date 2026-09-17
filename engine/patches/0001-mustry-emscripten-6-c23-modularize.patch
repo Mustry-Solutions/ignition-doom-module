@@ -1,0 +1,84 @@
+diff --git a/configure.ac b/configure.ac
+index ae1320b..e2cf1dc 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -115,7 +115,7 @@ AS_IF([test "x$with_libpng" != xno], [
+ 
+ # TODO: We currently link everything against libraries that don't need it.
+ # Use the specific library CFLAGS/LIBS variables instead of setting them here.
+-EMFLAGS="-gsource-map -s INVOKE_RUN=1 -s USE_SDL=2 -s USE_SDL_MIXER=2 -s LEGACY_GL_EMULATION=0 -s USE_SDL_NET=2 -s ASSERTIONS=0 -s WASM=1 -s ALLOW_MEMORY_GROWTH=0 -s FORCE_FILESYSTEM=1 -s EXTRA_EXPORTED_RUNTIME_METHODS=[['FS','ccall']] -s SAFE_HEAP=1 -s EXIT_RUNTIME=1 -s STACK_OVERFLOW_CHECK=1 -s PROXY_POSIX_SOCKETS=0 -s USE_PTHREADS=0 -s PROXY_TO_PTHREAD=0 -s TOTAL_MEMORY=64MB -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s ASYNCIFY -O3 --source-map-base /"
++EMFLAGS="-s INVOKE_RUN=1 -s USE_SDL=2 -s USE_SDL_MIXER=2 -s LEGACY_GL_EMULATION=0 -s USE_SDL_NET=2 -s ASSERTIONS=0 -s WASM=1 -s ALLOW_MEMORY_GROWTH=0 -s FORCE_FILESYSTEM=1 -s EXPORTED_RUNTIME_METHODS=[['FS','ccall','callMain','ENV']] -s EXPORTED_FUNCTIONS=[['_main','_I_Quit']] -s MODULARIZE=1 -s EXPORT_NAME=createDoomModule -s ENVIRONMENT=web -s EXIT_RUNTIME=1 -s PROXY_POSIX_SOCKETS=0 -s USE_PTHREADS=0 -s PROXY_TO_PTHREAD=0 -s TOTAL_MEMORY=64MB -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s ASYNCIFY -O3 -g0"
+ 
+ CFLAGS="$CFLAGS $SDL_CFLAGS ${SAMPLERATE_CFLAGS:-} ${PNG_CFLAGS:-} $EMFLAGS"
+ LDFLAGS="$LDFLAGS $SDL_LIBS ${SAMPLERATE_LIBS:-} ${PNG_LIBS:-} $EMFLAGS -lwebsocket.js"
+@@ -184,7 +184,7 @@ AC_SUBST(SDLNET_CFLAGS)
+ AC_SUBST(SDLNET_LIBS)
+ AC_SUBST(SDL_LIBS)
+ AC_SUBST(SDL_CFLAGS)
+-EXEEXT=".html"
++EXEEXT=".js"
+ AC_SUBST(EXEEXT)
+ 
+ AC_SUBST(ac_aux_dir)
+diff --git a/opl/Makefile.am b/opl/Makefile.am
+index 430953e..4198d54 100644
+--- a/opl/Makefile.am
++++ b/opl/Makefile.am
+@@ -3,7 +3,7 @@ AM_CFLAGS=@SDLMIXER_CFLAGS@
+ 
+ EXTRA_DIST=CMakeLists.txt
+ 
+-SUBDIRS = . examples
++SUBDIRS = .
+ 
+ noinst_LIBRARIES=libopl.a
+ 
+diff --git a/scripts/build.sh b/scripts/build.sh
+index 6cd2c35..965a64e 100755
+--- a/scripts/build.sh
++++ b/scripts/build.sh
+@@ -4,6 +4,6 @@ cd "`dirname \"$0\"`/.."
+ 
+ emmake make clean
+ emconfigure autoreconf -fiv
+-ac_cv_exeext=".html" emconfigure ./configure --host=none-none-none
++ac_cv_exeext=".js" emconfigure ./configure --host=none-none-none
+ 
+ emmake make
+diff --git a/src/doomtype.h b/src/doomtype.h
+index 9947a07..2f6f20f 100644
+--- a/src/doomtype.h
++++ b/src/doomtype.h
+@@ -100,9 +100,17 @@
+ 
+ #include <inttypes.h>
+ 
+-#if defined(__cplusplus) || defined(__bool_true_false_are_defined)
++#if defined(__cplusplus)
+ 
+-// Use builtin bool type with C++.
++typedef bool boolean;
++
++#elif defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L
++
++// C23 makes true/false keywords of type bool. Doom relies on boolean being
++// int-sized and memset()-able to -1 (see R_InstallSpriteLump), so keep an int.
++typedef int boolean;
++
++#elif defined(__bool_true_false_are_defined)
+ 
+ typedef bool boolean;
+ 
+diff --git a/textscreen/Makefile.am b/textscreen/Makefile.am
+index f55236f..dd0a8b4 100644
+--- a/textscreen/Makefile.am
++++ b/textscreen/Makefile.am
+@@ -5,7 +5,7 @@ CTAGS_ARGS=-I TXT_UNCAST_ARG+
+ 
+ # build this directory before the examples directory.
+ 
+-SUBDIRS = fonts . examples
++SUBDIRS = fonts .
+ 
+ noinst_LIBRARIES=libtextscreen.a
+ 

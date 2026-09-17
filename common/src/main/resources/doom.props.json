@@ -1,0 +1,139 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [],
+  "properties": {
+    "config": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Engine start-up options. Changing these after the game has started has no effect until it is restarted.",
+      "properties": {
+        "autoStart": {
+          "type": "boolean",
+          "default": false,
+          "description": "Start the engine as soon as the component mounts. Off shows a 'click to play' splash; the click also unlocks audio, which browsers only allow after a user gesture."
+        },
+        "sound": {
+          "type": "boolean",
+          "default": true,
+          "description": "Sound effects."
+        },
+        "music": {
+          "type": "boolean",
+          "default": false,
+          "description": "Music (OPL emulation). Off by default: it is CPU-hungry and E1M1 on loop tests the patience of coworkers."
+        },
+        "skill": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5,
+          "default": 3,
+          "description": "1 = I'm too young to die ... 5 = Nightmare!"
+        },
+        "warp": {
+          "type": "boolean",
+          "default": true,
+          "description": "Skip the title screen and start straight in the map given by config.episode / config.map."
+        },
+        "episode": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1,
+          "default": 1,
+          "description": "Episode to warp to. The shareware IWAD only has episode 1 (Knee-Deep in the Dead)."
+        },
+        "map": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9,
+          "default": 1,
+          "description": "Map to warp to (1-9)."
+        },
+        "keyboard": {
+          "type": "boolean",
+          "default": true,
+          "description": "Let the physical keyboard drive the game while the canvas has focus (click it first). Keys never reach the game while another element is focused, so the rest of the view keeps working. Off = tag-bound controls only."
+        },
+        "mouse": {
+          "type": "boolean",
+          "default": false,
+          "description": "Mouse look/turn while the canvas has focus."
+        },
+        "pixelated": {
+          "type": "boolean",
+          "default": true,
+          "description": "Scale the 320x200 frame with crisp nearest-neighbour pixels instead of smoothing. It is 1993, after all."
+        },
+        "showHud": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show the component's own status strip under the canvas (engine state, last message, focus hint)."
+        },
+        "playLabel": {
+          "type": "string",
+          "default": "",
+          "description": "Text on the splash button. Empty = 'Click to play'."
+        },
+        "extraArgs": {
+          "type": "string",
+          "default": "",
+          "description": "Extra command-line arguments passed to the engine, space-separated (e.g. '-nomonsters', '-fast', '-respawn'). Advanced."
+        }
+      }
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Tag-bindable controls. A true holds that key down for as long as it stays true, so a PLC input can drive the marine. 'weapon' selects a weapon slot on change (0 = none).",
+      "properties": {
+        "controls": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "forward": { "type": "boolean", "default": false, "description": "Move forward (W)." },
+            "backward": { "type": "boolean", "default": false, "description": "Move backward (S)." },
+            "strafeLeft": { "type": "boolean", "default": false, "description": "Strafe left (A)." },
+            "strafeRight": { "type": "boolean", "default": false, "description": "Strafe right (D)." },
+            "turnLeft": { "type": "boolean", "default": false, "description": "Turn left (Left arrow)." },
+            "turnRight": { "type": "boolean", "default": false, "description": "Turn right (Right arrow)." },
+            "fire": { "type": "boolean", "default": false, "description": "Fire (Space)." },
+            "use": { "type": "boolean", "default": false, "description": "Use / open doors (E)." },
+            "run": { "type": "boolean", "default": false, "description": "Run (Shift)." },
+            "menu": { "type": "boolean", "default": false, "description": "Menu / back (Escape)." },
+            "confirm": { "type": "boolean", "default": false, "description": "Confirm / menu select (Enter)." },
+            "weapon": { "type": "integer", "minimum": 0, "maximum": 7, "default": 0, "description": "Weapon slot to select when this value changes (1-7). 0 = no change." }
+          }
+        }
+      }
+    },
+    "state": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Two-way runtime state.",
+      "properties": {
+        "paused": {
+          "type": "boolean",
+          "default": false,
+          "description": "Pause the engine's main loop. Bind it to an alarm: production stops, Doom stops."
+        }
+      }
+    },
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Read-only engine status.",
+      "properties": {
+        "state": {
+          "type": "string",
+          "default": "idle",
+          "description": "idle | loading | running | paused | exited | error | busy. 'busy' means another Doom instance already owns this session (one per browser page)."
+        },
+        "message": {
+          "type": "string",
+          "default": "",
+          "description": "The last line the engine printed."
+        }
+      }
+    }
+  }
+}

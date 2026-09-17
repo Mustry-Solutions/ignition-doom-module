@@ -1,0 +1,155 @@
+// Doom — the frame keeps the engine's 16:10 image letterboxed inside whatever
+// size the component gets; SDL owns the canvas's pixel size, CSS owns its box.
+.mustry-doom {
+    --doom-bg: #000;
+    --doom-hud-bg: var(--neutral-90, #1f2933);
+    --doom-hud-text: var(--neutral-10, #f5f7fa);
+    --doom-accent: #b01e1e;
+
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    background: var(--doom-bg);
+    color: var(--doom-hud-text);
+    font-family: var(--font-family, system-ui, sans-serif);
+    overflow: hidden;
+
+    &__frame {
+        position: relative;
+        flex: 1 1 auto;
+        min-height: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        background: var(--doom-bg);
+    }
+
+    &__canvas {
+        display: block;
+        // SDL owns the canvas's inline CSS size and its backing store (times
+        // devicePixelRatio); the component only feeds it the frame's box.
+        max-width: 100%;
+        max-height: 100%;
+        background: var(--doom-bg);
+        outline: none;
+    }
+
+    &--pixelated &__canvas {
+        image-rendering: pixelated;
+        image-rendering: crisp-edges;
+    }
+
+    &__canvas:focus-visible {
+        box-shadow: inset 0 0 0 2px var(--doom-accent);
+    }
+
+    &__splash,
+    &__overlay {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 16px;
+        text-align: center;
+        color: #fff;
+        background:
+            radial-gradient(ellipse at center, rgba(176, 30, 30, 0.35), rgba(0, 0, 0, 0.9) 70%),
+            #000;
+    }
+
+    &__splash {
+        border: 0;
+        cursor: pointer;
+        font: inherit;
+    }
+
+    &__splash-title {
+        font-size: clamp(32px, 12cqw, 72px);
+        font-weight: 900;
+        letter-spacing: 0.12em;
+        color: var(--doom-accent);
+        text-shadow: 0 0 18px rgba(176, 30, 30, 0.8), 0 2px 0 #000;
+    }
+
+    &__splash-label {
+        font-size: 15px;
+        font-weight: 600;
+        padding: 6px 14px;
+        border: 1px solid rgba(255, 255, 255, 0.6);
+        border-radius: 3px;
+    }
+
+    &__splash-hint,
+    &__overlay-text {
+        font-size: 11px;
+        opacity: 0.7;
+        max-width: 90%;
+        word-break: break-word;
+    }
+
+    &__overlay-title {
+        font-size: 14px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+    }
+
+    &__hud {
+        flex: 0 0 auto;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        height: 28px;
+        padding: 0 10px;
+        font-size: 11px;
+        line-height: 28px;
+        background: var(--doom-hud-bg);
+        color: var(--doom-hud-text);
+        white-space: nowrap;
+        overflow: hidden;
+    }
+
+    &__dot {
+        flex: 0 0 auto;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #7b8794;
+
+        &--running { background: #2ecc71; }
+        &--paused { background: #f1c40f; }
+        &--loading { background: #3498db; animation: mustry-doom-pulse 1s infinite; }
+        &--error, &--busy { background: #e74c3c; }
+    }
+
+    &__state {
+        flex: 0 0 auto;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+    }
+
+    &__message {
+        flex: 1 1 auto;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        opacity: 0.8;
+        font-family: ui-monospace, Menlo, Consolas, monospace;
+    }
+
+    &__focus {
+        flex: 0 0 auto;
+        opacity: 0.7;
+    }
+}
+
+@keyframes mustry-doom-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}

@@ -1,0 +1,91 @@
+# Mustry Doom
+
+An Ignition **8.3.6+** module that answers the question nobody in industrial
+automation asked: can it run Doom? It adds one Perspective component, **Doom**,
+which runs the 1993 shareware episode on a canvas inside your view. Controls
+are tag-bindable, so a PLC input can fire the shotgun and an alarm can pause
+the game.
+
+It is free, GPL-2.0, and of no industrial value whatsoever.
+
+- **Module ID:** `com.mustrysolutions.doom`
+- **Component:** `mustrysolutions.perspective.fun.doom`, palette category `Mustry Solutions`
+- **Engine:** [Chocolate Doom](https://www.chocolate-doom.org/) → WebAssembly via Cloudflare's [doom-wasm](https://github.com/cloudflare/doom-wasm); see [engine/](engine/README.md)
+
+## Install
+
+1. Download `Mustry-Doom.modl` from the releases page.
+2. Gateway → Config → Modules → install. Accept the certificate and the licence.
+3. In the Designer, drag **Doom** from the `Mustry Solutions` palette category into a view. Save. Open the session. Click to play.
+
+The module is free: no trial, no activation.
+
+## The component
+
+| Group | Prop | What |
+|---|---|---|
+| `config` | `autoStart` | Start on mount. Off (default) shows a "Click to play" splash, and that click also unlocks audio. |
+| | `sound`, `music` | Sound effects (on) and OPL music (off, for the sake of your coworkers). |
+| | `skill`, `warp`, `episode`, `map` | Difficulty 1–5 and where to start. The shareware IWAD only has episode 1. |
+| | `keyboard` | Physical keyboard drives the game while the canvas is focused (click it). Keys never leak to the rest of the view. |
+| | `mouse` | Mouse turn while focused. |
+| | `pixelated`, `showHud`, `playLabel`, `extraArgs` | Crisp pixels, the status strip, the splash label, and raw engine arguments such as `-nomonsters`. |
+| `data.controls` | `forward`, `backward`, `strafeLeft`, `strafeRight`, `turnLeft`, `turnRight`, `fire`, `use`, `run`, `menu`, `confirm` | Booleans: true holds the key down for as long as it stays true. Bind them to tags. |
+| | `weapon` | Selects weapon slot 1–7 when the value changes; 0 = no change. |
+| `state.paused` | | Two-way. True pauses the game (Doom's own pause). Bind it to an alarm. |
+| `output.state` | | `idle`, `loading`, `running`, `paused`, `exited`, `error`, `busy` (another Doom already owns the page). |
+| `output.message` | | The last line the engine printed. |
+| event `onGameEvent` | `{ code, message }` | Engine lifecycle messages; `10` is "game started". |
+
+Key bindings (WASD move, arrows turn, Space fire, E use, Shift run, Esc menu)
+live in the shipped `default.cfg` and are mirrored one-to-one by the tag
+controls, so both ways of playing drive the same engine bindings.
+
+One engine per browser page: a second Doom component on the same page reports
+`busy`.
+
+## Build
+
+Requires Java 17. Node is downloaded by the build.
+
+```bash
+./gradlew build            # -> build/Mustry-Doom-<version>.modl (unsigned)
+cd web && npm test         # jest, pure-logic suites
+```
+
+The compiled engine is committed, so the build never needs Emscripten. To
+rebuild the engine from source (new upstream commit, new patch):
+
+```bash
+engine/build.sh            # Docker, emscripten/emsdk image
+engine/build.sh --local    # or a local emsdk + automake/autoconf/pkg-config
+```
+
+## Dev gateway
+
+```bash
+ops/fresh.sh     # build, sign with a throwaway dev cert, recreate the gateway unattended
+ops/deploy.sh    # rebuild + reload into the running gateway
+ops/e2e.sh       # deploy + Playwright smoke test (--fresh recreates the gateway first, what CI runs)
+ops/teardown.sh  # stop it (--purge to wipe the volume)
+```
+
+The smoke test in `e2e/` opens the verify project in headless Chromium, starts
+the game, checks the engine sized its canvas and reports `running`, drives the
+turn-left tag control and asserts the frame actually changed, and flips
+`state.paused`. It fails on any console error.
+
+The gateway comes up at http://localhost:9188 (admin / password) with a
+`verify` project mounted from `ops/verify/project`. Open
+http://localhost:9188/data/perspective/client/verify and click the game.
+
+## Licensing
+
+GPL-2.0-only for the module, because the engine is GPL-2.0. The shareware WAD
+is id Software's and may only be redistributed complete and free of charge,
+which is why this module can never be a paid product. Registered Doom, Doom II
+and other IWADs are not included and must not be added for redistribution. See
+[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+
+DOOM is a trademark of id Software LLC. This project is not affiliated with id
+Software, Bethesda, Cloudflare or Inductive Automation.
