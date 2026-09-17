@@ -166,6 +166,7 @@ describe('multiplayer', () => {
         expect(relayUrl({ relayUrl: '', arena: 'line 3' }, { protocol: 'http:', host: 'gw:9188' })).toBe('ws://gw:9188/system/doom-relay/line_3');
         expect(relayUrl({ relayUrl: '', arena: '' }, { protocol: 'https:', host: 'gw' })).toBe('wss://gw/system/doom-relay/default');
         expect(relayUrl({ relayUrl: 'wss://relay.example/x/', arena: 'a' }, { protocol: 'http:', host: 'gw' })).toBe('wss://relay.example/x/a');
+        expect(relayUrl({ relayUrl: '', arena: 'a' }, { protocol: 'http:', host: 'gw' }, 'T/k=')).toBe('ws://gw/system/doom-relay/a?ticket=T%2Fk%3D');
         expect(arenaKey('../etc')).toBe('default');
     });
     it('adds host arguments: -wss, -server, -nodes and the rules', () => {

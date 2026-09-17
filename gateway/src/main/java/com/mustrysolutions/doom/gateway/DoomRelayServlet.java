@@ -30,8 +30,11 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
  * Nothing is interpreted beyond the header, so any Doom net protocol the
  * engine speaks passes through.
  *
- * <p>Sessions are identified purely by the ids the engines chose; the relay
- * is reachable at {@code /system/doom/relay/<arena>} on the gateway.
+ * <p>Admission: the handshake must carry {@code ?ticket=<token>} issued by
+ * the session's {@link DoomModelDelegate} for this arena (see
+ * {@link DoomRelayTickets}); anything else is refused with 403. The engine
+ * reconnects during a netgame, so a ticket stays valid for the session. The relay is
+ * reachable at {@code /system/doom-relay/<arena>} on the gateway.
  */
 public class DoomRelayServlet extends JettyWebSocketServlet {
 
@@ -90,7 +93,19 @@ public class DoomRelayServlet extends JettyWebSocketServlet {
             if (arena.isBlank()) {
                 arena = "default";
             }
-            return new Peer(ARENAS.computeIfAbsent(arena, Arena::new));
+            String token = req.getHttpServletRequest().getParameter("ticket");
+            DoomRelayTickets.Ticket ticket = DoomRelayTickets.redeem(token, arena);
+            if (ticket == null) {
+                log.warnf("arena %s: refused a connection without a valid ticket from %s", arena,
+                    req.getHttpServletRequest().getRemoteAddr());
+                try {
+                    resp.sendForbidden("a Doom relay ticket for this arena is required");
+                } catch (java.io.IOException e) {
+                    log.debug("could not send 403", e);
+                }
+                return null;
+            }
+            return new Peer(ARENAS.computeIfAbsent(arena, Arena::new), ticket.player);
         });
     }
 
@@ -98,17 +113,19 @@ public class DoomRelayServlet extends JettyWebSocketServlet {
     @WebSocket
     public static class Peer {
         private final Arena arena;
+        private final String player;
         private Session session;
         private int id = -1;
 
-        Peer(Arena arena) {
+        Peer(Arena arena, String player) {
             this.arena = arena;
+            this.player = player;
         }
 
         @OnWebSocketOpen
         public void onOpen(Session session) {
             this.session = session;
-            log.debugf("arena %s: connection from %s", arena.name, session.getRemoteSocketAddress());
+            log.debugf("arena %s: %s connected from %s", arena.name, player, session.getRemoteSocketAddress());
         }
 
         @OnWebSocketMessage
@@ -137,10 +154,10 @@ public class DoomRelayServlet extends JettyWebSocketServlet {
                 if (previous != null && previous != session && previous.isOpen()) {
                     previous.close(1000, "replaced by a new server", Callback.NOOP);
                 }
-                log.infof("arena %s: server announced (%d peers waiting)", arena.name, arena.size());
+                log.infof("arena %s: server announced by %s (%d peers waiting)", arena.name, player, arena.size());
             } else {
                 arena.peers.put(from, session);
-                log.infof("arena %s: peer %d joined (%d peers)", arena.name, from, arena.size());
+                log.infof("arena %s: %s joined as peer %d (%d peers)", arena.name, player, from, arena.size());
             }
         }
 

@@ -12,7 +12,7 @@ import {
 import {
     base64ToBytes, buildArgs, bytesToBase64, clampInt, CODE_ERROR, CODE_GAME_STARTED, DEFAULT_PLAY_LABEL, diffControls,
     DoomControls, DoomStats, engineSize, heldKeys, isFatalLine, isValidSlot, MAX_SAVE_BYTES, parseEngineLine, PAUSE_KEY,
-    Phase, PixelSize, readStats, relayUrl, SAVE_DIR, saveDescription, saveSlotPath, statWrites, ZERO_STATS
+    arenaKey, Phase, PixelSize, readStats, relayUrl, SAVE_DIR, saveDescription, saveSlotPath, statWrites, ZERO_STATS
 } from './doomLogic';
 import { DoomSavesState, DoomStoreDelegate } from './doomSaves';
 import {
@@ -212,8 +212,15 @@ export class Doom extends Component<ComponentProps<DoomProps, DoomSavesState>, D
         const canvas = this.canvas;
         const size = this.syncCanvasSize();
         this.pageTitle = document.title;
-        loadEngine()
-            .then((factory) => factory({
+        const cfg0 = this.props.props.config;
+        // A netgame needs a relay ticket from the gateway (admission control);
+        // fetch it alongside the engine so main() can start with the URL.
+        const ticket: Promise<string | undefined> = cfg0.multiplayer === 'off'
+            ? Promise.resolve(undefined)
+            : (this.saves()?.requestTicket(arenaKey(cfg0.arena), cfg0.player)
+                ?? Promise.reject(new Error('no gateway delegate: cannot join a netgame')));
+        Promise.all([loadEngine(), ticket])
+            .then(([factory, relayTicket]) => factory({
                 canvas,
                 noInitialRun: true,
                 locateFile: (path) => ENGINE_PATH + path,
@@ -232,12 +239,12 @@ export class Doom extends Component<ComponentProps<DoomProps, DoomSavesState>, D
                 onDoomSaveGame: (slot: number) => this.onSaveGame(slot),
                 onExit: () => this.onExit(),
                 onAbort: (what) => this.onFatal(`Engine aborted: ${String(what)}`)
-            }))
-            .then((m) => {
+            }).then((m) => [m, relayTicket] as const))
+            .then(([m, relayTicket]) => {
                 this.module = m;
                 this.watchTitle();
                 const cfg = this.props.props.config;
-                const relay = cfg.multiplayer === 'off' ? undefined : relayUrl(cfg, window.location);
+                const relay = cfg.multiplayer === 'off' ? undefined : relayUrl(cfg, window.location, relayTicket);
                 m.callMain(buildArgs(cfg, size, relay));
                 this.watchFrame();
                 // Chocolate Doom is up as soon as main returns to the browser loop;
@@ -399,9 +406,12 @@ export class Doom extends Component<ComponentProps<DoomProps, DoomSavesState>, D
         this.props.store.props.write('output.lastSaveSlot', slot + 1);
         this.props.store.props.write('output.lastSaveDescription', description);
         const saves = this.props.props.config.persistSaves ? this.saves() : null;
-        if (saves) {
+        const authenticated = !!(this.props.delegate && this.props.delegate.authenticated);
+        if (saves && authenticated) {
             saves.putSlot(slot, description, bytesToBase64(bytes));
             this.setMessage(`Saved slot ${slot + 1} "${description}" to the gateway`);
+        } else if (saves) {
+            this.setMessage(`Saved slot ${slot + 1} "${description}" (this tab only: log in to keep saves on the gateway)`);
         } else {
             this.setMessage(`Saved slot ${slot + 1} "${description}" (this tab only)`);
         }

@@ -21,11 +21,17 @@ export const SAVE_EVENTS = {
     /** page -> gateway: { player, running, stats: {...changed} } -> module tag provider */
     TELEMETRY: 'doom-telemetry',
     /** gateway -> page: { player } the resolved [Doom]Players/<player> name */
-    PLAYER: 'doom-player'
+    PLAYER: 'doom-player',
+    /** page -> gateway: { arena, player }: please admit me to the relay */
+    TICKET: 'doom-relay-ticket',
+    /** gateway -> page: { arena, ticket } single-use relay admission */
+    TICKET_OK: 'doom-relay-ticket-ok'
 } as const;
 
 export interface DoomSavesState {
+    /** Save-game owner; empty when the session is unauthenticated (saves stay in the tab). */
     owner: string;
+    authenticated: boolean;
     /** The player folder the gateway writes telemetry to, once it told us. */
     player: string;
     /** Slots the gateway holds for this user, with data when they came from LIST. */
@@ -36,7 +42,9 @@ export interface DoomSavesState {
 
 export class DoomStoreDelegate extends ComponentStoreDelegate {
     private owner = '';
+    private authenticated = false;
     private player = '';
+    private ticketWaiters: Array<(ticket: string) => void> = [];
     private slots: SavedSlot[] = [];
     private loaded = false;
     private lastError = '';
@@ -46,7 +54,10 @@ export class DoomStoreDelegate extends ComponentStoreDelegate {
     }
 
     mapStateToProps(): DoomSavesState {
-        return { owner: this.owner, player: this.player, slots: this.slots, loaded: this.loaded, lastError: this.lastError };
+        return {
+            owner: this.owner, authenticated: this.authenticated, player: this.player,
+            slots: this.slots, loaded: this.loaded, lastError: this.lastError
+        };
     }
 
     requestSlots(): void {
@@ -55,6 +66,22 @@ export class DoomStoreDelegate extends ComponentStoreDelegate {
 
     putSlot(slot: number, description: string, data: string): void {
         this.fireEvent(SAVE_EVENTS.PUT, { slot, description, data });
+    }
+
+    /** Ask the gateway for a relay admission ticket; resolves with the token. */
+    requestTicket(arena: string, player: string): Promise<string> {
+        return new Promise<string>((resolve, reject) => {
+            const timer = window.setTimeout(() => {
+                this.ticketWaiters = this.ticketWaiters.filter((w) => w !== done);
+                reject(new Error('the gateway did not issue a relay ticket'));
+            }, 10_000);
+            const done = (ticket: string) => {
+                window.clearTimeout(timer);
+                resolve(ticket);
+            };
+            this.ticketWaiters.push(done);
+            this.fireEvent(SAVE_EVENTS.TICKET, { arena, player });
+        });
     }
 
     /** Push telemetry (only the changed stats) for the gateway's [Doom] provider. */
@@ -75,9 +102,17 @@ export class DoomStoreDelegate extends ComponentStoreDelegate {
                         data: typeof s.data === 'string' ? s.data : undefined
                     }));
                 this.owner = String((eventObject && eventObject.owner) || '');
+                this.authenticated = !!(eventObject && eventObject.authenticated);
                 this.loaded = true;
                 this.lastError = '';
                 this.notify();
+                break;
+            }
+            case SAVE_EVENTS.TICKET_OK: {
+                const ticket = String((eventObject && eventObject.ticket) || '');
+                const waiters = this.ticketWaiters;
+                this.ticketWaiters = [];
+                waiters.forEach((w) => w(ticket));
                 break;
             }
             case SAVE_EVENTS.PLAYER:

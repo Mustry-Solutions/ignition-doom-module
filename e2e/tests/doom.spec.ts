@@ -117,7 +117,7 @@ test('doom: quitting from the in-game menu leaves a restartable component, Resta
     await expect(page.getByText(/output\.state: running/)).toBeVisible();
 });
 
-test('doom: a save game made in Doom\'s menu survives a page reload via the gateway', async ({ page }) => {
+test('doom: an unauthenticated session keeps its saves in the tab, never in a shared gateway folder', async ({ page }) => {
     await startGame(page);
     const canvas = page.locator('#canvas');
     await canvas.click();
@@ -136,7 +136,6 @@ test('doom: a save game made in Doom\'s menu survives a page reload via the gate
     await step();
     await page.keyboard.press('Enter');
     await step();
-    // The slot editor starts with the previous name (Doom upper-cases it); clear it first.
     for (let i = 0; i < 24; i++) {
         await page.keyboard.press('Backspace');
     }
@@ -144,29 +143,31 @@ test('doom: a save game made in Doom\'s menu survives a page reload via the gate
     await page.keyboard.type('e2e save', { delay: 40 });
     await step();
     await page.keyboard.press('Enter');
-    // The gateway answered with the user's slots: at least this one, owned by the
-    // (unauthenticated) session's "anonymous" bucket.
+    // The engine saved (slot 1, our name) but the verify project has no login,
+    // so the gateway reports no owner and the component keeps the slot local.
     await expect(page.getByText(/last save: 1 "E2E SAVE"/)).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByText(/output\.savedSlots: [1-6]/)).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByText(/output\.saveOwner: anonymous/)).toBeVisible();
+    await expect(page.locator('.mustry-doom__message')).toHaveText(/this tab only: log in/);
+    await expect(page.getByText(/output\.savedSlots: 0/)).toBeVisible();
+    await expect(page.getByText(/output\.saveOwner:\s+·\s+last save/)).toBeVisible();
+});
 
-    // A fresh session: the gateway hands the slots back before the engine starts.
-    await page.reload();
-    const root = await openRoute(page, '/', '.mustry-doom');
-    await expect(page.getByText(/output\.savedSlots: [1-6]/)).toBeVisible({ timeout: 20_000 });
-    await root.locator('.mustry-doom__splash').click();
-    await expect(root).toHaveClass(/mustry-doom--running/, { timeout: 60_000 });
-    // The restored slot is readable by the engine: Load Game lists a non-empty slot 1.
-    await canvas.click();
-    await page.keyboard.press('Escape');
-    for (let i = 0; i < 2; i++) {
-        await page.keyboard.press('ArrowDown');
-    }
-    await page.keyboard.press('Enter');
-    await page.waitForTimeout(500);
-    await page.keyboard.press('Enter'); // load slot 1
-    await expect(page.getByText(/output\.state: running/)).toBeVisible();
-    await expect(page.getByText(/output\.inLevel: true/)).toBeVisible({ timeout: 15_000 });
+test('relay: a WebSocket without a gateway-issued ticket is refused', async ({ page, consoleErrors }) => {
+    // Straight from the page's origin, no component involved: the handshake
+    // must fail (403). A ticketed one is exercised by the deathmatch test.
+    await openRoute(page, '/', '.mustry-doom');
+    const result = await page.evaluate(() => new Promise<string>((resolve) => {
+        const ws = new WebSocket(`ws://${location.host}/system/doom-relay/e2e`);
+        ws.onopen = () => { ws.close(); resolve('open'); };
+        ws.onerror = () => resolve('error');
+        ws.onclose = (e) => resolve(`closed ${e.code}`);
+        setTimeout(() => resolve('timeout'), 10_000);
+    }));
+    expect(result).not.toBe('open');
+    // The browser reports the refused handshake as a console error; that is the
+    // expected outcome here, not a defect of the session.
+    const refused = consoleErrors.findIndex((e) => /doom-relay\/e2e.*403/.test(e));
+    expect(refused).toBeGreaterThanOrEqual(0);
+    consoleErrors.splice(refused, 1);
 });
 
 test('deathmatch: two sessions meet through the gateway relay and both reach the map', async ({ browser, page: hostPage }) => {

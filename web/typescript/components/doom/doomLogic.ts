@@ -47,13 +47,12 @@ export function arenaKey(raw: string): string {
  * The relay's WebSocket URL for an arena, derived from the page's own origin
  * (the gateway that serves the session), unless overridden.
  */
-export function relayUrl(cfg: { relayUrl: string; arena: string }, location: { protocol: string; host: string }): string {
+export function relayUrl(cfg: { relayUrl: string; arena: string }, location: { protocol: string; host: string }, ticket?: string): string {
     const override = (cfg.relayUrl || '').trim();
-    if (override !== '') {
-        return override.replace(/\/+$/, '') + '/' + arenaKey(cfg.arena);
-    }
-    const scheme = location.protocol === 'https:' ? 'wss' : 'ws';
-    return `${scheme}://${location.host}/system/doom-relay/${arenaKey(cfg.arena)}`;
+    const base = override !== ''
+        ? override.replace(/\/+$/, '') + '/' + arenaKey(cfg.arena)
+        : `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/system/doom-relay/${arenaKey(cfg.arena)}`;
+    return ticket ? `${base}?ticket=${encodeURIComponent(ticket)}` : base;
 }
 
 /** The boolean "hold this key" controls, in schema order. */

@@ -36,11 +36,13 @@ the module writes it into its own `[Doom]` tag provider, one folder per
 player. No bindings, no scripts. Historize it, alarm on it, trend it.
 
 **Remembers.** Doom's six save slots are stored on the gateway per Perspective
-user. Save on the day shift, load on the night shift.
+user. Save on the day shift, load on the night shift. Sessions without a login
+keep their saves in the tab, so nobody shares a folder by accident.
 
 **Deathmatch.** The gateway relays Doom's network between Perspective
 sessions. Host in one browser, join from another. The host's game launches
-when everyone is in the lobby.
+when everyone is in the lobby. Only sessions running the component get into
+an arena: the gateway hands each one a ticket.
 
 ---
 
@@ -86,8 +88,10 @@ Label it "Marine down". Watch the alarm table light up.
 | Deathmatch traffic | Relayed by the gateway at `/system/doom-relay/<arena>`, never stored |
 | The game itself | Runs in the browser tab. The gateway serves the engine and the shareware WAD. |
 
-The player name defaults to the session's authenticated user. Save games and
-telemetry are keyed by it, and a session can only ever reach its own.
+The player name defaults to the session's authenticated user, or to a
+per-session name when there is none. Save games are stored only for
+authenticated users, telemetry is keyed per player, and a session can only
+ever reach its own.
 
 ---
 

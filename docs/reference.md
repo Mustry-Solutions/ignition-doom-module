@@ -106,7 +106,9 @@ through Perspective's component-to-gateway message channel. A gateway-side
 model delegate stores it under
 `data/modules/com.mustrysolutions.doom/saves/<user>/slot<N>.dsg` (plus an
 `index.json` with names and timestamps), keyed by the session's authenticated
-user, or `anonymous`. Before the engine starts, the component asks for the
+user. An unauthenticated session has no owner: its saves stay in the tab
+(the HUD says so) instead of landing in a folder every other anonymous visitor
+would share. Before the engine starts, the component asks for the
 user's slots and writes them back into the in-memory filesystem, so Doom's own
 Load Game menu lists them. Slots are capped at 512 KB; a session can only ever
 read or write its own user's folder. Turn it off with `config.persistSaves`.

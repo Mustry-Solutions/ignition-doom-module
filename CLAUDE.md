@@ -71,7 +71,11 @@ The gateway's exact Jetty version (12.0.27) is a compile-only dependency in
 `gateway/build.gradle.kts`; bump it together with the Ignition image. Browser:
 `relayUrl()` derives `ws(s)://<page host>/system/doom-relay/<arena>`;
 `buildArgs()` emits `-wss <url> -server -nodes N [-deathmatch|-altdeath]` or
-`-wss <url> -connect 1`. The host auto-launches at `-nodes` (net_gui.c).
+`-wss <url> -connect 1`. The host auto-launches at `-nodes` (net_gui.c). Admission: `DoomRelayTickets`
+(per session+arena, reusable because the engine reconnects mid-game, 4 h TTL, revoked on delegate shutdown); the store delegate's
+`requestTicket()` -> `doom-relay-ticket` -> `doom-relay-ticket-ok`; the servlet
+creator redeems `?ticket=` and returns null (403) otherwise. Saves: `owner()` is
+null for unauthenticated sessions, the page then keeps slots in the tab.
 
 ## Key bindings must agree in three places
 
@@ -120,12 +124,16 @@ boot, so do not reintroduce it without confirming the 8.3 format.
 ## Build & verify
 
 ```bash
-./gradlew build                 # .modl + jest + Java
+./gradlew build                 # .modl + jest + Java (gateway JUnit: save store, relay tickets)
 cd web && npx tsc --noEmit && npm test
 ops/fresh.sh                    # unattended dev gateway on :9188
 ops/deploy.sh                   # reload a new build
 ops/e2e.sh [--fresh|--no-deploy] # Playwright smoke test (e2e/), what CI runs
 ```
+
+The verify project has no identity provider (8.3 sets that in the Designer,
+not in files), so the AUTHENTICATED save path is covered by DoomSaveStoreTest
+and by hand via the demo view's log-in link, not by Playwright.
 
 Never call a change done because the gateway returned 200: open
 http://localhost:9188/data/perspective/client/verify, click the game and see

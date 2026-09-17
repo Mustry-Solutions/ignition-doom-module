@@ -89,7 +89,7 @@
         "persistSaves": {
           "type": "boolean",
           "default": true,
-          "description": "Keep Doom's six save-game slots on the gateway per Perspective user (data/modules/com.mustrysolutions.doom/saves/<user>/). Slots are restored into the engine before it starts, so Doom's own Load Game menu shows them. Off = saves live only in the tab and vanish on reload."
+          "description": "Keep Doom's six save-game slots on the gateway per Perspective user (data/modules/com.mustrysolutions.doom/saves/<user>/). Slots are restored into the engine before it starts, so Doom's own Load Game menu shows them. Unauthenticated sessions keep saves in the tab only (no shared anonymous folder). Off = never persist."
         },
         "player": {
           "type": "string",
@@ -109,7 +109,7 @@
             "join"
           ],
           "default": "off",
-          "description": "Deathmatch over the gateway's relay (/system/doom-relay/<arena>). 'host' starts a server that launches the game once config.players marines have joined; 'join' connects to the arena's host. Everyone in an arena must use the same settings. Off = single player."
+          "description": "Deathmatch over the gateway's relay (/system/doom-relay/<arena>). 'host' starts a server that launches the game once config.players marines have joined; 'join' connects to the arena's host. Everyone in an arena must use the same settings. The gateway issues each session a single-use admission ticket; only Perspective sessions running this component can reach an arena. Off = single player."
         },
         "arena": {
           "type": "string",
@@ -330,7 +330,7 @@
         "saveOwner": {
           "type": "string",
           "default": "",
-          "description": "The user whose save games are loaded ('anonymous' for unauthenticated sessions)."
+          "description": "The user whose save games are stored on the gateway; empty for an unauthenticated session (saves then stay in the tab)."
         },
         "lastSaveSlot": {
           "type": "integer",
