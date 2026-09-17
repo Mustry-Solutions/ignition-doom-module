@@ -2,115 +2,646 @@
   "custom": {},
   "params": {},
   "props": {
-    "defaultSize": { "width": 1100, "height": 700 }
+    "defaultSize": {
+      "width": 1100,
+      "height": 900
+    }
   },
   "root": {
     "type": "ia.container.coord",
     "version": 0,
     "props": {},
-    "meta": { "name": "root" },
+    "meta": {
+      "name": "root"
+    },
     "children": [
       {
         "type": "ia.display.label",
         "version": 0,
-        "props": { "text": "Can it run Doom? Click the game to start. Click it again to give it the keyboard (WASD move, arrows turn, Space fire, E use, Shift run, Esc menu). The toggles on the right drive data.controls, i.e. what a tag binding would do.", "style": { "fontSize": "13px" } },
-        "meta": { "name": "help" },
-        "position": { "x": 16, "y": 10, "width": 1060, "height": 40 }
+        "props": {
+          "text": "Can it run Doom? Click the game to start. Click it again to give it the keyboard (WASD move, arrows turn, Space fire, E use, Shift run, Esc menu). The toggles on the right drive data.controls, i.e. what a tag binding would do.",
+          "style": {
+            "fontSize": "13px"
+          }
+        },
+        "meta": {
+          "name": "help"
+        },
+        "position": {
+          "x": 16,
+          "y": 10,
+          "width": 1060,
+          "height": 40
+        }
       },
       {
         "type": "mustrysolutions.perspective.fun.doom",
         "version": 0,
         "props": {
-          "config": { "autoStart": false },
+          "config": {
+            "autoStart": false
+          },
           "data": {
             "controls": {
-              "forward": false, "backward": false, "strafeLeft": false, "strafeRight": false,
-              "turnLeft": false, "turnRight": false, "fire": false, "use": false, "run": false,
-              "menu": false, "confirm": false, "weapon": 0
+              "forward": false,
+              "backward": false,
+              "strafeLeft": false,
+              "strafeRight": false,
+              "turnLeft": false,
+              "turnRight": false,
+              "fire": false,
+              "use": false,
+              "run": false,
+              "menu": false,
+              "confirm": false,
+              "weapon": 0
             }
           },
-          "state": { "paused": false }
+          "state": {}
         },
         "custom": {},
-        "meta": { "name": "doom" },
-        "position": { "x": 16, "y": 56, "width": 800, "height": 528 }
+        "meta": {
+          "name": "doom"
+        },
+        "position": {
+          "x": 16,
+          "y": 56,
+          "width": 800,
+          "height": 528
+        },
+        "propConfig": {
+          "props.output.health": {
+            "binding": {
+              "type": "tag",
+              "config": {
+                "mode": "direct",
+                "tagPath": "[default]Doom/Health",
+                "fallbackDelay": 2.5,
+                "bidirectional": true
+              }
+            }
+          },
+          "props.output.armor": {
+            "binding": {
+              "type": "tag",
+              "config": {
+                "mode": "direct",
+                "tagPath": "[default]Doom/Armor",
+                "fallbackDelay": 2.5,
+                "bidirectional": true
+              }
+            }
+          },
+          "props.output.ammo": {
+            "binding": {
+              "type": "tag",
+              "config": {
+                "mode": "direct",
+                "tagPath": "[default]Doom/Ammo",
+                "fallbackDelay": 2.5,
+                "bidirectional": true
+              }
+            }
+          },
+          "props.output.kills": {
+            "binding": {
+              "type": "tag",
+              "config": {
+                "mode": "direct",
+                "tagPath": "[default]Doom/Kills",
+                "fallbackDelay": 2.5,
+                "bidirectional": true
+              }
+            }
+          },
+          "props.output.map": {
+            "binding": {
+              "type": "tag",
+              "config": {
+                "mode": "direct",
+                "tagPath": "[default]Doom/Map",
+                "fallbackDelay": 2.5,
+                "bidirectional": true
+              }
+            }
+          },
+          "props.output.dead": {
+            "binding": {
+              "type": "tag",
+              "config": {
+                "mode": "direct",
+                "tagPath": "[default]Doom/Dead",
+                "fallbackDelay": 2.5,
+                "bidirectional": true
+              }
+            }
+          },
+          "props.output.inLevel": {
+            "binding": {
+              "type": "tag",
+              "config": {
+                "mode": "direct",
+                "tagPath": "[default]Doom/InLevel",
+                "fallbackDelay": 2.5,
+                "bidirectional": true
+              }
+            }
+          },
+          "props.state.paused": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "!{[default]Doom/Line/Running}"
+              }
+            }
+          }
+        }
       },
       {
         "type": "ia.input.toggle-switch",
         "version": 0,
-        "props": { "selected": false },
-        "propConfig": {
-          "props.selected": { "binding": { "type": "property", "config": { "path": "../doom.props.data.controls.fire", "bidirectional": true } } }
+        "props": {
+          "selected": false
         },
-        "meta": { "name": "fire" },
-        "position": { "x": 840, "y": 60, "width": 60, "height": 28 }
-      },
-      { "type": "ia.display.label", "version": 0, "props": { "text": "fire (tag → Space)" }, "meta": { "name": "fireLabel" }, "position": { "x": 910, "y": 60, "width": 170, "height": 28 } },
-      {
-        "type": "ia.input.toggle-switch",
-        "version": 0,
-        "props": { "selected": false },
         "propConfig": {
-          "props.selected": { "binding": { "type": "property", "config": { "path": "../doom.props.data.controls.forward", "bidirectional": true } } }
+          "props.selected": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "../doom.props.data.controls.fire",
+                "bidirectional": true
+              }
+            }
+          }
         },
-        "meta": { "name": "forward" },
-        "position": { "x": 840, "y": 100, "width": 60, "height": 28 }
-      },
-      { "type": "ia.display.label", "version": 0, "props": { "text": "forward (W)" }, "meta": { "name": "forwardLabel" }, "position": { "x": 910, "y": 100, "width": 170, "height": 28 } },
-      {
-        "type": "ia.input.toggle-switch",
-        "version": 0,
-        "props": { "selected": false },
-        "propConfig": {
-          "props.selected": { "binding": { "type": "property", "config": { "path": "../doom.props.data.controls.turnLeft", "bidirectional": true } } }
+        "meta": {
+          "name": "fire"
         },
-        "meta": { "name": "turnLeft" },
-        "position": { "x": 840, "y": 140, "width": 60, "height": 28 }
+        "position": {
+          "x": 840,
+          "y": 60,
+          "width": 60,
+          "height": 28
+        }
       },
-      { "type": "ia.display.label", "version": 0, "props": { "text": "turn left (←)" }, "meta": { "name": "turnLeftLabel" }, "position": { "x": 910, "y": 140, "width": 170, "height": 28 } },
-      {
-        "type": "ia.input.toggle-switch",
-        "version": 0,
-        "props": { "selected": false },
-        "propConfig": {
-          "props.selected": { "binding": { "type": "property", "config": { "path": "../doom.props.data.controls.use", "bidirectional": true } } }
-        },
-        "meta": { "name": "use" },
-        "position": { "x": 840, "y": 180, "width": 60, "height": 28 }
-      },
-      { "type": "ia.display.label", "version": 0, "props": { "text": "use (E)" }, "meta": { "name": "useLabel" }, "position": { "x": 910, "y": 180, "width": 170, "height": 28 } },
-      {
-        "type": "ia.input.toggle-switch",
-        "version": 0,
-        "props": { "selected": false },
-        "propConfig": {
-          "props.selected": { "binding": { "type": "property", "config": { "path": "../doom.props.state.paused", "bidirectional": true } } }
-        },
-        "meta": { "name": "paused" },
-        "position": { "x": 840, "y": 220, "width": 60, "height": 28 }
-      },
-      { "type": "ia.display.label", "version": 0, "props": { "text": "state.paused" }, "meta": { "name": "pausedLabel" }, "position": { "x": 910, "y": 220, "width": 170, "height": 28 } },
-      {
-        "type": "ia.input.numeric-entry-field",
-        "version": 0,
-        "props": { "value": 0, "format": "0" },
-        "propConfig": {
-          "props.value": { "binding": { "type": "property", "config": { "path": "../doom.props.data.controls.weapon", "bidirectional": true } } }
-        },
-        "meta": { "name": "weapon" },
-        "position": { "x": 840, "y": 260, "width": 60, "height": 32 }
-      },
-      { "type": "ia.display.label", "version": 0, "props": { "text": "weapon slot (1-7)" }, "meta": { "name": "weaponLabel" }, "position": { "x": 910, "y": 262, "width": 170, "height": 28 } },
       {
         "type": "ia.display.label",
         "version": 0,
-        "props": { "text": "", "style": { "fontFamily": "monospace", "fontSize": "11px", "whiteSpace": "pre-wrap", "overflowWrap": "anywhere" } },
-        "propConfig": {
-          "props.text": { "binding": { "type": "expr", "config": { "expression": "\"output.state: \" + {../doom.props.output.state} + \"\\noutput.message: \" + {../doom.props.output.message}" } } }
+        "props": {
+          "text": "fire (tag \u2192 Space)"
         },
-        "meta": { "name": "outputs" },
-        "position": { "x": 840, "y": 310, "width": 240, "height": 120 }
+        "meta": {
+          "name": "fireLabel"
+        },
+        "position": {
+          "x": 910,
+          "y": 60,
+          "width": 170,
+          "height": 28
+        }
+      },
+      {
+        "type": "ia.input.toggle-switch",
+        "version": 0,
+        "props": {
+          "selected": false
+        },
+        "propConfig": {
+          "props.selected": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "../doom.props.data.controls.forward",
+                "bidirectional": true
+              }
+            }
+          }
+        },
+        "meta": {
+          "name": "forward"
+        },
+        "position": {
+          "x": 840,
+          "y": 100,
+          "width": 60,
+          "height": 28
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "forward (W)"
+        },
+        "meta": {
+          "name": "forwardLabel"
+        },
+        "position": {
+          "x": 910,
+          "y": 100,
+          "width": 170,
+          "height": 28
+        }
+      },
+      {
+        "type": "ia.input.toggle-switch",
+        "version": 0,
+        "props": {
+          "selected": false
+        },
+        "propConfig": {
+          "props.selected": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "../doom.props.data.controls.turnLeft",
+                "bidirectional": true
+              }
+            }
+          }
+        },
+        "meta": {
+          "name": "turnLeft"
+        },
+        "position": {
+          "x": 840,
+          "y": 140,
+          "width": 60,
+          "height": 28
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "turn left (\u2190)"
+        },
+        "meta": {
+          "name": "turnLeftLabel"
+        },
+        "position": {
+          "x": 910,
+          "y": 140,
+          "width": 170,
+          "height": 28
+        }
+      },
+      {
+        "type": "ia.input.toggle-switch",
+        "version": 0,
+        "props": {
+          "selected": false
+        },
+        "propConfig": {
+          "props.selected": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "../doom.props.data.controls.use",
+                "bidirectional": true
+              }
+            }
+          }
+        },
+        "meta": {
+          "name": "use"
+        },
+        "position": {
+          "x": 840,
+          "y": 180,
+          "width": 60,
+          "height": 28
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "use (E)"
+        },
+        "meta": {
+          "name": "useLabel"
+        },
+        "position": {
+          "x": 910,
+          "y": 180,
+          "width": 170,
+          "height": 28
+        }
+      },
+      {
+        "type": "ia.input.toggle-switch",
+        "version": 0,
+        "props": {
+          "selected": true
+        },
+        "propConfig": {
+          "props.selected": {
+            "binding": {
+              "type": "tag",
+              "config": {
+                "mode": "direct",
+                "tagPath": "[default]Doom/Line/Running",
+                "fallbackDelay": 2.5,
+                "bidirectional": true
+              }
+            }
+          }
+        },
+        "meta": {
+          "name": "lineRunning"
+        },
+        "position": {
+          "x": 840,
+          "y": 220,
+          "width": 60,
+          "height": 28
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "line running (tag \u2192 paused)"
+        },
+        "meta": {
+          "name": "lineRunningLabel"
+        },
+        "position": {
+          "x": 910,
+          "y": 220,
+          "width": 170,
+          "height": 28
+        }
+      },
+      {
+        "type": "ia.input.numeric-entry-field",
+        "version": 0,
+        "props": {
+          "value": 0,
+          "format": "0"
+        },
+        "propConfig": {
+          "props.value": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "../doom.props.data.controls.weapon",
+                "bidirectional": true
+              }
+            }
+          }
+        },
+        "meta": {
+          "name": "weapon"
+        },
+        "position": {
+          "x": 840,
+          "y": 260,
+          "width": 60,
+          "height": 32
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "weapon slot (1-7)"
+        },
+        "meta": {
+          "name": "weaponLabel"
+        },
+        "position": {
+          "x": 910,
+          "y": 262,
+          "width": 170,
+          "height": 28
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "fontFamily": "monospace",
+            "fontSize": "11px",
+            "whiteSpace": "pre-wrap",
+            "overflowWrap": "anywhere"
+          }
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "\"output.state: \" + {../doom.props.output.state} + \"\\noutput.message: \" + {../doom.props.output.message} + \"\\noutput.inLevel: \" + {../doom.props.output.inLevel} + \"\\noutput.health: \" + {../doom.props.output.health} + \"\\noutput.armor: \" + {../doom.props.output.armor} + \"\\noutput.ammo: \" + {../doom.props.output.ammo} + \"\\noutput.kills: \" + {../doom.props.output.kills} + \"/\" + {../doom.props.output.totalKills} + \"\\noutput.map: E\" + {../doom.props.output.episode} + \"M\" + {../doom.props.output.map}"
+              }
+            }
+          }
+        },
+        "meta": {
+          "name": "outputs"
+        },
+        "position": {
+          "x": 840,
+          "y": 310,
+          "width": 240,
+          "height": 150
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "",
+          "style": {
+            "fontFamily": "monospace",
+            "fontSize": "11px",
+            "whiteSpace": "pre-wrap"
+          }
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "\"tag Doom/Health: \" + {[default]Doom/Health} + \"\\ntag Doom/Kills: \" + {[default]Doom/Kills} + \"\\nline running: \" + {[default]Doom/Line/Running}"
+              }
+            }
+          }
+        },
+        "meta": {
+          "name": "tagReadback"
+        },
+        "position": {
+          "x": 840,
+          "y": 470,
+          "width": 240,
+          "height": 60
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "Marine vitals from the TimescaleDB historian (last 5 minutes): output.health / armor / ammo \u2192 [default]Doom/* tags \u2192 Doom Historian. Fire a few rounds and watch ammo trend down.",
+          "style": {
+            "fontSize": "12px"
+          }
+        },
+        "meta": {
+          "name": "chartLabel"
+        },
+        "position": {
+          "x": 16,
+          "y": 596,
+          "width": 1064,
+          "height": 22
+        }
+      },
+      {
+        "type": "ia.chart.timeseries",
+        "version": 0,
+        "props": {
+          "series": [
+            {
+              "name": "Health",
+              "data": []
+            },
+            {
+              "name": "Armor",
+              "data": []
+            },
+            {
+              "name": "Ammo",
+              "data": []
+            }
+          ],
+          "plots": [
+            {
+              "trends": [
+                {
+                  "series": "Health"
+                },
+                {
+                  "series": "Armor"
+                },
+                {
+                  "series": "Ammo"
+                }
+              ],
+              "axes": []
+            }
+          ]
+        },
+        "propConfig": {
+          "props.series[0].data": {
+            "binding": {
+              "type": "tag-history",
+              "config": {
+                "tags": [
+                  {
+                    "path": "[default]Doom/Health",
+                    "aggregate": "default",
+                    "alias": "Health"
+                  }
+                ],
+                "returnFormat": "Wide",
+                "aggregateMode": "default",
+                "range": {
+                  "type": "realtime",
+                  "mostRecent": 5,
+                  "mostRecentUnits": "MINUTE"
+                },
+                "polling": {
+                  "enabled": true,
+                  "rate": 2
+                },
+                "ignoreBadQuality": false,
+                "preventInterpolation": false,
+                "valueFormat": "DATASET"
+              }
+            }
+          },
+          "props.series[1].data": {
+            "binding": {
+              "type": "tag-history",
+              "config": {
+                "tags": [
+                  {
+                    "path": "[default]Doom/Armor",
+                    "aggregate": "default",
+                    "alias": "Armor"
+                  }
+                ],
+                "returnFormat": "Wide",
+                "aggregateMode": "default",
+                "range": {
+                  "type": "realtime",
+                  "mostRecent": 5,
+                  "mostRecentUnits": "MINUTE"
+                },
+                "polling": {
+                  "enabled": true,
+                  "rate": 2
+                },
+                "ignoreBadQuality": false,
+                "preventInterpolation": false,
+                "valueFormat": "DATASET"
+              }
+            }
+          },
+          "props.series[2].data": {
+            "binding": {
+              "type": "tag-history",
+              "config": {
+                "tags": [
+                  {
+                    "path": "[default]Doom/Ammo",
+                    "aggregate": "default",
+                    "alias": "Ammo"
+                  }
+                ],
+                "returnFormat": "Wide",
+                "aggregateMode": "default",
+                "range": {
+                  "type": "realtime",
+                  "mostRecent": 5,
+                  "mostRecentUnits": "MINUTE"
+                },
+                "polling": {
+                  "enabled": true,
+                  "rate": 2
+                },
+                "ignoreBadQuality": false,
+                "preventInterpolation": false,
+                "valueFormat": "DATASET"
+              }
+            }
+          }
+        },
+        "meta": {
+          "name": "vitalsChart"
+        },
+        "position": {
+          "x": 16,
+          "y": 622,
+          "width": 1064,
+          "height": 260
+        }
       }
-    ]
+    ],
+    "events": {
+      "system": {
+        "onStartup": {
+          "type": "script",
+          "scope": "G",
+          "config": {
+            "script": "\t# Gateway startup script of the verify project: creates the Doom telemetry\n\t# tags (historized by the \"Doom Historian\" TimescaleDB profile that\n\t# ops/fresh.sh seeds) and a fake production-line tag with an alarm, so the\n\t# view can show \"line stops, Doom pauses\". Idempotent: collision policy \"m\"\n\t# merges into existing tags.\n\n\tHISTORIAN = \"Doom Historian\"\n\n\n\tdef historized(name, data_type, deadband_style=\"Discrete\"):\n\t    return {\n\t        \"name\": name,\n\t        \"tagType\": \"AtomicTag\",\n\t        \"valueSource\": \"memory\",\n\t        \"dataType\": data_type,\n\t        \"value\": 0,\n\t        \"historyEnabled\": True,\n\t        \"historyProvider\": HISTORIAN,\n\t        \"historicalDeadbandStyle\": deadband_style,\n\t        \"sampleMode\": \"OnChange\",\n\t        \"historyMaxAgeUnits\": \"SEC\",\n\t        \"historyMaxAge\": 60,\n\t    }\n\n\n\ttags = [\n\t    {\n\t        \"name\": \"Doom\",\n\t        \"tagType\": \"Folder\",\n\t        \"tags\": [\n\t            historized(\"Health\", \"Int4\"),\n\t            historized(\"Armor\", \"Int4\"),\n\t            historized(\"Ammo\", \"Int4\"),\n\t            historized(\"Kills\", \"Int4\"),\n\t            historized(\"Map\", \"Int4\"),\n\t            historized(\"Dead\", \"Boolean\"),\n\t            historized(\"InLevel\", \"Boolean\"),\n\t            {\n\t                \"name\": \"Line\",\n\t                \"tagType\": \"Folder\",\n\t                \"tags\": [\n\t                    {\n\t                        \"name\": \"Running\",\n\t                        \"tagType\": \"AtomicTag\",\n\t                        \"valueSource\": \"memory\",\n\t                        \"dataType\": \"Boolean\",\n\t                        \"value\": True,\n\t                        \"documentation\": \"Pretend production line. False raises the 'Line stopped' alarm; the Doom view pauses the game while it is active.\",\n\t                        \"alarms\": [\n\t                            {\n\t                                \"name\": \"Line stopped\",\n\t                                \"mode\": \"Equality\",\n\t                                \"setpointA\": 0,\n\t                                \"priority\": \"High\",\n\t                                \"label\": \"Line stopped - the marine can wait\",\n\t                            }\n\t                        ],\n\t                    }\n\t                ],\n\t            },\n\t        ],\n\t    }\n\t]\n\n\tresults = system.tag.configure(\"[default]\", tags, \"m\")\n\tsystem.util.getLogger(\"MustryDoom.verify\").info(\"Doom tags configured: %s\" % \",\".join(str(r) for r in results))"
+          }
+        }
+      }
+    }
   }
 }

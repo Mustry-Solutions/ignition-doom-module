@@ -38,6 +38,29 @@ side, Java scopes for registration). Read README.md first.
 `doomLogic.CONTROL_KEYS` (the browser keys the tag controls synthesise) and
 `engine/README.md` (the table). Change one, change all three.
 
+## Dev gateway config seeding
+
+`ops/gateway-config/` holds file-based 8.3 gateway config (the "Doom Historian"
+TimescaleDB profile). `ops/fresh.sh` copies it into the **external** collection
+(`data/config/resources/external/<module>/<type>/<name>/`) only AFTER the
+gateway's first clean RUNNING. Lessons paid for: pre-creating the config tree
+FAULTS the gateway ("Unable to create 'core' resource collection"); files
+dropped into the gateway-owned `core` collection are swept away; `docker cp`
+renames a folder when the destination is missing; and every resource.json
+needs an `attributes.uuid` or it is "not loaded". The historian module itself
+is staged by `ops/stage-historian.sh` (sibling repo, dev-signed); acceptance in
+`accept_staged_module` covers every `.modl` in `ops/modules`. `wrapper.log`
+inside the container is a symlink to stdout: use `docker logs`, not `grep`.
+
+## Verify project tags
+
+The `[default]Doom/*` memory tags (historized) and `Doom/Line/Running` (with
+its alarm) are created by `system.tag.configure` from TWO idempotent places:
+the DoomDemo view root's `events.system.onStartup` (known to work: the tags
+appear when the session opens) and `ignition/event-scripts/startup.py` (the
+8.3 gateway-event-script resource format is unverified; keep both until it is
+confirmed in the gateway log).
+
 ## Build & verify
 
 ```bash

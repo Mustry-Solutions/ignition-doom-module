@@ -38,6 +38,11 @@ flowchart TB
         CANVAS["Canvas id=canvas<br/>SDL draws frames"]
     end
 
+    subgraph HIST[Ignition gateway · tags and history]
+        TAGSOUT["[default]Doom/* memory tags<br/>bidirectional bindings on output.*"]
+        TSDB["TimescaleDB historian<br/>Mustry TimescaleDB Historian module"]
+    end
+
     RES -->|bundle + engine over HTTP| COMP
     TAGS -->|prop changes| COMP
     COMP -->|"callMain(args)"| ENG
@@ -46,7 +51,10 @@ flowchart TB
     CANVAS -->|SDL keyboard target| ENG
     ENG -->|frames| CANVAS
     ENG -->|stdout lines| COMP
+    ENG -->|"Mustry_Stat(id), polled"| COMP
     COMP --> OUT
+    OUT -->|health, armor, ammo, kills...| TAGSOUT
+    TAGSOUT -->|tag history| TSDB
 ```
 
 The gateway does almost nothing: the gateway hook mounts a static folder and
@@ -70,7 +78,13 @@ page.
    `KeyboardEvent` for Space at the canvas. SDL cannot tell it from a real key.
    Releasing the tag sends the key-up; `weapon` presses a digit; `state.paused`
    presses Doom's own Pause key.
-4. **Information flows back through stdout.** The engine prints lines, some
+4. **Telemetry comes out of the engine's memory.** A small C shim compiled
+   into the engine (`Mustry_Stat(id)`, see `engine/patches`) reads the console
+   player's health, armor, ammo, weapon, kill/item/secret counts, map and
+   alive/dead state. The component polls it a few times a second and writes
+   changed values to `output.*`. Bind those to memory tags and your historian
+   records the marine like any process value.
+5. **Information flows back through stdout.** The engine prints lines, some
    with a `doom: <code>, <text>` prefix. The component mirrors the last line
    into `output.message`, tracks the phase in `output.state`, fires
    `onGameEvent` for coded lines, and restores the tab title whenever SDL
@@ -95,6 +109,44 @@ unmount the component calls the engine's `I_Quit` so the main loop stops.
 | `output.state` | | `idle`, `loading`, `running`, `paused`, `exited`, `error`, `busy` (another Doom already owns the page). |
 | `output.message` | | The last line the engine printed. |
 | event `onGameEvent` | `{ code, message }` | Engine lifecycle messages; `10` is "game started". |
+
+### Live telemetry
+
+While the game runs the component polls the engine a few times a second
+(`config.statsIntervalMs`) and mirrors the marine into read-only outputs:
+`output.health`, `armor`, `ammo`, `weapon`, `kills`, `items`, `secrets`, their
+`total*` counterparts, `episode`, `map`, `levelSeconds`, `inLevel` and `dead`.
+They are ordinary props, so they bind like anything else.
+
+### Recipes
+
+**Historize the marine.** Bind an output to a memory tag *bidirectionally*
+(the component writes the prop, the binding pushes it to the tag), enable
+history on the tag, and the marine's health is in your historian next to the
+pump pressures. The verify project does exactly this into the Mustry
+TimescaleDB Historian:
+
+```json
+"props.output.health": { "binding": { "type": "tag", "config": {
+  "mode": "direct", "tagPath": "[default]Doom/Health", "bidirectional": true } } }
+```
+
+**Production stops, Doom stops.** Bind `state.paused` to an expression on a
+line-status tag (or on an alarm's active count) and the game freezes with
+Doom's own pause banner until the line runs again:
+
+```
+!{[default]Doom/Line/Running}
+```
+
+**A PLC input fires the shotgun.** Bind `data.controls.fire` to any boolean
+tag. True holds the key down, false releases it. The same works for movement,
+`use` (doors), `run` and `menu`; `data.controls.weapon` selects a slot on
+change.
+
+**Nightmare when the line runs hot.** `config.extraArgs` takes raw engine
+arguments; a binding that yields `-fast -respawn` above a rate setpoint is
+left as an exercise.
 
 Key bindings (WASD move, arrows turn, Space fire, E use, Shift run, Esc menu)
 live in the shipped `default.cfg` and are mirrored one-to-one by the tag
@@ -137,6 +189,14 @@ turn-left tag control and asserts the frame actually changed, and flips
 The gateway comes up at http://localhost:9188 (admin / password) with a
 `verify` project mounted from `ops/verify/project`. Open
 http://localhost:9188/data/perspective/client/verify and click the game.
+
+The compose file also starts TimescaleDB, and `ops/fresh.sh` seeds a
+"Doom Historian" profile for the [Mustry TimescaleDB Historian](https://github.com/Mustry-Solutions/timescaledb-historian-module)
+module. Stage that module once with `ops/stage-historian.sh` (it builds the
+sibling repo dev-signed); the verify project's startup script then creates
+historized `[default]Doom/*` tags and the view trends the marine's health.
+Without the historian module staged, everything else still works; the tags
+just have no history.
 
 ## Licensing
 

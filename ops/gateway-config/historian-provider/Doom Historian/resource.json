@@ -1,0 +1,14 @@
+{
+  "scope": "A",
+  "description": "Dev-only TimescaleDB historian for the Doom telemetry tags (seeded by ops/fresh.sh).",
+  "version": 1,
+  "restricted": false,
+  "overridable": true,
+  "files": [
+    "config.json"
+  ],
+  "attributes": {
+    "uuid": "6d00ae1e-d00d-4e1e-9a5b-0d00e1e2e3e4",
+    "enabled": true
+  }
+}

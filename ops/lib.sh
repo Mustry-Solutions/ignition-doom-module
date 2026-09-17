@@ -112,8 +112,9 @@ build_and_stage_module() {
   fi
 
   mkdir -p "${MODULES_DIR}"
-  # Clear old copies so only the current build is staged.
-  rm -f "${MODULES_DIR}"/*.modl 2>/dev/null || true
+  # Replace only this module's previous build; other staged modules (the
+  # TimescaleDB historian from ops/stage-historian.sh) stay.
+  rm -f "${MODULES_DIR}"/Mustry-Doom*.modl 2>/dev/null || true
   cp "${modl}" "${MODULES_DIR}/"
   ok "Staged $(basename "${modl}") -> ops/modules/"
 }
@@ -177,44 +178,72 @@ wait_for_modules_registry() {
 # entry into the gateway-written file (never replace it — it also carries every
 # built-in module). Requires python3.
 accept_staged_module() {
-  local modl fingerprint tmp
-  modl="$(find "${MODULES_DIR}" -maxdepth 1 -name '*.modl' | head -1)"
-  [[ -n "${modl}" ]] || { err "No staged .modl in ops/modules."; return 1; }
+  local fingerprint tmp
   fingerprint="$(openssl x509 -in "${CERT_FILE}" -noout -fingerprint -sha1 \
                    | cut -d= -f2 | tr -d ':' | tr '[:upper:]' '[:lower:]')"
   [[ -n "${fingerprint}" ]] || { err "Could not fingerprint ${CERT_FILE}."; return 1; }
+  ls "${MODULES_DIR}"/*.modl >/dev/null 2>&1 || { err "No staged .modl in ops/modules."; return 1; }
 
-  # The module ships an EULA (license.html inside the .modl); acceptance
-  # persists as the CRC32 of that file (matches the platform's
-  # ModuleUtil.calculateLicenseCrc — trick ported back from the observability
-  # module's ops). Without it every fresh boot parks in commissioning.
-  license_crc="$(python3 -c "import zipfile,zlib,sys; print(zlib.crc32(zipfile.ZipFile(sys.argv[1]).read('license.html')))" "${modl}")"
-  info "Pre-accepting the module certificate (fingerprint ${fingerprint}) + license (crc ${license_crc})..."
+  info "Pre-accepting every staged module (cert fingerprint ${fingerprint})..."
   "${COMPOSE[@]}" stop gateway
   tmp="$(mktemp -d)"
   docker cp "${CONTAINER_NAME}:/usr/local/bin/ignition/data/modules.json" "${tmp}/modules.json"
-  LICENSE_CRC="${license_crc}" MODULE_ID="${MODULE_ID}" MODL_NAME="$(basename "${modl}")" FINGERPRINT="${fingerprint}" \
-  python3 - "${tmp}/modules.json" <<'EOF'
-import json, os, sys
+  # Each staged .modl: module id from its module.xml, EULA acceptance as the
+  # CRC32 of its license.html (matches ModuleUtil.calculateLicenseCrc).
+  FINGERPRINT="${fingerprint}" MODULES_DIR="${MODULES_DIR}" \
+  python3 - "${tmp}/modules.json" <<'PYEOF'
+import glob, json, os, re, sys, zipfile, zlib
 path = sys.argv[1]
 with open(path) as f:
     modules = json.load(f)
-modules[os.environ["MODULE_ID"]] = {
-    "filename": f"/external-modules/{os.environ['MODL_NAME']}",
-    "onStartup": "enabled",
-    "certFingerprint": os.environ["FINGERPRINT"],
-    "licenseAgreementHash": int(os.environ["LICENSE_CRC"]),
-}
+for modl in sorted(glob.glob(os.path.join(os.environ["MODULES_DIR"], "*.modl"))):
+    z = zipfile.ZipFile(modl)
+    module_id = re.search(r"<id>([^<]+)</id>", z.read("module.xml").decode()).group(1).strip()
+    entry = {
+        "filename": f"/external-modules/{os.path.basename(modl)}",
+        "onStartup": "enabled",
+        "certFingerprint": os.environ["FINGERPRINT"],
+    }
+    if "license.html" in z.namelist():
+        entry["licenseAgreementHash"] = zlib.crc32(z.read("license.html"))
+    modules[module_id] = entry
+    print(f"  accepted {module_id} <- {os.path.basename(modl)}")
 with open(path, "w") as f:
     json.dump(modules, f, indent=2)
-EOF
+PYEOF
   docker cp "${tmp}/modules.json" "${CONTAINER_NAME}:/usr/local/bin/ignition/data/modules.json"
   rm -rf "${tmp}"
-  # docker cp writes the file as root; the gateway must be able to rewrite its
-  # own registry (it spams AccessDeniedException otherwise). Chown via a helper
-  # container against the same volume — the gateway itself is stopped here.
   "${COMPOSE[@]}" run --rm -u root --entrypoint sh gateway \
       -c 'chown ignition:ignition /usr/local/bin/ignition/data/modules.json'
   "${COMPOSE[@]}" start gateway
   ok "Module acceptance seeded; gateway restarting."
+}
+
+# --- file-based gateway config ----------------------------------------------
+# Ignition 8.3 keeps gateway config as files under data/config/resources/
+# <collection>/<module>/<type>/<name>/. The "core" collection is owned by the
+# gateway (files dropped there are swept away); "external" is the collection
+# for externally managed config, which is what a committed dev profile is. Copy
+# the resources from ops/gateway-config (the "Doom Historian" TimescaleDB
+# profile) into external. Call it with the gateway RUNNING after its first
+# clean start (pre-creating the tree FAULTS the gateway). Stops, seeds, restarts.
+seed_gateway_config() {
+  local src="${OPS_DIR}/gateway-config"
+  local dst="/usr/local/bin/ignition/data/config/resources/external/com.inductiveautomation.historian"
+  [[ -d "${src}/historian-provider" ]] || return 0
+  if ! docker exec "${CONTAINER_NAME}" test -d /usr/local/bin/ignition/data/config/resources/core; then
+    warn "Config tree not initialised (gateway not running or never started clean); skipping seeding."
+    return 0
+  fi
+  info "Seeding gateway config (historian profile)..."
+  "${COMPOSE[@]}" stop gateway
+  # docker cp renames a directory when the destination is missing, so create
+  # the exact target first and copy the folder's contents into it.
+  "${COMPOSE[@]}" run --rm -u root --entrypoint sh gateway \
+      -c "mkdir -p '${dst}/historian-provider' && chown -R ignition:ignition '${dst}'"
+  docker cp "${src}/historian-provider/." "${CONTAINER_NAME}:${dst}/historian-provider/"
+  "${COMPOSE[@]}" run --rm -u root --entrypoint sh gateway \
+      -c "chown -R ignition:ignition '${dst}'"
+  "${COMPOSE[@]}" start gateway
+  ok "Gateway config seeded; gateway restarting."
 }

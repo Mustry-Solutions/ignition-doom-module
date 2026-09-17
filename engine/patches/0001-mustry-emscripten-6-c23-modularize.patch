@@ -1,5 +1,5 @@
 diff --git a/configure.ac b/configure.ac
-index ae1320b..e2cf1dc 100644
+index ae1320b..f671b04 100644
 --- a/configure.ac
 +++ b/configure.ac
 @@ -115,7 +115,7 @@ AS_IF([test "x$with_libpng" != xno], [
@@ -7,7 +7,7 @@ index ae1320b..e2cf1dc 100644
  # TODO: We currently link everything against libraries that don't need it.
  # Use the specific library CFLAGS/LIBS variables instead of setting them here.
 -EMFLAGS="-gsource-map -s INVOKE_RUN=1 -s USE_SDL=2 -s USE_SDL_MIXER=2 -s LEGACY_GL_EMULATION=0 -s USE_SDL_NET=2 -s ASSERTIONS=0 -s WASM=1 -s ALLOW_MEMORY_GROWTH=0 -s FORCE_FILESYSTEM=1 -s EXTRA_EXPORTED_RUNTIME_METHODS=[['FS','ccall']] -s SAFE_HEAP=1 -s EXIT_RUNTIME=1 -s STACK_OVERFLOW_CHECK=1 -s PROXY_POSIX_SOCKETS=0 -s USE_PTHREADS=0 -s PROXY_TO_PTHREAD=0 -s TOTAL_MEMORY=64MB -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s ASYNCIFY -O3 --source-map-base /"
-+EMFLAGS="-s INVOKE_RUN=1 -s USE_SDL=2 -s USE_SDL_MIXER=2 -s LEGACY_GL_EMULATION=0 -s USE_SDL_NET=2 -s ASSERTIONS=0 -s WASM=1 -s ALLOW_MEMORY_GROWTH=0 -s FORCE_FILESYSTEM=1 -s EXPORTED_RUNTIME_METHODS=[['FS','ccall','callMain','ENV']] -s EXPORTED_FUNCTIONS=[['_main','_I_Quit']] -s MODULARIZE=1 -s EXPORT_NAME=createDoomModule -s ENVIRONMENT=web -s EXIT_RUNTIME=1 -s PROXY_POSIX_SOCKETS=0 -s USE_PTHREADS=0 -s PROXY_TO_PTHREAD=0 -s TOTAL_MEMORY=64MB -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s ASYNCIFY -O3 -g0"
++EMFLAGS="-s INVOKE_RUN=1 -s USE_SDL=2 -s USE_SDL_MIXER=2 -s LEGACY_GL_EMULATION=0 -s USE_SDL_NET=2 -s ASSERTIONS=0 -s WASM=1 -s ALLOW_MEMORY_GROWTH=0 -s FORCE_FILESYSTEM=1 -s EXPORTED_RUNTIME_METHODS=[['FS','ccall','callMain','ENV']] -s EXPORTED_FUNCTIONS=[['_main','_I_Quit','_Mustry_Stat']] -s MODULARIZE=1 -s EXPORT_NAME=createDoomModule -s ENVIRONMENT=web -s EXIT_RUNTIME=1 -s PROXY_POSIX_SOCKETS=0 -s USE_PTHREADS=0 -s PROXY_TO_PTHREAD=0 -s TOTAL_MEMORY=64MB -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s ASYNCIFY -O3 -g0"
  
  CFLAGS="$CFLAGS $SDL_CFLAGS ${SAMPLERATE_CFLAGS:-} ${PNG_CFLAGS:-} $EMFLAGS"
  LDFLAGS="$LDFLAGS $SDL_LIBS ${SAMPLERATE_LIBS:-} ${PNG_LIBS:-} $EMFLAGS -lwebsocket.js"
@@ -45,6 +45,108 @@ index 6cd2c35..965a64e 100755
 +ac_cv_exeext=".js" emconfigure ./configure --host=none-none-none
  
  emmake make
+diff --git a/src/doom/Makefile.am b/src/doom/Makefile.am
+index 89ca2b4..94378c8 100644
+--- a/src/doom/Makefile.am
++++ b/src/doom/Makefile.am
+@@ -35,6 +35,7 @@ hu_stuff.c         hu_stuff.h   \
+ info.c             info.h       \
+ m_menu.c           m_menu.h     \
+ m_random.c         m_random.h   \
++mustry_stats.c                  \
+ p_ceilng.c                      \
+ p_doors.c                       \
+ p_enemy.c                       \
+diff --git a/src/doom/mustry_stats.c b/src/doom/mustry_stats.c
+new file mode 100644
+index 0000000..a465122
+--- /dev/null
++++ b/src/doom/mustry_stats.c
+@@ -0,0 +1,84 @@
++//
++// Mustry Doom: read-only player telemetry for the host page.
++//
++// Exported to JavaScript (see EXPORTED_FUNCTIONS in configure.ac) so the
++// Perspective component can poll the marine's state and publish it as
++// component outputs, which Ignition can then bind to tags and historize.
++// Everything here is a plain read of engine globals; nothing is mutated.
++//
++
++#include "doomstat.h"
++#include "d_player.h"
++#include "d_items.h"
++#include "p_local.h"
++
++enum
++{
++    MSTAT_IN_LEVEL = 0,   // 1 while a map is being played
++    MSTAT_HEALTH = 1,
++    MSTAT_ARMOR = 2,
++    MSTAT_AMMO = 3,       // ammo for the ready weapon, -1 when it needs none
++    MSTAT_WEAPON = 4,     // weapontype_t of the ready weapon (0 = fist)
++    MSTAT_KILLS = 5,
++    MSTAT_ITEMS = 6,
++    MSTAT_SECRETS = 7,
++    MSTAT_TOTAL_KILLS = 8,
++    MSTAT_TOTAL_ITEMS = 9,
++    MSTAT_TOTAL_SECRETS = 10,
++    MSTAT_EPISODE = 11,
++    MSTAT_MAP = 12,
++    MSTAT_LEVEL_SECONDS = 13,
++    MSTAT_DEAD = 14,      // 1 while the player is dead
++    MSTAT_PAUSED = 15
++};
++
++int Mustry_Stat(int id)
++{
++    player_t *p;
++    int in_level;
++
++    in_level = (gamestate == GS_LEVEL) ? 1 : 0;
++    p = &players[consoleplayer];
++
++    switch (id)
++    {
++        case MSTAT_IN_LEVEL:
++            return in_level;
++        case MSTAT_HEALTH:
++            return in_level ? p->health : 0;
++        case MSTAT_ARMOR:
++            return in_level ? p->armorpoints : 0;
++        case MSTAT_AMMO:
++            if (!in_level)
++                return 0;
++            if (weaponinfo[p->readyweapon].ammo == am_noammo)
++                return -1;
++            return p->ammo[weaponinfo[p->readyweapon].ammo];
++        case MSTAT_WEAPON:
++            return in_level ? (int) p->readyweapon : 0;
++        case MSTAT_KILLS:
++            return in_level ? p->killcount : 0;
++        case MSTAT_ITEMS:
++            return in_level ? p->itemcount : 0;
++        case MSTAT_SECRETS:
++            return in_level ? p->secretcount : 0;
++        case MSTAT_TOTAL_KILLS:
++            return in_level ? totalkills : 0;
++        case MSTAT_TOTAL_ITEMS:
++            return in_level ? totalitems : 0;
++        case MSTAT_TOTAL_SECRETS:
++            return in_level ? totalsecret : 0;
++        case MSTAT_EPISODE:
++            return gameepisode;
++        case MSTAT_MAP:
++            return gamemap;
++        case MSTAT_LEVEL_SECONDS:
++            return in_level ? leveltime / TICRATE : 0;
++        case MSTAT_DEAD:
++            return (in_level && p->playerstate == PST_DEAD) ? 1 : 0;
++        case MSTAT_PAUSED:
++            return paused ? 1 : 0;
++        default:
++            return 0;
++    }
++}
 diff --git a/src/doomtype.h b/src/doomtype.h
 index 9947a07..2f6f20f 100644
 --- a/src/doomtype.h

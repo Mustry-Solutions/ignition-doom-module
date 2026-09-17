@@ -3,6 +3,7 @@
 
 export interface DoomConfig {
     autoStart: boolean;
+    statsIntervalMs: number;
     sound: boolean;
     music: boolean;
     skill: number;
@@ -188,3 +189,42 @@ export function isFatalLine(line: string): boolean {
 export type Phase = 'idle' | 'loading' | 'running' | 'paused' | 'exited' | 'error' | 'busy';
 
 export const DEFAULT_PLAY_LABEL = 'Click to play';
+
+// --- live telemetry ---------------------------------------------------------
+// Mirrors the MSTAT_* ids in the engine patch (src/doom/mustry_stats.c).
+
+export const STAT_IDS = {
+    inLevel: 0, health: 1, armor: 2, ammo: 3, weapon: 4, kills: 5, items: 6, secrets: 7,
+    totalKills: 8, totalItems: 9, totalSecrets: 10, episode: 11, map: 12, levelSeconds: 13, dead: 14
+} as const;
+export type StatKey = keyof typeof STAT_IDS;
+export const STAT_KEYS = Object.keys(STAT_IDS) as StatKey[];
+
+export type DoomStats = Record<StatKey, number>;
+
+export const ZERO_STATS: DoomStats = STAT_KEYS.reduce((acc, k) => {
+    acc[k] = 0;
+    return acc;
+}, {} as DoomStats);
+
+/** Read every stat through a raw reader (the engine's Mustry_Stat export). */
+export function readStats(read: (id: number) => number): DoomStats {
+    const out = {} as DoomStats;
+    for (const k of STAT_KEYS) {
+        const v = read(STAT_IDS[k]);
+        out[k] = Number.isFinite(v) ? v : 0;
+    }
+    return out;
+}
+
+/** The output writes needed to go from prev to next (only changed keys). */
+export function statWrites(prev: DoomStats | null, next: DoomStats): Array<[string, number | boolean]> {
+    const writes: Array<[string, number | boolean]> = [];
+    for (const k of STAT_KEYS) {
+        if (!prev || prev[k] !== next[k]) {
+            const v = next[k];
+            writes.push([`output.${k}`, k === 'inLevel' || k === 'dead' ? v !== 0 : v]);
+        }
+    }
+    return writes;
+}

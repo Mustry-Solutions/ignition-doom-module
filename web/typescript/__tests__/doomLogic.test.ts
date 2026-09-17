@@ -1,10 +1,10 @@
 import {
-    buildArgs, diffControls, EMPTY_CONTROLS, engineSize, heldKeys, isFatalLine, parseEngineLine, splitArgs, weaponKey
+    buildArgs, diffControls, EMPTY_CONTROLS, engineSize, heldKeys, isFatalLine, parseEngineLine, readStats, splitArgs, STAT_IDS, statWrites, weaponKey, ZERO_STATS
 } from '../components/doom/doomLogic';
 import { mapDoomProps, PropReader } from '../components/doom/doomProps';
 
 const baseConfig = {
-    autoStart: false, sound: true, music: false, skill: 3, warp: true, episode: 1, map: 1,
+    autoStart: false, statsIntervalMs: 250, sound: true, music: false, skill: 3, warp: true, episode: 1, map: 1,
     keyboard: true, mouse: false, pixelated: true, showHud: true, playLabel: '', extraArgs: ''
 };
 
@@ -109,5 +109,26 @@ describe('mapDoomProps', () => {
         expect(p.controls.fire).toBe(true);
         expect(p.controls.weapon).toBe(2);
         expect(p.paused).toBe(true);
+    });
+});
+
+describe('telemetry', () => {
+    it('reads every stat through the engine reader by id', () => {
+        const stats = readStats((id) => id * 10);
+        expect(stats.health).toBe(STAT_IDS.health * 10);
+        expect(stats.dead).toBe(STAT_IDS.dead * 10);
+        expect(Object.keys(stats).sort()).toEqual(Object.keys(STAT_IDS).sort());
+    });
+    it('coerces non-finite readings to 0', () => {
+        expect(readStats(() => NaN).health).toBe(0);
+    });
+    it('writes everything on the first publish and only changes afterwards, booleans for flags', () => {
+        const first = statWrites(null, ZERO_STATS);
+        expect(first).toHaveLength(Object.keys(STAT_IDS).length);
+        expect(first).toContainEqual(['output.inLevel', false]);
+        expect(first).toContainEqual(['output.health', 0]);
+        const next = { ...ZERO_STATS, inLevel: 1, health: 87, dead: 0 };
+        expect(statWrites(ZERO_STATS, next)).toEqual([['output.inLevel', true], ['output.health', 87]]);
+        expect(statWrites(next, next)).toEqual([]);
     });
 });

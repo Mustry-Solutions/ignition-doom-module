@@ -8,8 +8,8 @@ import {
     Size2d
 } from '@inductiveautomation/perspective-client';
 import {
-    buildArgs, CODE_ERROR, CODE_GAME_STARTED, DEFAULT_PLAY_LABEL, diffControls, DoomControls, engineSize, heldKeys,
-    isFatalLine, parseEngineLine, PAUSE_KEY, Phase, PixelSize
+    buildArgs, clampInt, CODE_ERROR, CODE_GAME_STARTED, DEFAULT_PLAY_LABEL, diffControls, DoomControls, DoomStats, engineSize,
+    heldKeys, isFatalLine, parseEngineLine, PAUSE_KEY, Phase, PixelSize, readStats, statWrites, ZERO_STATS
 } from './doomLogic';
 import {
     CANVAS_ID, claimEngine, dispatchKey, DoomModule, ENGINE_PATH, KEYBOARD_ELEMENT, loadEngine, pressKey, releaseEngine
@@ -42,6 +42,8 @@ export class Doom extends Component<ComponentProps<DoomProps>, DoomState> {
     private appliedControls: DoomControls | null = null;
     private titleObserver: MutationObserver | null = null;
     private pageTitle = '';
+    private statsTimer: number | null = null;
+    private lastStats: DoomStats | null = null;
 
     constructor(props: ComponentProps<DoomProps>) {
         super(props);
@@ -70,7 +72,52 @@ export class Doom extends Component<ComponentProps<DoomProps>, DoomState> {
 
     componentWillUnmount(): void {
         this.unwatchFrame();
+        this.stopStats();
         this.quit();
+    }
+
+    // --- live telemetry -------------------------------------------------------
+    // The engine exports Mustry_Stat(id) (see engine/patches); poll it a few
+    // times a second and mirror changed values into output.* so they can be
+    // bound to tags and historized. Zeroed when the engine stops.
+
+    private startStats(): void {
+        this.stopStats();
+        const interval = clampInt(this.props.props.config.statsIntervalMs, 100, 5000, 250);
+        this.statsTimer = window.setInterval(this.pollStats, interval);
+        this.pollStats();
+    }
+
+    private stopStats(): void {
+        if (this.statsTimer !== null) {
+            window.clearInterval(this.statsTimer);
+            this.statsTimer = null;
+        }
+        if (this.lastStats) {
+            this.publishStats(ZERO_STATS);
+        }
+    }
+
+    private pollStats = (): void => {
+        const m = this.module;
+        if (!m) {
+            return;
+        }
+        let stats: DoomStats;
+        try {
+            stats = readStats((id) => m.ccall('Mustry_Stat', 'number', ['number'], [id]) as number);
+        } catch {
+            return;
+        }
+        this.publishStats(stats);
+    };
+
+    private publishStats(stats: DoomStats): void {
+        const w = this.props.store.props;
+        for (const [path, value] of statWrites(this.lastStats, stats)) {
+            w.write(path, value);
+        }
+        this.lastStats = { ...stats };
     }
 
     // --- sizing -----------------------------------------------------------------
@@ -151,6 +198,7 @@ export class Doom extends Component<ComponentProps<DoomProps>, DoomState> {
                 // Chocolate Doom is up as soon as main returns to the browser loop;
                 // the protocol's "game started" (10) confirms the first tic ran.
                 this.setPhase('running', 'Running');
+                this.startStats();
                 this.appliedControls = null;
                 this.applyControls(this.props.props.controls);
                 if (this.props.props.paused) {
@@ -164,6 +212,7 @@ export class Doom extends Component<ComponentProps<DoomProps>, DoomState> {
     private quit(): void {
         if (this.module && !this.quitting) {
             this.quitting = true;
+            this.stopStats();
             try {
                 if (this.canvas) {
                     heldKeys(this.props.props.controls).forEach((k) => dispatchKey(this.canvas!, 'keyup', k));
@@ -178,6 +227,7 @@ export class Doom extends Component<ComponentProps<DoomProps>, DoomState> {
     }
 
     private onExit(): void {
+        this.stopStats();
         this.module = null;
         releaseEngine(this);
         this.unwatchTitle();
@@ -187,6 +237,7 @@ export class Doom extends Component<ComponentProps<DoomProps>, DoomState> {
     }
 
     private onFatal(message: string): void {
+        this.stopStats();
         this.module = null;
         releaseEngine(this);
         this.unwatchTitle();

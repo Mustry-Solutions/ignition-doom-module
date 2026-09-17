@@ -3,10 +3,11 @@ import { PNG } from 'pngjs';
 import { test, expect, openRoute } from './helpers';
 
 // The DoomDemo view (route "/"): the Doom component plus toggle switches bound
-// bidirectionally to data.controls.* and state.paused. DOM order of the
-// toggles: fire, forward, turnLeft, use, paused.
+// bidirectionally to data.controls.* and to the [default]Doom/Line/Running tag
+// (state.paused is an expression on that tag: line stops, Doom pauses).
+// DOM order of the toggles: fire, forward, turnLeft, use, lineRunning.
 const TURN_LEFT = 2;
-const PAUSED = 4;
+const LINE_RUNNING = 4;
 
 const toggle = (page: Page, index: number) =>
     page.locator('[data-component="ia.input.toggle-switch"]').nth(index).locator('.ia_toggleSwitch');
@@ -72,12 +73,22 @@ test('doom: a tag-bound control reaches the engine (turn left changes the frame)
     expect(moved, 'holding turnLeft via the binding must rotate the view').toBeGreaterThan(0.3);
 });
 
-test('doom: state.paused pauses and resumes through the binding', async ({ page }) => {
+test('doom: stopping the line (a tag) pauses the game through state.paused, restarting resumes it', async ({ page }) => {
     const root = await startGame(page);
-    await toggle(page, PAUSED).click();
+    await toggle(page, LINE_RUNNING).click();
     await expect(root).toHaveClass(/mustry-doom--paused/);
     await expect(page.getByText('output.state: paused')).toBeVisible();
-    await toggle(page, PAUSED).click();
+    await toggle(page, LINE_RUNNING).click();
     await expect(root).toHaveClass(/mustry-doom--running/);
     await expect(page.getByText('output.state: running')).toBeVisible();
+});
+
+test('doom: live telemetry reaches the outputs and the bound tags', async ({ page }) => {
+    await startGame(page);
+    // The marine starts E1M1 with 100 health and 50 bullets; the outputs are
+    // polled from the engine and the view mirrors the bound tag values too.
+    await expect(page.getByText('output.health: 100')).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText('output.ammo: 50')).toBeVisible();
+    await expect(page.getByText('output.inLevel: true')).toBeVisible();
+    await expect(page.getByText('tag Doom/Health: 100')).toBeVisible({ timeout: 20_000 });
 });

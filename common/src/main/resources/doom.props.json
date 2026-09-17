@@ -78,6 +78,13 @@
           "type": "string",
           "default": "",
           "description": "Extra command-line arguments passed to the engine, space-separated (e.g. '-nomonsters', '-fast', '-respawn'). Advanced."
+        },
+        "statsIntervalMs": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 5000,
+          "default": 250,
+          "description": "How often (ms) the live telemetry outputs are refreshed while the game runs."
         }
       }
     },
@@ -90,18 +97,68 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "forward": { "type": "boolean", "default": false, "description": "Move forward (W)." },
-            "backward": { "type": "boolean", "default": false, "description": "Move backward (S)." },
-            "strafeLeft": { "type": "boolean", "default": false, "description": "Strafe left (A)." },
-            "strafeRight": { "type": "boolean", "default": false, "description": "Strafe right (D)." },
-            "turnLeft": { "type": "boolean", "default": false, "description": "Turn left (Left arrow)." },
-            "turnRight": { "type": "boolean", "default": false, "description": "Turn right (Right arrow)." },
-            "fire": { "type": "boolean", "default": false, "description": "Fire (Space)." },
-            "use": { "type": "boolean", "default": false, "description": "Use / open doors (E)." },
-            "run": { "type": "boolean", "default": false, "description": "Run (Shift)." },
-            "menu": { "type": "boolean", "default": false, "description": "Menu / back (Escape)." },
-            "confirm": { "type": "boolean", "default": false, "description": "Confirm / menu select (Enter)." },
-            "weapon": { "type": "integer", "minimum": 0, "maximum": 7, "default": 0, "description": "Weapon slot to select when this value changes (1-7). 0 = no change." }
+            "forward": {
+              "type": "boolean",
+              "default": false,
+              "description": "Move forward (W)."
+            },
+            "backward": {
+              "type": "boolean",
+              "default": false,
+              "description": "Move backward (S)."
+            },
+            "strafeLeft": {
+              "type": "boolean",
+              "default": false,
+              "description": "Strafe left (A)."
+            },
+            "strafeRight": {
+              "type": "boolean",
+              "default": false,
+              "description": "Strafe right (D)."
+            },
+            "turnLeft": {
+              "type": "boolean",
+              "default": false,
+              "description": "Turn left (Left arrow)."
+            },
+            "turnRight": {
+              "type": "boolean",
+              "default": false,
+              "description": "Turn right (Right arrow)."
+            },
+            "fire": {
+              "type": "boolean",
+              "default": false,
+              "description": "Fire (Space)."
+            },
+            "use": {
+              "type": "boolean",
+              "default": false,
+              "description": "Use / open doors (E)."
+            },
+            "run": {
+              "type": "boolean",
+              "default": false,
+              "description": "Run (Shift)."
+            },
+            "menu": {
+              "type": "boolean",
+              "default": false,
+              "description": "Menu / back (Escape)."
+            },
+            "confirm": {
+              "type": "boolean",
+              "default": false,
+              "description": "Confirm / menu select (Enter)."
+            },
+            "weapon": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 7,
+              "default": 0,
+              "description": "Weapon slot to select when this value changes (1-7). 0 = no change."
+            }
           }
         }
       }
@@ -121,7 +178,7 @@
     "output": {
       "type": "object",
       "additionalProperties": false,
-      "description": "Read-only engine status.",
+      "description": "Read-only engine status and live player telemetry (polled a few times per second while running). Bind these to memory tags to historize the marine.",
       "properties": {
         "state": {
           "type": "string",
@@ -132,6 +189,81 @@
           "type": "string",
           "default": "",
           "description": "The last line the engine printed."
+        },
+        "inLevel": {
+          "type": "boolean",
+          "default": false,
+          "description": "True while a map is being played (not on the title, intermission or finale)."
+        },
+        "health": {
+          "type": "integer",
+          "default": 0,
+          "description": "Marine health, 0-200."
+        },
+        "armor": {
+          "type": "integer",
+          "default": 0,
+          "description": "Armor points, 0-200."
+        },
+        "ammo": {
+          "type": "integer",
+          "default": 0,
+          "description": "Ammo for the ready weapon; -1 for fist/chainsaw."
+        },
+        "weapon": {
+          "type": "integer",
+          "default": 0,
+          "description": "Ready weapon slot: 0 fist, 1 pistol, 2 shotgun, 3 chaingun, 4 rocket launcher, 5 plasma, 6 BFG, 7 chainsaw."
+        },
+        "kills": {
+          "type": "integer",
+          "default": 0,
+          "description": "Monsters killed on this map."
+        },
+        "items": {
+          "type": "integer",
+          "default": 0,
+          "description": "Items picked up on this map."
+        },
+        "secrets": {
+          "type": "integer",
+          "default": 0,
+          "description": "Secrets found on this map."
+        },
+        "totalKills": {
+          "type": "integer",
+          "default": 0,
+          "description": "Monsters on this map."
+        },
+        "totalItems": {
+          "type": "integer",
+          "default": 0,
+          "description": "Items on this map."
+        },
+        "totalSecrets": {
+          "type": "integer",
+          "default": 0,
+          "description": "Secrets on this map."
+        },
+        "episode": {
+          "type": "integer",
+          "default": 0,
+          "description": "Current episode."
+        },
+        "map": {
+          "type": "integer",
+          "default": 0,
+          "description": "Current map."
+        },
+        "levelSeconds": {
+          "type": "integer",
+          "default": 0,
+          "description": "Seconds played on this map."
+        },
+        "dead": {
+          "type": "boolean",
+          "default": false,
+          "description": "True while the marine is dead."
         }
       }
     }
