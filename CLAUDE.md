@@ -52,6 +52,20 @@ is staged by `ops/stage-historian.sh` (sibling repo, dev-signed); acceptance in
 `accept_staged_module` covers every `.modl` in `ops/modules`. `wrapper.log`
 inside the container is a symlink to stdout: use `docker logs`, not `grep`.
 
+## Demo view facts (DoomDemo)
+
+- Alarm-status tag property that actually updates in 8.3 bindings:
+  `[default]<tag>.AlarmActiveUnackCount` (documented `ActiveUnackCount` reads
+  null). Subscribe with a *tag* binding + transform, never an expression.
+- Alarm status table id is `ia.display.alarmstatustable`; give it >= 220 px or
+  the rows hide under its toolbar/filter chips.
+- Tag-history bindings: `dateRange.rangeType/mostRecent/mostRecentUnits(MIN)`,
+  `aggregate: LastValue`; no `{view.params.*}` indirection in tag paths.
+- Embr Chart.js (`embr.chart.chart-js`) takes `{x: epochMs, y}` points with
+  `scales.x.type = "time"` (moment adapter is bundled).
+- The e2e spec relies on toggle DOM order fire, forward, turnLeft, use,
+  lineRunning and on the readout text patterns; keep them when restyling.
+
 ## Verify project tags
 
 The `[default]Doom/*` memory tags (historized) and `Doom/Line/Running` (with

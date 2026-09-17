@@ -189,25 +189,47 @@ accept_staged_module() {
   tmp="$(mktemp -d)"
   docker cp "${CONTAINER_NAME}:/usr/local/bin/ignition/data/modules.json" "${tmp}/modules.json"
   # Each staged .modl: module id from its module.xml, EULA acceptance as the
-  # CRC32 of its license.html (matches ModuleUtil.calculateLicenseCrc).
+  # CRC32 of its license.html (matches ModuleUtil.calculateLicenseCrc), and the
+  # certificate fingerprint of whoever signed it: our dev cert for the modules
+  # we build, or the signer certificate shipped inside a third-party .modl
+  # (certificates.p7b, e.g. Embr Charts).
   FINGERPRINT="${fingerprint}" MODULES_DIR="${MODULES_DIR}" \
   python3 - "${tmp}/modules.json" <<'PYEOF'
-import glob, json, os, re, sys, zipfile, zlib
+import glob, hashlib, json, os, re, subprocess, sys, zipfile, zlib
 path = sys.argv[1]
 with open(path) as f:
     modules = json.load(f)
+
+def signer_fingerprint(z):
+    """SHA-1 of the first certificate in the module's certificates.p7b (DER or PEM),
+    lower-case hex; None when absent or unreadable (then the dev cert applies)."""
+    if "certificates.p7b" not in z.namelist():
+        return None
+    import base64
+    raw = z.read("certificates.p7b")
+    for inform in ("DER", "PEM"):
+        r = subprocess.run(["openssl", "pkcs7", "-inform", inform, "-print_certs"],
+                           input=raw, capture_output=True)
+        if r.returncode != 0:
+            continue
+        m = re.search(r"-----BEGIN CERTIFICATE-----(.*?)-----END CERTIFICATE-----", r.stdout.decode(), re.S)
+        if m:
+            return hashlib.sha1(base64.b64decode("".join(m.group(1).split()))).hexdigest()
+    return None
+
 for modl in sorted(glob.glob(os.path.join(os.environ["MODULES_DIR"], "*.modl"))):
     z = zipfile.ZipFile(modl)
     module_id = re.search(r"<id>([^<]+)</id>", z.read("module.xml").decode()).group(1).strip()
+    fp = signer_fingerprint(z) or os.environ["FINGERPRINT"]
     entry = {
         "filename": f"/external-modules/{os.path.basename(modl)}",
         "onStartup": "enabled",
-        "certFingerprint": os.environ["FINGERPRINT"],
+        "certFingerprint": fp,
     }
     if "license.html" in z.namelist():
         entry["licenseAgreementHash"] = zlib.crc32(z.read("license.html"))
     modules[module_id] = entry
-    print(f"  accepted {module_id} <- {os.path.basename(modl)}")
+    print(f"  accepted {module_id} <- {os.path.basename(modl)} (cert {fp[:12]}...)")
 with open(path, "w") as f:
     json.dump(modules, f, indent=2)
 PYEOF

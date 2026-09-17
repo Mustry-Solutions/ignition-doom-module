@@ -192,11 +192,38 @@ http://localhost:9188/data/perspective/client/verify and click the game.
 
 The compose file also starts TimescaleDB, and `ops/fresh.sh` seeds a
 "Doom Historian" profile for the [Mustry TimescaleDB Historian](https://github.com/Mustry-Solutions/timescaledb-historian-module)
-module. Stage that module once with `ops/stage-historian.sh` (it builds the
-sibling repo dev-signed); the verify project's startup script then creates
-historized `[default]Doom/*` tags and the view trends the marine's health.
-Without the historian module staged, everything else still works; the tags
-just have no history.
+module. Two optional modules make the demo view complete; stage them once and
+`fresh.sh` accepts them unattended next to Doom:
+
+```bash
+ops/stage-historian.sh   # builds the sibling historian repo, dev-signed
+ops/stage-embr.sh        # downloads Musson Industrial's Embr Charts (MIT) release
+```
+
+The verify project's startup script then builds the tag model below, and the
+view trends the marine from the historian with Embr's Chart.js component (a
+tag-history binding per dataset with a script transform to `{x, y}` points;
+the chart is bound to `Player1` because tag-history bindings do not take the
+view's `{view.params.player}` indirection, unlike the tag bindings on the KPI
+tiles and the component outputs).
+Without them everything else still works: the tags have no history and the
+chart shows an "unknown component" placeholder.
+
+### Tag model (multiplayer-ready)
+
+| Path | What |
+|---|---|
+| `[default]_types_/Doom/Marine` | UDT with parameter `Player`: Health, Armor, Ammo, Weapon, Kills, TotalKills, Items, Secrets, Episode, Map, LevelSeconds, InLevel, Dead (alarm "Marine down", Critical), Session. All historized. |
+| `[default]Doom/Players/Player1` | One instance per marine. The view's `player` param picks the instance through indirect bindings, so a second player is a second instance and a second session. |
+| `[default]Doom/Line/Running` | Pretend production line with the "Line stopped" alarm (High). |
+
+`state.paused` is a tag binding on `[default]Doom/Line/Running.AlarmActiveUnackCount`
+with a `> 0` transform: an active, unacknowledged line alarm pauses the game;
+acknowledging it in the alarm status table, or restarting the line, resumes it.
+(Two things learned the hard way: in 8.3 bindings the property is
+`AlarmActiveUnackCount`, not the documented `ActiveUnackCount`; and it must be a
+*tag* binding on the property, because an expression that merely references it
+re-evaluates on the tag's value change, before the alarm has transitioned.)
 
 ## Licensing
 

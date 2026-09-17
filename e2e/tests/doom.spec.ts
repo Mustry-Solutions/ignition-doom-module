@@ -18,7 +18,7 @@ async function startGame(page: Page) {
     await root.locator('.mustry-doom__splash').click();
     // Engine download + WAD preload + first tic. Generous: CI runners are slow.
     await expect(root).toHaveClass(/mustry-doom--running/, { timeout: 60_000 });
-    await expect(page.getByText('output.state: running')).toBeVisible();
+    await expect(page.getByText(/output\.state: running/)).toBeVisible();
     return root;
 }
 
@@ -77,18 +77,18 @@ test('doom: stopping the line (a tag) pauses the game through state.paused, rest
     const root = await startGame(page);
     await toggle(page, LINE_RUNNING).click();
     await expect(root).toHaveClass(/mustry-doom--paused/);
-    await expect(page.getByText('output.state: paused')).toBeVisible();
+    await expect(page.getByText(/output\.state: paused/)).toBeVisible();
     await toggle(page, LINE_RUNNING).click();
     await expect(root).toHaveClass(/mustry-doom--running/);
-    await expect(page.getByText('output.state: running')).toBeVisible();
+    await expect(page.getByText(/output\.state: running/)).toBeVisible();
 });
 
 test('doom: live telemetry reaches the outputs and the bound tags', async ({ page }) => {
     await startGame(page);
     // The marine starts E1M1 with 100 health and 50 bullets; the outputs are
     // polled from the engine and the view mirrors the bound tag values too.
-    await expect(page.getByText('output.health: 100')).toBeVisible({ timeout: 20_000 });
-    await expect(page.getByText('output.ammo: 50')).toBeVisible();
-    await expect(page.getByText('output.inLevel: true')).toBeVisible();
-    await expect(page.getByText('tag Doom/Health: 100')).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText(/output\.health: 100/)).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText(/output\.ammo: 50/)).toBeVisible();
+    await expect(page.getByText(/output\.inLevel: true/)).toBeVisible();
+    await expect(page.getByText(/tag Player1\/Health: 100/)).toBeVisible({ timeout: 20_000 });
 });
