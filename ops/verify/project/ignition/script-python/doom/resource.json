@@ -1,10 +1,10 @@
 {
-  "scope": "G",
+  "scope": "A",
   "version": 1,
   "restricted": false,
   "overridable": true,
   "files": [
-    "startup.py"
+    "code.py"
   ],
   "attributes": {}
 }

@@ -92,3 +92,23 @@ test('doom: live telemetry reaches the outputs and the bound tags', async ({ pag
     await expect(page.getByText(/output\.inLevel: true/)).toBeVisible();
     await expect(page.getByText(/tag Player1\/Health: 100/)).toBeVisible({ timeout: 20_000 });
 });
+
+test('doom: quitting from the in-game menu leaves a restartable component, Restart brings it back', async ({ page }) => {
+    const root = await startGame(page);
+    // Real keys through the focused canvas: Escape opens the menu, Quit Game is
+    // the sixth entry, Enter asks "are you sure", y quits -> I_Quit -> exit().
+    const canvas = page.locator('#canvas');
+    await canvas.click();
+    await page.keyboard.press('Escape');
+    for (let i = 0; i < 5; i++) {
+        await page.keyboard.press('ArrowDown');
+    }
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(300);
+    await page.keyboard.press('y');
+    await expect(root).toHaveClass(/mustry-doom--exited/, { timeout: 20_000 });
+    await expect(page.getByText(/output\.state: exited/)).toBeVisible();
+    await root.getByRole('button', { name: 'Restart' }).click();
+    await expect(root).toHaveClass(/mustry-doom--running/, { timeout: 60_000 });
+    await expect(page.getByText(/output\.state: running/)).toBeVisible();
+});

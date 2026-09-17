@@ -12,6 +12,7 @@ export interface DoomProps {
     config: DoomConfig;
     controls: DoomControls;
     paused: boolean;
+    running: boolean;
 }
 
 export function mapDoomProps(tree: PropReader): DoomProps {
@@ -38,6 +39,7 @@ export function mapDoomProps(tree: PropReader): DoomProps {
             extraArgs: tree.readString('config.extraArgs', '')
         },
         controls,
-        paused: tree.readBoolean('state.paused', false)
+        paused: tree.readBoolean('state.paused', false),
+        running: tree.readBoolean('state.running', false)
     };
 }

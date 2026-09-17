@@ -172,6 +172,11 @@
           "type": "boolean",
           "default": false,
           "description": "Pause the engine's main loop. Bind it to an alarm: production stops, Doom stops."
+        },
+        "running": {
+          "type": "boolean",
+          "default": false,
+          "description": "Two-way. True starts the engine (same as clicking the splash), false quits it (Chocolate Doom's I_Quit). The component writes it back as the engine starts and stops, so a binding can restart the game without a page reload."
         }
       }
     },

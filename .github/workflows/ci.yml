@@ -77,6 +77,11 @@ jobs:
           npm ci
           npx playwright install --with-deps chromium
 
+      # Embr Charts (MIT) is a public download; the historian module is built
+      # from a private sibling repo and stays optional in CI.
+      - name: Stage Embr Charts
+        run: ops/stage-embr.sh
+
       - name: Bring up gateway and run the suite
         run: ops/e2e.sh --fresh
 

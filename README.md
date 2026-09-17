@@ -200,7 +200,7 @@ ops/stage-historian.sh   # builds the sibling historian repo, dev-signed
 ops/stage-embr.sh        # downloads Musson Industrial's Embr Charts (MIT) release
 ```
 
-The verify project's startup script then builds the tag model below, and the
+The verify project's `doom.setupTags()` library script (run from the demo view's startup event) then builds the tag model below, and the
 view trends the marine from the historian with Embr's Chart.js component (a
 tag-history binding per dataset with a script transform to `{x, y}` points;
 the chart is bound to `Player1` because tag-history bindings do not take the

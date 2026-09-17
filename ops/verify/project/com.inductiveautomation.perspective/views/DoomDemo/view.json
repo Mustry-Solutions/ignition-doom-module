@@ -28,7 +28,7 @@
           "type": "script",
           "scope": "G",
           "config": {
-            "script": "\t# Creates the tag model behind the Doom demo. Idempotent (collision policy\n\t# \"m\" merges), so it can run from the gateway startup AND from the view's\n\t# onStartup. Historized by the \"Doom Historian\" TimescaleDB profile seeded by\n\t# ops/fresh.sh; without that module the tags still work, history just fails.\n\t#\n\t# Model (multiplayer-ready: one Marine UDT instance per player):\n\t#   [default]_types_/Doom/Marine         UDT, parameter Player\n\t#   [default]Doom/Players/<Player>       instances (Player1 today)\n\t#   [default]Doom/Line/Running           pretend production line + alarm\n\n\tHISTORIAN = \"Doom Historian\"\n\n\n\tdef member(name, data_type, doc, alarms=None):\n\t    t = {\n\t        \"name\": name,\n\t        \"tagType\": \"AtomicTag\",\n\t        \"valueSource\": \"memory\",\n\t        \"dataType\": data_type,\n\t        \"value\": 0 if data_type != \"String\" else \"\",\n\t        \"documentation\": doc,\n\t        \"historyEnabled\": True,\n\t        \"historyProvider\": HISTORIAN,\n\t        \"historicalDeadbandStyle\": \"Discrete\",\n\t        \"sampleMode\": \"OnChange\",\n\t        \"historyMaxAgeUnits\": \"SEC\",\n\t        \"historyMaxAge\": 60,\n\t    }\n\t    if alarms:\n\t        t[\"alarms\"] = alarms\n\t    return t\n\n\n\tmarine_udt = {\n\t    \"name\": \"Marine\",\n\t    \"tagType\": \"UdtType\",\n\t    \"parameters\": {\"Player\": {\"dataType\": \"String\", \"value\": \"Player1\"}},\n\t    \"tags\": [\n\t        member(\"Health\", \"Int4\", \"Marine health, 0-200 (output.health).\"),\n\t        member(\"Armor\", \"Int4\", \"Armor points, 0-200 (output.armor).\"),\n\t        member(\"Ammo\", \"Int4\", \"Ammo for the ready weapon, -1 = melee (output.ammo).\"),\n\t        member(\"Weapon\", \"Int4\", \"Ready weapon slot 0-7 (output.weapon).\"),\n\t        member(\"Kills\", \"Int4\", \"Monsters killed on this map (output.kills).\"),\n\t        member(\"TotalKills\", \"Int4\", \"Monsters on this map (output.totalKills).\"),\n\t        member(\"Items\", \"Int4\", \"Items picked up (output.items).\"),\n\t        member(\"Secrets\", \"Int4\", \"Secrets found (output.secrets).\"),\n\t        member(\"Episode\", \"Int4\", \"Episode (output.episode).\"),\n\t        member(\"Map\", \"Int4\", \"Map (output.map).\"),\n\t        member(\"LevelSeconds\", \"Int4\", \"Seconds on this map (output.levelSeconds).\"),\n\t        member(\"InLevel\", \"Boolean\", \"True while a map is being played (output.inLevel).\"),\n\t        member(\n\t            \"Dead\", \"Boolean\", \"True while the marine is dead (output.dead).\",\n\t            alarms=[{\n\t                \"name\": \"Marine down\",\n\t                \"mode\": \"Equality\",\n\t                \"setpointA\": 1,\n\t                \"priority\": \"Critical\",\n\t                \"label\": \"Marine {Player} is down\",\n\t                \"notes\": \"The player died. Acknowledge to confirm you laughed.\",\n\t            }],\n\t        ),\n\t        {\n\t            \"name\": \"Session\",\n\t            \"tagType\": \"AtomicTag\",\n\t            \"valueSource\": \"memory\",\n\t            \"dataType\": \"String\",\n\t            \"value\": \"\",\n\t            \"documentation\": \"Perspective session id currently driving this marine (multiplayer bookkeeping).\",\n\t        },\n\t    ],\n\t}\n\n\tline = {\n\t    \"name\": \"Line\",\n\t    \"tagType\": \"Folder\",\n\t    \"tags\": [{\n\t        \"name\": \"Running\",\n\t        \"tagType\": \"AtomicTag\",\n\t        \"valueSource\": \"memory\",\n\t        \"dataType\": \"Boolean\",\n\t        \"value\": True,\n\t        \"documentation\": \"Pretend production line. False raises the 'Line stopped' alarm; the demo view pauses Doom while that alarm is active and unacknowledged.\",\n\t        \"alarms\": [{\n\t            \"name\": \"Line stopped\",\n\t            \"mode\": \"Equality\",\n\t            \"setpointA\": 0,\n\t            \"priority\": \"High\",\n\t            \"label\": \"Line 3 filler stopped\",\n\t            \"notes\": \"Acknowledge to let the marine carry on.\",\n\t        }],\n\t    }],\n\t}\n\n\tplayers = {\n\t    \"name\": \"Players\",\n\t    \"tagType\": \"Folder\",\n\t    \"tags\": [{\n\t        \"name\": \"Player1\",\n\t        \"tagType\": \"UdtInstance\",\n\t        \"typeId\": \"Doom/Marine\",\n\t        \"parameters\": {\"Player\": \"Player1\"},\n\t    }],\n\t}\n\n\tlog = system.util.getLogger(\"MustryDoom.verify\")\n\tr1 = system.tag.configure(\"[default]_types_\", [{\"name\": \"Doom\", \"tagType\": \"Folder\", \"tags\": [marine_udt]}], \"m\")\n\tr2 = system.tag.configure(\"[default]\", [{\"name\": \"Doom\", \"tagType\": \"Folder\", \"tags\": [line, players]}], \"m\")\n\tlog.info(\"Doom tag model configured: types=%s tags=%s\" % (\",\".join(str(r) for r in r1), \",\".join(str(r) for r in r2)))"
+            "script": "\t# Tag model (UDT, Player1 instance, line tag) lives in the project library.\n\tdoom.setupTags()"
           }
         }
       }
@@ -1272,38 +1272,7 @@
           "type": "line",
           "data": {
             "labels": [],
-            "datasets": [
-              {
-                "label": "Health",
-                "data": [],
-                "borderColor": "#e24b4a",
-                "backgroundColor": "#e24b4a33",
-                "borderWidth": 2,
-                "pointRadius": 0,
-                "stepped": true,
-                "tension": 0
-              },
-              {
-                "label": "Armor",
-                "data": [],
-                "borderColor": "#2ecc71",
-                "backgroundColor": "#2ecc7133",
-                "borderWidth": 2,
-                "pointRadius": 0,
-                "stepped": true,
-                "tension": 0
-              },
-              {
-                "label": "Ammo",
-                "data": [],
-                "borderColor": "#f1c40f",
-                "backgroundColor": "#f1c40f33",
-                "borderWidth": 2,
-                "pointRadius": 0,
-                "stepped": true,
-                "tension": 0
-              }
-            ]
+            "datasets": []
           },
           "options": {
             "responsive": true,
@@ -1360,104 +1329,16 @@
           }
         },
         "propConfig": {
-          "props.data.datasets[0].data": {
+          "props.data.datasets": {
             "binding": {
-              "type": "tag-history",
+              "type": "expr",
               "config": {
-                "tags": [
-                  {
-                    "path": "[default]Doom/Players/Player1/Health",
-                    "aggregate": "LastValue",
-                    "alias": "Health"
-                  }
-                ],
-                "returnFormat": "Wide",
-                "aggregateMode": "LastValue",
-                "dateRange": {
-                  "rangeType": "realtime",
-                  "mostRecent": 5,
-                  "mostRecentUnits": "MIN"
-                },
-                "polling": {
-                  "enabled": true,
-                  "rate": 2
-                },
-                "ignoreBadQuality": false,
-                "preventInterpolation": false,
-                "valueFormat": "DATASET"
+                "expression": "now(2000)"
               },
               "transforms": [
                 {
                   "type": "script",
-                  "code": "\trows = system.dataset.toPyDataSet(value) if value is not None else []\n\tout = []\n\tfor row in rows:\n\t\tt = row[0]\n\t\ty = row[1]\n\t\tif y is None:\n\t\t\tcontinue\n\t\tout.append({\"x\": t.getTime() if hasattr(t, \"getTime\") else t, \"y\": y})\n\treturn out"
-                }
-              ]
-            }
-          },
-          "props.data.datasets[1].data": {
-            "binding": {
-              "type": "tag-history",
-              "config": {
-                "tags": [
-                  {
-                    "path": "[default]Doom/Players/Player1/Armor",
-                    "aggregate": "LastValue",
-                    "alias": "Armor"
-                  }
-                ],
-                "returnFormat": "Wide",
-                "aggregateMode": "LastValue",
-                "dateRange": {
-                  "rangeType": "realtime",
-                  "mostRecent": 5,
-                  "mostRecentUnits": "MIN"
-                },
-                "polling": {
-                  "enabled": true,
-                  "rate": 2
-                },
-                "ignoreBadQuality": false,
-                "preventInterpolation": false,
-                "valueFormat": "DATASET"
-              },
-              "transforms": [
-                {
-                  "type": "script",
-                  "code": "\trows = system.dataset.toPyDataSet(value) if value is not None else []\n\tout = []\n\tfor row in rows:\n\t\tt = row[0]\n\t\ty = row[1]\n\t\tif y is None:\n\t\t\tcontinue\n\t\tout.append({\"x\": t.getTime() if hasattr(t, \"getTime\") else t, \"y\": y})\n\treturn out"
-                }
-              ]
-            }
-          },
-          "props.data.datasets[2].data": {
-            "binding": {
-              "type": "tag-history",
-              "config": {
-                "tags": [
-                  {
-                    "path": "[default]Doom/Players/Player1/Ammo",
-                    "aggregate": "LastValue",
-                    "alias": "Ammo"
-                  }
-                ],
-                "returnFormat": "Wide",
-                "aggregateMode": "LastValue",
-                "dateRange": {
-                  "rangeType": "realtime",
-                  "mostRecent": 5,
-                  "mostRecentUnits": "MIN"
-                },
-                "polling": {
-                  "enabled": true,
-                  "rate": 2
-                },
-                "ignoreBadQuality": false,
-                "preventInterpolation": false,
-                "valueFormat": "DATASET"
-              },
-              "transforms": [
-                {
-                  "type": "script",
-                  "code": "\trows = system.dataset.toPyDataSet(value) if value is not None else []\n\tout = []\n\tfor row in rows:\n\t\tt = row[0]\n\t\ty = row[1]\n\t\tif y is None:\n\t\t\tcontinue\n\t\tout.append({\"x\": t.getTime() if hasattr(t, \"getTime\") else t, \"y\": y})\n\treturn out"
+                  "code": "\tplayer = self.view.params.player\n\tbase = \"[default]Doom/Players/%s/\" % player\n\tseries = [(\"Health\", \"#e24b4a\"), (\"Armor\", \"#2ecc71\"), (\"Ammo\", \"#f1c40f\")]\n\tend = system.date.now()\n\tstart = system.date.addMinutes(end, -5)\n\tds = system.tag.queryTagHistory(paths=[base + name for name, _ in series], startDate=start, endDate=end, returnFormat=\"Wide\", aggregationMode=\"LastValue\", returnSize=-1)\n\tpds = system.dataset.toPyDataSet(ds)\n\tout = []\n\tfor i, (name, color) in enumerate(series):\n\t\tpts = []\n\t\tfor row in pds:\n\t\t\ty = row[i + 1]\n\t\t\tif y is None:\n\t\t\t\tcontinue\n\t\t\tt = row[0]\n\t\t\tpts.append({\"x\": t.getTime() if hasattr(t, \"getTime\") else t, \"y\": y})\n\t\tout.append({\"label\": name, \"data\": pts, \"borderColor\": color, \"backgroundColor\": color + \"33\", \"borderWidth\": 2, \"pointRadius\": 0, \"stepped\": True, \"tension\": 0})\n\treturn out"
                 }
               ]
             }
@@ -1471,6 +1352,49 @@
           "y": 650,
           "width": 772,
           "height": 216
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "MARINE DOWN",
+          "style": {
+            "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+            "fontSize": "12px",
+            "fontWeight": "700",
+            "letterSpacing": "0.1em",
+            "textAlign": "center",
+            "borderRadius": "16px",
+            "color": "#3a0a0a",
+            "backgroundColor": "#e24b4a"
+          }
+        },
+        "propConfig": {
+          "meta.visible": {
+            "binding": {
+              "type": "tag",
+              "config": {
+                "mode": "indirect",
+                "tagPath": "[default]Doom/Players/{player}/Dead",
+                "references": {
+                  "player": "{view.params.player}"
+                },
+                "fallbackDelay": 2.5,
+                "bidirectional": false
+              }
+            }
+          }
+        },
+        "meta": {
+          "name": "deadPill",
+          "visible": false
+        },
+        "position": {
+          "x": 900,
+          "y": 22,
+          "width": 140,
+          "height": 32
         }
       }
     ]

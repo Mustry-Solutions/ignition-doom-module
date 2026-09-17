@@ -44,6 +44,7 @@ export class Doom extends Component<ComponentProps<DoomProps>, DoomState> {
     private pageTitle = '';
     private statsTimer: number | null = null;
     private lastStats: DoomStats | null = null;
+    private unmounting = false;
 
     constructor(props: ComponentProps<DoomProps>) {
         super(props);
@@ -62,6 +63,13 @@ export class Doom extends Component<ComponentProps<DoomProps>, DoomState> {
         if (p.config.autoStart && !prev.props.config.autoStart && !this.started) {
             this.start();
         }
+        // state.running is two-way: a binding flipping it starts or quits the
+        // engine; the component writes it back as the engine comes and goes.
+        if (p.running && !prev.props.running && !this.started) {
+            this.start();
+        } else if (!p.running && prev.props.running && this.started) {
+            this.quit('Stopped');
+        }
         if (this.state.phase === 'running' || this.state.phase === 'paused') {
             this.applyControls(p.controls);
             if (p.paused !== this.enginePaused) {
@@ -71,6 +79,7 @@ export class Doom extends Component<ComponentProps<DoomProps>, DoomState> {
     }
 
     componentWillUnmount(): void {
+        this.unmounting = true;
         this.unwatchFrame();
         this.stopStats();
         this.quit();
@@ -170,7 +179,10 @@ export class Doom extends Component<ComponentProps<DoomProps>, DoomState> {
             return;
         }
         this.started = true;
+        this.quitting = false;
+        this.enginePaused = false;
         this.setPhase('loading', 'Loading engine…');
+        this.props.store.props.write('state.running', true);
         const canvas = this.canvas;
         const size = this.syncCanvasSize();
         this.pageTitle = document.title;
@@ -208,8 +220,12 @@ export class Doom extends Component<ComponentProps<DoomProps>, DoomState> {
             .catch((e) => this.onFatal(String(e && (e as Error).message || e)));
     };
 
-    /** Ask the engine to shut down (Chocolate Doom's I_Quit → exit()). */
-    private quit(): void {
+    /**
+     * Ask the engine to shut down (Chocolate Doom's I_Quit → exit()). Emscripten
+     * runs onExit synchronously inside the call and then throws ExitStatus, so
+     * by the time this returns the component is back in a restartable state.
+     */
+    private quit(message = 'Engine exited'): void {
         if (this.module && !this.quitting) {
             this.quitting = true;
             this.stopStats();
@@ -221,28 +237,39 @@ export class Doom extends Component<ComponentProps<DoomProps>, DoomState> {
             } catch {
                 // exit() unwinds through here by design (Emscripten throws ExitStatus).
             }
+            this.finish('exited', message);
         }
         this.unwatchTitle();
         releaseEngine(this);
     }
 
     private onExit(): void {
-        this.stopStats();
-        this.module = null;
-        releaseEngine(this);
-        this.unwatchTitle();
-        if (!this.quitting) {
-            this.setPhase('exited', 'Engine exited');
+        if (this.quitting) {
+            return; // quit() reports the outcome itself
         }
+        this.finish('exited', 'Engine exited');
     }
 
     private onFatal(message: string): void {
+        this.finish('error', message);
+        this.fire(CODE_ERROR, message);
+    }
+
+    /** Common teardown after the engine stops, leaving the component restartable. */
+    private finish(phase: 'exited' | 'error', message: string): void {
         this.stopStats();
         this.module = null;
+        this.started = false;
+        this.enginePaused = false;
+        this.appliedControls = null;
         releaseEngine(this);
         this.unwatchTitle();
-        this.setPhase('error', message);
-        this.fire(CODE_ERROR, message);
+        this.unwatchFrame();
+        if (this.unmounting) {
+            return;
+        }
+        this.setPhase(phase, message);
+        this.props.store.props.write('state.running', false);
     }
 
     private onStdout = (text: string): void => {
@@ -398,6 +425,9 @@ export class Doom extends Component<ComponentProps<DoomProps>, DoomState> {
                         <div className="mustry-doom__overlay">
                             <span className="mustry-doom__overlay-title">{phase === 'error' ? 'Engine error' : phase === 'busy' ? 'Busy' : 'Exited'}</span>
                             <span className="mustry-doom__overlay-text">{message}</span>
+                            {phase !== 'busy' && (
+                                <button type="button" className="mustry-doom__restart" onClick={this.start}>Restart</button>
+                            )}
                         </div>
                     )}
                 </div>

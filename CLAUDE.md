@@ -68,12 +68,13 @@ inside the container is a symlink to stdout: use `docker logs`, not `grep`.
 
 ## Verify project tags
 
-The `[default]Doom/*` memory tags (historized) and `Doom/Line/Running` (with
-its alarm) are created by `system.tag.configure` from TWO idempotent places:
-the DoomDemo view root's `events.system.onStartup` (known to work: the tags
-appear when the session opens) and `ignition/event-scripts/startup.py` (the
-8.3 gateway-event-script resource format is unverified; keep both until it is
-confirmed in the gateway log).
+The `[default]Doom/*` tag model (Marine UDT, Player1 instance, line tag with
+alarm) is created by `doom.setupTags()` in the project library
+(`ops/verify/project/ignition/script-python/doom/code.py`), called from the
+DoomDemo view root's `events.system.onStartup`. Idempotent. A gateway
+event-script resource (`ignition/event-scripts/startup.py`) was tried and
+proven NOT to run on a fresh 8.3.6 gateway with the project mounted from first
+boot, so do not reintroduce it without confirming the 8.3 format.
 
 ## Build & verify
 

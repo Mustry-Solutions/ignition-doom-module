@@ -1,6 +1,5 @@
 # Creates the tag model behind the Doom demo. Idempotent (collision policy
-# "m" merges), so it can run from the gateway startup AND from the view's
-# onStartup. Historized by the "Doom Historian" TimescaleDB profile seeded by
+# "m" merges). Called from the DoomDemo view root's onStartup as doom.setupTags(). Historized by the "Doom Historian" TimescaleDB profile seeded by
 # ops/fresh.sh; without that module the tags still work, history just fails.
 #
 # Model (multiplayer-ready: one Marine UDT instance per player):
@@ -102,7 +101,10 @@ players = {
     }],
 }
 
-log = system.util.getLogger("MustryDoom.verify")
-r1 = system.tag.configure("[default]_types_", [{"name": "Doom", "tagType": "Folder", "tags": [marine_udt]}], "m")
-r2 = system.tag.configure("[default]", [{"name": "Doom", "tagType": "Folder", "tags": [line, players]}], "m")
-log.info("Doom tag model configured: types=%s tags=%s" % (",".join(str(r) for r in r1), ",".join(str(r) for r in r2)))
+
+def setupTags():
+    """Create/merge the Doom tag model (UDT, Player1 instance, line tag). Idempotent."""
+    log = system.util.getLogger("MustryDoom.verify")
+    r1 = system.tag.configure("[default]_types_", [{"name": "Doom", "tagType": "Folder", "tags": [marine_udt]}], "m")
+    r2 = system.tag.configure("[default]", [{"name": "Doom", "tagType": "Folder", "tags": [line, players]}], "m")
+    log.info("Doom tag model configured: types=%s tags=%s" % (",".join(str(r) for r in r1), ",".join(str(r) for r in r2)))

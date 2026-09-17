@@ -92,6 +92,24 @@
         word-break: break-word;
     }
 
+    &__restart {
+        margin-top: 6px;
+        padding: 6px 16px;
+        border: 1px solid rgba(255, 255, 255, 0.6);
+        border-radius: 3px;
+        background: transparent;
+        color: #fff;
+        font: inherit;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+
+        &:hover {
+            background: var(--doom-accent);
+            border-color: var(--doom-accent);
+        }
+    }
+
     &__overlay-title {
         font-size: 14px;
         font-weight: 700;

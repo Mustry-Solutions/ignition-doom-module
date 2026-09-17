@@ -102,13 +102,15 @@ describe('mapDoomProps', () => {
         expect(p.config).toEqual(baseConfig);
         expect(p.controls).toEqual(EMPTY_CONTROLS);
         expect(p.paused).toBe(false);
+        expect(p.running).toBe(false);
     });
     it('reads bound values', () => {
-        const p = mapDoomProps(tree({ 'config.skill': 5, 'data.controls.fire': true, 'data.controls.weapon': 2, 'state.paused': true }));
+        const p = mapDoomProps(tree({ 'config.skill': 5, 'data.controls.fire': true, 'data.controls.weapon': 2, 'state.paused': true, 'state.running': true }));
         expect(p.config.skill).toBe(5);
         expect(p.controls.fire).toBe(true);
         expect(p.controls.weapon).toBe(2);
         expect(p.paused).toBe(true);
+        expect(p.running).toBe(true);
     });
 });
 
