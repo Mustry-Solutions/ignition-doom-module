@@ -19,8 +19,10 @@ Releases are driven by an annotated git tag `vX.Y.Z` on `main`.
      so prerelease suffixes are rejected. Bump the patch number instead.
    - builds and **signs** the `.modl` (it carries `license.html`, the
      install-time EULA) and checks the signature landed,
+   - packages the demo project (`ops/package-demo.sh`) as a Designer import,
    - creates a draft GitHub Release named `v0.1.0`, attaches the signed
-     `.modl`, then flips it public with the changelog section as notes.
+     `.modl` and `Mustry-Doom-Demo-Project.zip`, then flips it public with
+     the changelog section as notes.
 
 The tag should point at a commit already on `main`, so the e2e gateway run
 has already passed for it; the release build signs rather than re-testing.

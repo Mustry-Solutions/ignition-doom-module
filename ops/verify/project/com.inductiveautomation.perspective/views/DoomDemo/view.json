@@ -1092,6 +1092,30 @@
         }
       },
       {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "The trend needs two optional modules: Embr Charts (the chart) and a tag history provider such as the Mustry TimescaleDB Historian (the data). Without them this card shows a placeholder; everything else on the page works.",
+          "style": {
+            "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+            "fontSize": "12px",
+            "color": "#8b95a5",
+            "whiteSpace": "normal",
+            "textAlign": "center",
+            "padding": "8px"
+          }
+        },
+        "meta": {
+          "name": "chartNote"
+        },
+        "position": {
+          "x": 38,
+          "y": 700,
+          "width": 772,
+          "height": 60
+        }
+      },
+      {
         "type": "embr.chart.chart-js",
         "version": 0,
         "props": {
@@ -1164,7 +1188,7 @@
               "transforms": [
                 {
                   "type": "script",
-                  "code": "\tplayer = self.view.params.player\n\tbase = \"[default]Doom/Players/%s/\" % player\n\tseries = [(\"Health\", \"#e24b4a\"), (\"Armor\", \"#2ecc71\"), (\"Ammo\", \"#f1c40f\")]\n\tend = system.date.now()\n\tstart = system.date.addMinutes(end, -5)\n\tds = system.tag.queryTagHistory(paths=[base + name for name, _ in series], startDate=start, endDate=end, returnFormat=\"Wide\", aggregationMode=\"LastValue\", returnSize=-1)\n\tpds = system.dataset.toPyDataSet(ds)\n\tout = []\n\tfor i, (name, color) in enumerate(series):\n\t\tpts = []\n\t\tfor row in pds:\n\t\t\ty = row[i + 1]\n\t\t\tif y is None:\n\t\t\t\tcontinue\n\t\t\tt = row[0]\n\t\t\tpts.append({\"x\": t.getTime() if hasattr(t, \"getTime\") else t, \"y\": y})\n\t\tout.append({\"label\": name, \"data\": pts, \"borderColor\": color, \"backgroundColor\": color + \"33\", \"borderWidth\": 2, \"pointRadius\": 0, \"stepped\": True, \"tension\": 0})\n\treturn out"
+                  "code": "\tplayer = self.view.params.player\n\tbase = \"[default]Doom/Players/%s/\" % player\n\tseries = [(\"Health\", \"#e24b4a\"), (\"Armor\", \"#2ecc71\"), (\"Ammo\", \"#f1c40f\")]\n\tend = system.date.now()\n\tstart = system.date.addMinutes(end, -5)\n\ttry:\n\t\tds = system.tag.queryTagHistory(paths=[base + name for name, _ in series], startDate=start, endDate=end, returnFormat=\"Wide\", aggregationMode=\"LastValue\", returnSize=-1)\n\texcept Exception:\n\t\treturn []\n\tpds = system.dataset.toPyDataSet(ds)\n\tout = []\n\tfor i, (name, color) in enumerate(series):\n\t\tpts = []\n\t\tfor row in pds:\n\t\t\ty = row[i + 1]\n\t\t\tif y is None:\n\t\t\t\tcontinue\n\t\t\tt = row[0]\n\t\t\tpts.append({\"x\": t.getTime() if hasattr(t, \"getTime\") else t, \"y\": y})\n\t\tout.append({\"label\": name, \"data\": pts, \"borderColor\": color, \"backgroundColor\": color + \"33\", \"borderWidth\": 2, \"pointRadius\": 0, \"stepped\": True, \"tension\": 0})\n\treturn out"
                 }
               ]
             }

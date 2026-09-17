@@ -52,8 +52,9 @@ an arena: the gateway hands each one a ticket.
 
 ## In pictures
 
-The demo project that ships with the repository, running on a plain 8.3.6
-gateway with the Mustry TimescaleDB Historian and Embr Charts installed.
+The demo project from the releases page, running on a plain 8.3.6 gateway
+with the Mustry TimescaleDB Historian and Embr Charts installed. The module
+provides the game and the tags; the screen around them is this project.
 
 ![The control room: the game, health/armor/ammo/kills tiles fed by the [Doom] tag provider, the line alarm table, tag-bound controls and a five-minute health trend from the historian.](docs/images/control-room.png)
 
@@ -84,6 +85,28 @@ bar: FRAG where ARMS used to be, and two player markers.*
    session. Click to play.
 
 That is the whole setup. Nothing else to configure.
+
+**What the module gives you:** the Doom component, the engine and the
+shareware episode served by the gateway, the `[Doom]` tag provider that fills
+itself with each player's telemetry, save games per user, and the deathmatch
+relay. All of it works from a bare component with default settings.
+
+**What it does not give you:** the control-room screen in the pictures
+below. That is a demo project, and it is one download away.
+
+### The demo project
+
+Every release also carries `Mustry-Doom-Demo-Project.zip`. In the Designer,
+File, Import, pick the zip, import everything. You get project `DoomDemo`
+with the control-room view at `/` and the deathmatch arena at
+`/arena/host/<player>` and `/arena/join/<player>`. The tags it uses are
+created the first time a view opens.
+
+The trend in the control room wants two optional modules: [Embr Charts](https://github.com/mussonindustrial/embr/releases)
+for the chart and a tag history provider, for instance the
+[Mustry TimescaleDB Historian](https://github.com/Mustry-Solutions/timescaledb-historian-module),
+for the data. Without them the chart card says so and the rest of the page
+works.
 
 ---
 

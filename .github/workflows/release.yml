@@ -118,6 +118,9 @@ jobs:
           path: ${{ steps.modl.outputs.path }}
           if-no-files-found: error
 
+      - name: Package the demo project
+        run: ops/package-demo.sh build/Mustry-Doom-Demo-Project.zip
+
       - name: Extract release notes
         if: ${{ steps.ver.outputs.publish == 'true' }}
         run: python3 ops/changelog-notes.py "${{ steps.ver.outputs.version }}" > "$RUNNER_TEMP/notes.md"
@@ -131,5 +134,6 @@ jobs:
             --title "v${{ steps.ver.outputs.version }}" \
             --notes-file "$RUNNER_TEMP/notes.md" \
             --draft \
-            "${{ steps.modl.outputs.path }}"
+            "${{ steps.modl.outputs.path }}" \
+            build/Mustry-Doom-Demo-Project.zip
           gh release edit "$GITHUB_REF_NAME" --draft=false

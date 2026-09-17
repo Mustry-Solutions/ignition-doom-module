@@ -6,6 +6,14 @@ are semver. Ignition's module version is numeric only, so releases are plain
 
 ## [Unreleased]
 
+### Added
+
+- `Mustry-Doom-Demo-Project.zip` on every release: the control-room and
+  arena views as a Designer-importable project (`DoomDemo`). Tags are created
+  on first open; history uses the "Doom Historian" profile when present, else
+  the gateway's first historian, else none; the chart card explains its two
+  optional modules instead of erroring.
+
 ## [0.1.1] - 2026-09-17
 
 ### Fixed

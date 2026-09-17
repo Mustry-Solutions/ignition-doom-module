@@ -14,7 +14,20 @@
 # resolved in types created through system.tag.configure on 8.3.6, so the
 # per-player folder is generated with literal paths instead.
 
-HISTORIAN = "Doom Historian"
+# Preferred history provider; on a gateway without it (an imported demo
+# project), fall back to whatever historian exists, else no history at all.
+PREFERRED_HISTORIAN = "Doom Historian"
+
+
+def historian():
+    """The tag history provider to use, or None when the gateway has none."""
+    try:
+        names = list(system.tag.getHistorianProviders())
+    except Exception:
+        names = []
+    if PREFERRED_HISTORIAN in names:
+        return PREFERRED_HISTORIAN
+    return names[0] if names else None
 
 
 def member(player, name, data_type, doc, alarms=None):
@@ -31,13 +44,17 @@ def member(player, name, data_type, doc, alarms=None):
         "executionMode": "EventDriven",
         "dataType": data_type,
         "documentation": doc,
-        "historyEnabled": True,
-        "historyProvider": HISTORIAN,
-        "historicalDeadbandStyle": "Discrete",
-        "sampleMode": "OnChange",
-        "historyMaxAgeUnits": "SEC",
-        "historyMaxAge": 60,
     }
+    provider = historian()
+    if provider:
+        t.update({
+            "historyEnabled": True,
+            "historyProvider": provider,
+            "historicalDeadbandStyle": "Discrete",
+            "sampleMode": "OnChange",
+            "historyMaxAgeUnits": "SEC",
+            "historyMaxAge": 60,
+        })
     if alarms:
         t["alarms"] = alarms
     return t
@@ -120,4 +137,4 @@ def setupPlayer(player):
     # cannot be overwritten in place ("Cannot move/rename inherited tag").
     system.tag.deleteTags(["[default]Doom/Players/" + player])
     r = system.tag.configure("[default]Doom/Players", [marine_folder(player)], "o")
-    log.info("Doom player folder configured for %s: %s" % (player, ",".join(str(x) for x in r)))
+    log.info("Doom player folder configured for %s (historian: %s): %s" % (player, historian() or "none", ",".join(str(x) for x in r)))
