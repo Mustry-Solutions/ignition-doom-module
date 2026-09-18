@@ -21,6 +21,17 @@ class DoomRelayTicketsTest {
     }
 
     @Test
+    void wadTicketsAndArenaTicketsNeverCross() {
+        String wad = DoomRelayTickets.issueWad("session-W");
+        String arena = DoomRelayTickets.issue("line3", "session-W", "Player1");
+        assertEquals(true, DoomRelayTickets.redeemWad(wad));
+        assertEquals(false, DoomRelayTickets.redeemWad(arena), "an arena ticket downloads nothing");
+        assertEquals(DoomRelayTickets.WAD_SCOPE, DoomRelayTickets.redeem(wad).arena, "the relay sees the pseudo-arena and refuses it");
+        DoomRelayTickets.revoke("session-W");
+        assertEquals(false, DoomRelayTickets.redeemWad(wad), "dies with the delegate like any other ticket");
+    }
+
+    @Test
     void unknownOrEmptyTicketsAreRefused() {
         assertNull(DoomRelayTickets.redeem(null));
         assertNull(DoomRelayTickets.redeem(""));

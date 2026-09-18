@@ -77,6 +77,24 @@ The gateway's exact Jetty version (12.0.27) is a compile-only dependency in
 creator redeems `?ticket=` and returns null (403) otherwise. Saves: `owner()` is
 null for unauthenticated sessions, the page then keeps slots in the tab.
 
+## Operator WADs (bring your own)
+
+`DoomWadStore` reads `data/modules/com.mustrysolutions.doom/wads/`; the hook
+serves one file per `GET /data/mustry-doom/wads/<name>` behind a
+`DoomRelayTickets.issueWad` ticket (`X-Doom-Ticket`; the relay refuses WAD
+tickets and vice versa). Browser: `planWads()` (doomLogic) decides what runs
+from the delegate's `doom-wads-ok` listing, `prepareWads()` (Doom.tsx)
+fetches and writes the files into the engine FS before main(). Engine facts
+that shape it: Chocolate Doom identifies an IWAD by FILE NAME (`KNOWN_IWADS`
+in doomLogic; anything else is "Unknown or invalid IWAD file"), refuses
+`-file` with shareware data, and reads `-warp` as one number for MAP01-style
+IWADs (`wadGameMode()` sniffs the lump directory). Saves of a custom IWAD go
+to `saves/<user>/game-<iwad>/`. The e2e fixture is doom1.wad seeded as
+`wads/doom.wad` by `seed_verify_wads` (ops/lib.sh); a registered IWAD is
+never in the repo, so PWAD loading proper is untested by CI. Data routes on
+8.3 MUST set `.accessControl(...)` or `mount()` throws "Access control must be
+specified".
+
 ## Start gating (why Doom.tsx waits before main())
 
 Perspective can hand a NEW view a REUSED component store (same address, e.g.
@@ -92,6 +110,8 @@ defaults: wrong role/arena/player. Two guards, both needed:
    multiplayer/arena/player, quit and restart on the new identity. Turns any
    remaining race into a short delay. Retry only when `p !== prev.props`
    (a setState round-trip must not retrigger: React error #185).
+   `wadIdentity()` does the same for a bound `config.iwad`/`pwads` (the WAD
+   e2e failed without it: the click landed before the binding).
 Symptom that led here: full e2e suite failed the deathmatch test 5/5 while
 the test alone passed; host ticket issued for arena `default`.
 

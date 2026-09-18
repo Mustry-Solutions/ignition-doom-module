@@ -14,6 +14,10 @@ export interface DoomConfig {
     relayUrl: string;
     sound: boolean;
     music: boolean;
+    /** Operator-supplied IWAD key ("" = the bundled shareware doom1.wad). */
+    iwad: string;
+    /** Operator-supplied PWAD keys, loaded in order after the IWAD. */
+    pwads: string[];
     skill: number;
     warp: boolean;
     episode: number;
@@ -160,15 +164,178 @@ export function engineSize(frameWidth: number, frameHeight: number): PixelSize {
     return { width: w, height: h };
 }
 
+// --- operator-supplied WADs ---------------------------------------------------
+// The module ships doom1.wad only. Other IWADs and PWADs come from the
+// gateway's data/modules/com.mustrysolutions.doom/wads/ folder, fetched by the
+// page with a ticket from its delegate and written into the engine's in-memory
+// filesystem before main(). Keys are case-insensitive names without ".wad".
+
+export const BUNDLED_IWAD = 'doom1';
+/**
+ * Chocolate Doom identifies an IWAD by its FILE NAME (d_iwad.c), not its
+ * contents, and refuses anything else with "Unknown or invalid IWAD file".
+ * So the operator's file must carry one of these names (case does not matter).
+ */
+export const KNOWN_IWADS = ['doom', 'doom1', 'doom2', 'plutonia', 'tnt', 'chex', 'hacx', 'freedm', 'freedoom1', 'freedoom2'] as const;
+/** Where the hook serves operator WADs (see DoomGatewayHook.mountRouteHandlers). */
+export const WADS_PATH = '/data/mustry-doom/wads/';
+export const WAD_TICKET_HEADER = 'X-Doom-Ticket';
+
+/** A WAD key the gateway understands, or null: one path segment, ".wad" dropped, lower case. */
+export function wadKey(raw: unknown): string | null {
+    if (typeof raw !== 'string') {
+        return null;
+    }
+    const s = raw.trim();
+    if (!/^[A-Za-z0-9_-][A-Za-z0-9._-]{0,63}$/.test(s)) {
+        return null;
+    }
+    const k = s.toLowerCase().replace(/\.wad$/, '');
+    return k === '' ? null : k;
+}
+
+/** True when the config asks for the bundled IWAD (empty, "doom1", "doom1.wad" or junk). */
+export function isBundledIwad(iwad: string): boolean {
+    const k = wadKey(iwad);
+    return k === null || k === BUNDLED_IWAD;
+}
+
+/** The engine filesystem name for a WAD key. */
+export function wadFileName(key: string): string {
+    return key + '.wad';
+}
+
+export function wadUrl(key: string): string {
+    return WADS_PATH + encodeURIComponent(wadFileName(key));
+}
+
+/** What the page decided to load, after checking the gateway's list. */
+export interface WadPlan {
+    /** IWAD key to run, BUNDLED_IWAD when falling back. */
+    iwad: string;
+    /** PWAD keys to fetch and pass with -file, in order. */
+    pwads: string[];
+    /** Keys that must be fetched from the gateway (the bundled IWAD is preloaded). */
+    fetch: string[];
+    /** Why the config could not be honoured in full; "" when it could. */
+    error: string;
+}
+
+/**
+ * Resolve config.iwad / config.pwads against what the gateway has. An unknown
+ * IWAD falls back to shareware, an unknown PWAD is dropped; both are named in
+ * the error so the operator learns it from output.wadError, not a black canvas.
+ */
+export function planWads(cfg: { iwad: string; pwads: string[] }, available: string[] | null): WadPlan {
+    const have = new Set((available || []).map((a) => wadKey(a)).filter((k): k is string => k !== null));
+    const problems: string[] = [];
+    let iwad = BUNDLED_IWAD;
+    if (!isBundledIwad(cfg.iwad)) {
+        const k = wadKey(cfg.iwad) as string;
+        if (!(KNOWN_IWADS as readonly string[]).includes(k)) {
+            problems.push(`IWAD "${cfg.iwad}": the engine only recognises IWADs by their canonical file name (${KNOWN_IWADS.join(', ')}); playing ${BUNDLED_IWAD}`);
+        } else if (available === null) {
+            problems.push(`IWAD "${cfg.iwad}" needs the gateway channel; playing ${BUNDLED_IWAD}`);
+        } else if (have.has(k)) {
+            iwad = k;
+        } else {
+            problems.push(`IWAD "${cfg.iwad}" is not in the gateway's wads folder; playing ${BUNDLED_IWAD}`);
+        }
+    } else if (typeof cfg.iwad === 'string' && cfg.iwad.trim() !== '' && wadKey(cfg.iwad) === null) {
+        problems.push(`IWAD "${cfg.iwad}" is not a valid name; playing ${BUNDLED_IWAD}`);
+    }
+    const pwads: string[] = [];
+    for (const raw of Array.isArray(cfg.pwads) ? cfg.pwads : []) {
+        const k = wadKey(raw);
+        if (k === null) {
+            if (typeof raw === 'string' && raw.trim() !== '') {
+                problems.push(`PWAD "${raw}" is not a valid name; skipped`);
+            }
+            continue;
+        }
+        if (available === null) {
+            problems.push(`PWAD "${raw}" needs the gateway channel; skipped`);
+        } else if (!have.has(k)) {
+            problems.push(`PWAD "${raw}" is not in the gateway's wads folder; skipped`);
+        } else if (!pwads.includes(k) && k !== iwad) {
+            pwads.push(k);
+        }
+    }
+    const fetch = iwad === BUNDLED_IWAD ? [...pwads] : [iwad, ...pwads];
+    return { iwad, pwads, fetch, error: problems.join('; ') };
+}
+
+/** Chocolate Doom's gamemode, as far as -warp and -file care. */
+export type GameMode = 'shareware' | 'registered' | 'retail' | 'commercial';
+
+/** The lump names in a WAD's directory: header [id:4][numlumps:i32][infotableofs:i32], entries [filepos:i32][size:i32][name:8]. */
+export function wadLumpNames(bytes: Uint8Array): Set<string> {
+    const names = new Set<string>();
+    if (bytes.length < 12) {
+        return names;
+    }
+    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    const numLumps = view.getInt32(4, true);
+    const dirOffset = view.getInt32(8, true);
+    if (numLumps <= 0 || dirOffset < 12 || dirOffset + numLumps * 16 > bytes.length) {
+        return names;
+    }
+    for (let i = 0; i < numLumps; i++) {
+        const at = dirOffset + i * 16 + 8;
+        let name = '';
+        for (let c = 0; c < 8 && bytes[at + c] !== 0; c++) {
+            name += String.fromCharCode(bytes[at + c]);
+        }
+        names.add(name.toUpperCase());
+    }
+    return names;
+}
+
+/**
+ * How Chocolate Doom will classify an IWAD (D_IdentifyVersion): MAP01 means
+ * Doom II ("commercial", -warp takes one number), E4M1 retail, E3M1
+ * registered, anything else shareware, which refuses -file outright.
+ */
+export function wadGameMode(bytes: Uint8Array): GameMode {
+    const lumps = wadLumpNames(bytes);
+    if (lumps.has('MAP01')) {
+        return 'commercial';
+    }
+    if (lumps.has('E4M1')) {
+        return 'retail';
+    }
+    if (lumps.has('E3M1')) {
+        return 'registered';
+    }
+    return 'shareware';
+}
+
+export function wadIsCommercial(bytes: Uint8Array): boolean {
+    return wadGameMode(bytes) === 'commercial';
+}
+
+/** What buildArgs needs to know about the WADs that will be on the engine's filesystem. */
+export interface GameFiles {
+    iwad: string;
+    pwads: string[];
+    commercial: boolean;
+}
+
+export const BUNDLED_GAME: GameFiles = { iwad: BUNDLED_IWAD, pwads: [], commercial: false };
+
 /** Chocolate Doom command line for a config and window size. */
-export function buildArgs(cfg: DoomConfig, size: PixelSize = { width: RENDER_WIDTH, height: RENDER_HEIGHT }, relay?: string): string[] {
+export function buildArgs(cfg: DoomConfig, size: PixelSize = { width: RENDER_WIDTH, height: RENDER_HEIGHT }, relay?: string,
+    game: GameFiles = BUNDLED_GAME): string[] {
     const args = [
-        '-iwad', 'doom1.wad',
+        '-iwad', wadFileName(game.iwad),
         '-config', 'default.cfg',
         '-savedir', SAVE_DIR,
         '-window', '-nogui',
         '-width', String(size.width), '-height', String(size.height)
     ];
+    if (game.pwads.length > 0) {
+        args.push('-file', ...game.pwads.map(wadFileName));
+    }
     if (!cfg.sound) {
         args.push('-nosfx');
     }
@@ -181,7 +348,12 @@ export function buildArgs(cfg: DoomConfig, size: PixelSize = { width: RENDER_WID
     const skill = clampInt(cfg.skill, 1, 5, 3);
     args.push('-skill', String(skill));
     if (cfg.warp) {
-        args.push('-warp', String(clampInt(cfg.episode, 1, 1, 1)), String(clampInt(cfg.map, 1, 9, 1)));
+        // Doom II has no episodes: -warp takes the map alone.
+        if (game.commercial) {
+            args.push('-warp', String(clampInt(cfg.map, 1, 32, 1)));
+        } else {
+            args.push('-warp', String(clampInt(cfg.episode, 1, 4, 1)), String(clampInt(cfg.map, 1, 9, 1)));
+        }
     }
     // Netgame over the gateway relay (doom-wasm's -wss transport). The host
     // is the Doom server (id 1) and launches once -nodes players are in the

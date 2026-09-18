@@ -269,3 +269,23 @@ seed_gateway_config() {
   "${COMPOSE[@]}" start gateway
   ok "Gateway config seeded; gateway restarting."
 }
+
+# --- verify fixtures: operator WADs ---------------------------------------------
+# The module reads operator-supplied IWADs/PWADs from
+# data/modules/com.mustrysolutions.doom/wads/ (see docs/reference.md). The e2e
+# suite needs one there without a registered IWAD in the repo: the shareware
+# doom1.wad copied in under the name doom.wad (the engine identifies IWADs by
+# file name, and doom.wad is a name it accepts; its contents still make it
+# shareware). Needs the gateway container to exist; the data volume keeps it.
+seed_verify_wads() {
+  local src="${PROJECT_ROOT}/gateway/src/main/resources/mounted/doom/doom1.wad"
+  local dst="/usr/local/bin/ignition/data/modules/com.mustrysolutions.doom/wads"
+  [[ -f "${src}" ]] || { warn "No ${src}; skipping the verify WAD fixture."; return 0; }
+  info "Seeding the verify WAD fixture (doom1.wad as ${dst}/doom.wad)..."
+  "${COMPOSE[@]}" run --rm -u root --entrypoint sh gateway \
+      -c "mkdir -p '${dst}' && chown -R ignition:ignition '${dst}'"
+  docker cp "${src}" "${CONTAINER_NAME}:${dst}/doom.wad"
+  "${COMPOSE[@]}" run --rm -u root --entrypoint sh gateway \
+      -c "chown -R ignition:ignition '${dst}'"
+  ok "Verify WAD fixture in place."
+}

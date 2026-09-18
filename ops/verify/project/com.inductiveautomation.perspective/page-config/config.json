@@ -21,6 +21,22 @@
     "arena": "default",
     "players": 2
    }
+  },
+  "/wad/:iwad": {
+   "viewPath": "DoomWad",
+   "viewParams": {
+    "iwad": "doom1",
+    "pwad": "",
+    "player": "WadTester"
+   }
+  },
+  "/wad/:iwad/:pwad": {
+   "viewPath": "DoomWad",
+   "viewParams": {
+    "iwad": "doom1",
+    "pwad": "",
+    "player": "WadTester"
+   }
   }
  }
 }

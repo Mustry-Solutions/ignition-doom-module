@@ -1,10 +1,10 @@
 import {
-    arenaKey, base64ToBytes, buildArgs, bytesToBase64, diffControls, EMPTY_CONTROLS, engineSize, heldKeys, isFatalLine, isValidSlot, parseEngineLine, readStats, relayUrl, saveDescription, saveSlotPath, splitArgs, STAT_IDS, statWrites, weaponKey, ZERO_STATS
+    arenaKey, base64ToBytes, buildArgs, BUNDLED_IWAD, bytesToBase64, diffControls, EMPTY_CONTROLS, engineSize, heldKeys, isFatalLine, isValidSlot, parseEngineLine, planWads, readStats, relayUrl, saveDescription, saveSlotPath, splitArgs, STAT_IDS, statWrites, wadGameMode, wadIsCommercial, wadKey, wadUrl, weaponKey, ZERO_STATS
 } from '../components/doom/doomLogic';
 import { mapDoomProps, PropReader } from '../components/doom/doomProps';
 
 const baseConfig = {
-    autoStart: false, statsIntervalMs: 250, persistSaves: true, player: '', publishTelemetry: true, multiplayer: 'off' as const, arena: 'default', players: 2, deathmatch: 'deathmatch' as const, relayUrl: '', sound: true, music: false, skill: 3, warp: true, episode: 1, map: 1,
+    autoStart: false, statsIntervalMs: 250, persistSaves: true, player: '', publishTelemetry: true, multiplayer: 'off' as const, arena: 'default', players: 2, deathmatch: 'deathmatch' as const, relayUrl: '', sound: true, music: false, iwad: '', pwads: [] as string[], skill: 3, warp: true, episode: 1, map: 1,
     keyboard: true, mouse: false, pixelated: true, showHud: true, playLabel: '', extraArgs: ''
 };
 
@@ -30,6 +30,84 @@ describe('buildArgs', () => {
     it('passes the frame size as the engine window', () => {
         const args = buildArgs(baseConfig, { width: 800, height: 500 });
         expect(args.slice(args.indexOf('-width'), args.indexOf('-width') + 4)).toEqual(['-width', '800', '-height', '500']);
+    });
+    it('runs an operator IWAD with its PWADs, and warps by map alone for Doom II-style games', () => {
+        const args = buildArgs({ ...baseConfig, episode: 3, map: 15 }, undefined, undefined, { iwad: 'doom2', pwads: ['av', 'my.mod'], commercial: true });
+        expect(args.slice(0, 2)).toEqual(['-iwad', 'doom2.wad']);
+        expect(args.slice(args.indexOf('-file'), args.indexOf('-file') + 3)).toEqual(['-file', 'av.wad', 'my.mod.wad']);
+        expect(args.slice(args.indexOf('-warp'), args.indexOf('-warp') + 2)).toEqual(['-warp', '15']);
+        expect(args[args.indexOf('-warp') + 2]).not.toBe('3');
+    });
+    it('allows four episodes for an episodic operator IWAD', () => {
+        const args = buildArgs({ ...baseConfig, episode: 4, map: 7 }, undefined, undefined, { iwad: 'doomu', pwads: [], commercial: false });
+        expect(args.slice(args.indexOf('-warp'), args.indexOf('-warp') + 3)).toEqual(['-warp', '4', '7']);
+    });
+});
+
+describe('operator WADs', () => {
+    it('keys names case-insensitively, with or without .wad, and rejects paths', () => {
+        expect(wadKey('DOOM2.WAD')).toBe('doom2');
+        expect(wadKey(' doom2 ')).toBe('doom2');
+        expect(wadKey('my.mod.wad')).toBe('my.mod');
+        expect(wadKey('../doom2.wad')).toBeNull();
+        expect(wadKey('a/b')).toBeNull();
+        expect(wadKey('.wad')).toBeNull();
+        expect(wadKey('')).toBeNull();
+        expect(wadKey(42)).toBeNull();
+        expect(wadUrl('my.mod')).toBe('/data/mustry-doom/wads/my.mod.wad');
+    });
+    it('plans the bundled game when nothing is asked for, without touching the gateway', () => {
+        expect(planWads({ iwad: '', pwads: [] }, null)).toEqual({ iwad: BUNDLED_IWAD, pwads: [], fetch: [], error: '' });
+        expect(planWads({ iwad: 'doom1.wad', pwads: [] }, null).error).toBe('');
+    });
+    it('uses what the gateway has and fetches the IWAD then the PWADs', () => {
+        const plan = planWads({ iwad: 'DOOM2', pwads: ['av.wad', 'AV', 'doom2'] }, ['doom2', 'av']);
+        expect(plan).toEqual({ iwad: 'doom2', pwads: ['av'], fetch: ['doom2', 'av'], error: '' });
+    });
+    it('refuses an IWAD name the engine would not recognise, without fetching it', () => {
+        const plan = planWads({ iwad: 'mygame', pwads: [] }, ['mygame']);
+        expect(plan.iwad).toBe(BUNDLED_IWAD);
+        expect(plan.fetch).toEqual([]);
+        expect(plan.error).toMatch(/canonical file name/);
+    });
+    it('falls back to shareware for an unknown IWAD and skips unknown PWADs, naming both', () => {
+        const plan = planWads({ iwad: 'plutonia', pwads: ['av', 'nope', 'bad/name'] }, ['doom2', 'av']);
+        expect(plan.iwad).toBe(BUNDLED_IWAD);
+        expect(plan.pwads).toEqual(['av']);
+        expect(plan.fetch).toEqual(['av']);
+        expect(plan.error).toMatch(/IWAD "plutonia" is not in the gateway's wads folder; playing doom1/);
+        expect(plan.error).toMatch(/PWAD "nope" is not in the gateway's wads folder; skipped/);
+        expect(plan.error).toMatch(/PWAD "bad\/name" is not a valid name; skipped/);
+    });
+    it('cannot honour operator WADs without the gateway channel', () => {
+        const plan = planWads({ iwad: 'doom2', pwads: ['av'] }, null);
+        expect(plan.iwad).toBe(BUNDLED_IWAD);
+        expect(plan.fetch).toEqual([]);
+        expect(plan.error).toMatch(/needs the gateway channel/);
+    });
+    it('detects a Doom II-style IWAD by its MAP01 lump', () => {
+        const wad = (lumps: string[]) => {
+            const dir = 12;
+            const bytes = new Uint8Array(dir + lumps.length * 16);
+            const view = new DataView(bytes.buffer);
+            bytes.set([0x49, 0x57, 0x41, 0x44], 0); // IWAD
+            view.setInt32(4, lumps.length, true);
+            view.setInt32(8, dir, true);
+            lumps.forEach((name, i) => {
+                for (let c = 0; c < name.length; c++) {
+                    bytes[dir + i * 16 + 8 + c] = name.charCodeAt(c);
+                }
+            });
+            return bytes;
+        };
+        expect(wadIsCommercial(wad(['PLAYPAL', 'E1M1', 'THINGS']))).toBe(false);
+        expect(wadIsCommercial(wad(['PLAYPAL', 'MAP01', 'THINGS']))).toBe(true);
+        expect(wadIsCommercial(wad(['MAP010']))).toBe(false);
+        expect(wadIsCommercial(new Uint8Array(3))).toBe(false);
+        expect(wadGameMode(wad(['E1M1', 'E1M9']))).toBe('shareware');
+        expect(wadGameMode(wad(['E1M1', 'E3M1']))).toBe('registered');
+        expect(wadGameMode(wad(['E1M1', 'E3M1', 'E4M1']))).toBe('retail');
+        expect(wadGameMode(wad(['map01']))).toBe('commercial');
     });
 });
 
@@ -95,7 +173,8 @@ describe('mapDoomProps', () => {
     const tree = (values: Record<string, unknown>): PropReader => ({
         readString: (p, d) => (typeof values[p] === 'string' ? values[p] as string : (d ?? '')),
         readBoolean: (p, d) => (typeof values[p] === 'boolean' ? values[p] as boolean : (d ?? false)),
-        readNumber: <T>(p: string, d: T) => (typeof values[p] === 'number' ? values[p] as unknown as T : d)
+        readNumber: <T>(p: string, d: T) => (typeof values[p] === 'number' ? values[p] as unknown as T : d),
+        readArray: (p, d) => (Array.isArray(values[p]) ? values[p] as unknown[] : (d ?? []))
     });
     it('applies defaults', () => {
         const p = mapDoomProps(tree({}));
@@ -105,8 +184,10 @@ describe('mapDoomProps', () => {
         expect(p.running).toBe(false);
     });
     it('reads bound values', () => {
-        const p = mapDoomProps(tree({ 'config.skill': 5, 'data.controls.fire': true, 'data.controls.weapon': 2, 'state.paused': true, 'state.running': true }));
+        const p = mapDoomProps(tree({ 'config.skill': 5, 'config.iwad': 'doom2', 'config.pwads': ['av', 7, 'x'], 'data.controls.fire': true, 'data.controls.weapon': 2, 'state.paused': true, 'state.running': true }));
         expect(p.config.skill).toBe(5);
+        expect(p.config.iwad).toBe('doom2');
+        expect(p.config.pwads).toEqual(['av', 'x']);
         expect(p.controls.fire).toBe(true);
         expect(p.controls.weapon).toBe(2);
         expect(p.paused).toBe(true);

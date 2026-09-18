@@ -98,9 +98,9 @@ below. That is a demo project, and it is one download away.
 
 Every release also carries `Mustry-Doom-Demo-Project.zip`. In the Designer,
 File, Import, pick the zip, import everything. You get project `DoomDemo`
-with the control-room view at `/` and the deathmatch arena at
-`/arena/host/<player>` and `/arena/join/<player>`. The tags it uses are
-created the first time a view opens.
+with the control-room view at `/`, the deathmatch arena at
+`/arena/host/<player>` and `/arena/join/<player>`, and `/wad/<iwad>` for a
+WAD of your own. The tags it uses are created the first time a view opens.
 
 The trend in the control room wants two optional modules: [Embr Charts](https://github.com/mussonindustrial/embr/releases)
 for the chart and a tag history provider, for instance the
@@ -130,6 +130,11 @@ Label it "Marine down". Watch the alarm table light up.
 **Deathmatch.** Set `config.multiplayer` to `host` on one component and
 `join` on another, same `config.arena`. Open both sessions. Fight.
 
+**Bring your own WAD.** Copy the `DOOM2.WAD` you own into
+`data/modules/com.mustrysolutions.doom/wads/` on the gateway and set
+`config.iwad` to `doom2`. Mods go next to it and into `config.pwads`. Only
+sessions running the component can fetch them; everyone else gets a 403.
+
 ---
 
 ## Where the data lives
@@ -140,6 +145,7 @@ Label it "Marine down". Watch the alarm table light up.
 | Save games | `data/modules/com.mustrysolutions.doom/saves/<user>/` on the gateway |
 | Deathmatch traffic | Relayed by the gateway at `/system/doom-relay/<arena>`, never stored |
 | The game itself | Runs in the browser tab. The gateway serves the engine and the shareware WAD. |
+| Your own WADs | `data/modules/com.mustrysolutions.doom/wads/` on the gateway, served to component sessions only |
 
 The player name defaults to the session's authenticated user, or to a
 per-session name when there is none. Save games are stored only for
@@ -154,7 +160,8 @@ The engine is [Chocolate Doom](https://www.chocolate-doom.org/), GPL-2.0, so
 the module is GPL-2.0. The shareware episode is id Software's and may only be
 redistributed complete and free of charge, which is why this module is free
 and always will be. Registered Doom, Doom II and other IWADs are not included
-and must not be added. See [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+and must not be added; the module plays the ones you own from the gateway's
+wads folder. See [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
 
 DOOM is a trademark of id Software LLC. Mustry Solutions is not affiliated with
 id Software, Bethesda, Cloudflare or Inductive Automation.
