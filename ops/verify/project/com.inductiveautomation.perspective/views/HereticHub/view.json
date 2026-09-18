@@ -1,0 +1,916 @@
+{
+  "custom": {},
+  "params": {},
+  "props": {
+    "defaultSize": {
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "root": {
+    "type": "ia.container.flex",
+    "version": 0,
+    "props": {
+      "direction": "column",
+      "wrap": "nowrap",
+      "justify": "flex-start",
+      "alignItems": "stretch",
+      "alignContent": "flex-start",
+      "style": {
+        "backgroundColor": "#0b0d10",
+        "minHeight": "100%"
+      }
+    },
+    "meta": {
+      "name": "root"
+    },
+    "position": {},
+    "custom": {},
+    "children": [
+      {
+        "type": "ia.container.flex",
+        "version": 0,
+        "props": {
+          "direction": "column",
+          "wrap": "nowrap",
+          "justify": "flex-start",
+          "alignItems": "stretch",
+          "alignContent": "flex-start",
+          "style": {
+            "padding": "36px 40px 20px 40px"
+          }
+        },
+        "meta": {
+          "name": "header"
+        },
+        "position": {
+          "basis": "auto",
+          "grow": 0,
+          "shrink": 0
+        },
+        "custom": {},
+        "children": [
+          {
+            "type": "ia.display.label",
+            "version": 0,
+            "props": {
+              "text": "\u2190 All games",
+              "style": {
+                "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+                "fontSize": "12px",
+                "color": "#8b95a5",
+                "cursor": "pointer",
+                "marginBottom": "6px"
+              }
+            },
+            "meta": {
+              "name": "back"
+            },
+            "position": {
+              "basis": "auto",
+              "grow": 0,
+              "shrink": 0
+            },
+            "events": {
+              "dom": {
+                "onClick": {
+                  "type": "script",
+                  "scope": "G",
+                  "config": {
+                    "script": "\tsystem.perspective.navigate(page='/')"
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "ia.display.label",
+            "version": 0,
+            "props": {
+              "text": "HERETIC",
+              "style": {
+                "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+                "fontSize": "40px",
+                "fontWeight": "800",
+                "letterSpacing": "0.12em",
+                "color": "#d9a441"
+              }
+            },
+            "meta": {
+              "name": "title"
+            },
+            "position": {
+              "basis": "auto",
+              "grow": 0,
+              "shrink": 0
+            }
+          },
+          {
+            "type": "ia.display.label",
+            "version": 0,
+            "props": {
+              "text": "Raven's 1994 shareware episode: City of the Damned.",
+              "style": {
+                "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+                "fontSize": "14px",
+                "color": "#8b95a5",
+                "marginTop": "2px"
+              }
+            },
+            "meta": {
+              "name": "subtitle"
+            },
+            "position": {
+              "basis": "auto",
+              "grow": 0,
+              "shrink": 0
+            }
+          }
+        ]
+      },
+      {
+        "type": "ia.container.flex",
+        "version": 0,
+        "props": {
+          "direction": "row",
+          "wrap": "wrap",
+          "justify": "flex-start",
+          "alignItems": "stretch",
+          "alignContent": "flex-start",
+          "style": {
+            "gap": "16px",
+            "padding": "0 40px"
+          }
+        },
+        "meta": {
+          "name": "sections"
+        },
+        "position": {
+          "basis": "auto",
+          "grow": 0,
+          "shrink": 0
+        },
+        "custom": {},
+        "children": [
+          {
+            "type": "ia.container.flex",
+            "version": 0,
+            "props": {
+              "direction": "column",
+              "wrap": "nowrap",
+              "justify": "flex-start",
+              "alignItems": "stretch",
+              "alignContent": "flex-start",
+              "style": {
+                "backgroundColor": "#12161c",
+                "borderRadius": "14px",
+                "padding": "18px 20px",
+                "border": "1px solid #1c2230",
+                "cursor": "pointer",
+                "maxWidth": "380px"
+              }
+            },
+            "meta": {
+              "name": "section0"
+            },
+            "position": {
+              "basis": "280px",
+              "grow": 1,
+              "shrink": 1
+            },
+            "custom": {},
+            "children": [
+              {
+                "type": "ia.display.label",
+                "version": 0,
+                "props": {
+                  "text": "Play",
+                  "style": {
+                    "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+                    "fontSize": "18px",
+                    "fontWeight": "700",
+                    "color": "#e6e9ef"
+                  }
+                },
+                "meta": {
+                  "name": "title"
+                },
+                "position": {
+                  "basis": "auto",
+                  "grow": 0,
+                  "shrink": 0
+                }
+              },
+              {
+                "type": "ia.display.label",
+                "version": 0,
+                "props": {
+                  "text": "Corvus, an elven wand and the same component. Outputs on the side.",
+                  "style": {
+                    "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+                    "fontSize": "13px",
+                    "color": "#8b95a5",
+                    "marginTop": "6px",
+                    "whiteSpace": "pre-wrap",
+                    "lineHeight": "1.45"
+                  }
+                },
+                "meta": {
+                  "name": "blurb"
+                },
+                "position": {
+                  "basis": "auto",
+                  "grow": 1,
+                  "shrink": 1
+                }
+              },
+              {
+                "type": "ia.display.label",
+                "version": 0,
+                "props": {
+                  "text": "/game/heretic",
+                  "style": {
+                    "fontFamily": "ui-monospace, Menlo, Consolas, monospace",
+                    "fontSize": "11px",
+                    "color": "#d9a441",
+                    "marginTop": "14px"
+                  }
+                },
+                "meta": {
+                  "name": "route"
+                },
+                "position": {
+                  "basis": "auto",
+                  "grow": 0,
+                  "shrink": 0
+                }
+              }
+            ],
+            "events": {
+              "dom": {
+                "onClick": {
+                  "type": "script",
+                  "scope": "G",
+                  "config": {
+                    "script": "\tsystem.perspective.navigate(page='/game/heretic')"
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "ia.container.flex",
+            "version": 0,
+            "props": {
+              "direction": "column",
+              "wrap": "nowrap",
+              "justify": "flex-start",
+              "alignItems": "stretch",
+              "alignContent": "flex-start",
+              "style": {
+                "backgroundColor": "#12161c",
+                "borderRadius": "14px",
+                "padding": "18px 20px",
+                "border": "1px solid #1c2230",
+                "cursor": "pointer",
+                "maxWidth": "380px"
+              }
+            },
+            "meta": {
+              "name": "section1"
+            },
+            "position": {
+              "basis": "280px",
+              "grow": 1,
+              "shrink": 1
+            },
+            "custom": {},
+            "children": [
+              {
+                "type": "ia.display.label",
+                "version": 0,
+                "props": {
+                  "text": "Deathmatch \u00b7 host",
+                  "style": {
+                    "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+                    "fontSize": "18px",
+                    "fontWeight": "700",
+                    "color": "#e6e9ef"
+                  }
+                },
+                "meta": {
+                  "name": "title"
+                },
+                "position": {
+                  "basis": "auto",
+                  "grow": 0,
+                  "shrink": 0
+                }
+              },
+              {
+                "type": "ia.display.label",
+                "version": 0,
+                "props": {
+                  "text": "Heretic through the same gateway relay. Host first.",
+                  "style": {
+                    "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+                    "fontSize": "13px",
+                    "color": "#8b95a5",
+                    "marginTop": "6px",
+                    "whiteSpace": "pre-wrap",
+                    "lineHeight": "1.45"
+                  }
+                },
+                "meta": {
+                  "name": "blurb"
+                },
+                "position": {
+                  "basis": "auto",
+                  "grow": 1,
+                  "shrink": 1
+                }
+              },
+              {
+                "type": "ia.display.label",
+                "version": 0,
+                "props": {
+                  "text": "/arena/host/Corvus1/htic/heretic",
+                  "style": {
+                    "fontFamily": "ui-monospace, Menlo, Consolas, monospace",
+                    "fontSize": "11px",
+                    "color": "#d9a441",
+                    "marginTop": "14px"
+                  }
+                },
+                "meta": {
+                  "name": "route"
+                },
+                "position": {
+                  "basis": "auto",
+                  "grow": 0,
+                  "shrink": 0
+                }
+              }
+            ],
+            "events": {
+              "dom": {
+                "onClick": {
+                  "type": "script",
+                  "scope": "G",
+                  "config": {
+                    "script": "\tsystem.perspective.navigate(page='/arena/host/Corvus1/htic/heretic')"
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "ia.container.flex",
+            "version": 0,
+            "props": {
+              "direction": "column",
+              "wrap": "nowrap",
+              "justify": "flex-start",
+              "alignItems": "stretch",
+              "alignContent": "flex-start",
+              "style": {
+                "backgroundColor": "#12161c",
+                "borderRadius": "14px",
+                "padding": "18px 20px",
+                "border": "1px solid #1c2230",
+                "cursor": "pointer",
+                "maxWidth": "380px"
+              }
+            },
+            "meta": {
+              "name": "section2"
+            },
+            "position": {
+              "basis": "280px",
+              "grow": 1,
+              "shrink": 1
+            },
+            "custom": {},
+            "children": [
+              {
+                "type": "ia.display.label",
+                "version": 0,
+                "props": {
+                  "text": "Deathmatch \u00b7 join",
+                  "style": {
+                    "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+                    "fontSize": "18px",
+                    "fontWeight": "700",
+                    "color": "#e6e9ef"
+                  }
+                },
+                "meta": {
+                  "name": "title"
+                },
+                "position": {
+                  "basis": "auto",
+                  "grow": 0,
+                  "shrink": 0
+                }
+              },
+              {
+                "type": "ia.display.label",
+                "version": 0,
+                "props": {
+                  "text": "Join from a second browser.",
+                  "style": {
+                    "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+                    "fontSize": "13px",
+                    "color": "#8b95a5",
+                    "marginTop": "6px",
+                    "whiteSpace": "pre-wrap",
+                    "lineHeight": "1.45"
+                  }
+                },
+                "meta": {
+                  "name": "blurb"
+                },
+                "position": {
+                  "basis": "auto",
+                  "grow": 1,
+                  "shrink": 1
+                }
+              },
+              {
+                "type": "ia.display.label",
+                "version": 0,
+                "props": {
+                  "text": "/arena/join/Corvus2/htic/heretic",
+                  "style": {
+                    "fontFamily": "ui-monospace, Menlo, Consolas, monospace",
+                    "fontSize": "11px",
+                    "color": "#d9a441",
+                    "marginTop": "14px"
+                  }
+                },
+                "meta": {
+                  "name": "route"
+                },
+                "position": {
+                  "basis": "auto",
+                  "grow": 0,
+                  "shrink": 0
+                }
+              }
+            ],
+            "events": {
+              "dom": {
+                "onClick": {
+                  "type": "script",
+                  "scope": "G",
+                  "config": {
+                    "script": "\tsystem.perspective.navigate(page='/arena/join/Corvus2/htic/heretic')"
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "ia.container.flex",
+            "version": 0,
+            "props": {
+              "direction": "column",
+              "wrap": "nowrap",
+              "justify": "flex-start",
+              "alignItems": "stretch",
+              "alignContent": "flex-start",
+              "style": {
+                "backgroundColor": "#12161c",
+                "borderRadius": "14px",
+                "padding": "18px 20px",
+                "border": "1px solid #1c2230",
+                "cursor": "pointer",
+                "maxWidth": "380px"
+              }
+            },
+            "meta": {
+              "name": "section3"
+            },
+            "position": {
+              "basis": "280px",
+              "grow": 1,
+              "shrink": 1
+            },
+            "custom": {},
+            "children": [
+              {
+                "type": "ia.display.label",
+                "version": 0,
+                "props": {
+                  "text": "WAD lab",
+                  "style": {
+                    "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+                    "fontSize": "18px",
+                    "fontWeight": "700",
+                    "color": "#e6e9ef"
+                  }
+                },
+                "meta": {
+                  "name": "title"
+                },
+                "position": {
+                  "basis": "auto",
+                  "grow": 0,
+                  "shrink": 0
+                }
+              },
+              {
+                "type": "ia.display.label",
+                "version": 0,
+                "props": {
+                  "text": "Drop heretic.wad in the gateway's wads folder and set config.iwad; Heretic takes PWADs on shareware data.",
+                  "style": {
+                    "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+                    "fontSize": "13px",
+                    "color": "#8b95a5",
+                    "marginTop": "6px",
+                    "whiteSpace": "pre-wrap",
+                    "lineHeight": "1.45"
+                  }
+                },
+                "meta": {
+                  "name": "blurb"
+                },
+                "position": {
+                  "basis": "auto",
+                  "grow": 1,
+                  "shrink": 1
+                }
+              },
+              {
+                "type": "ia.display.label",
+                "version": 0,
+                "props": {
+                  "text": "/game/heretic",
+                  "style": {
+                    "fontFamily": "ui-monospace, Menlo, Consolas, monospace",
+                    "fontSize": "11px",
+                    "color": "#d9a441",
+                    "marginTop": "14px"
+                  }
+                },
+                "meta": {
+                  "name": "route"
+                },
+                "position": {
+                  "basis": "auto",
+                  "grow": 0,
+                  "shrink": 0
+                }
+              }
+            ],
+            "events": {
+              "dom": {
+                "onClick": {
+                  "type": "script",
+                  "scope": "G",
+                  "config": {
+                    "script": "\tsystem.perspective.navigate(page='/game/heretic')"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "type": "ia.container.flex",
+        "version": 0,
+        "props": {
+          "direction": "column",
+          "wrap": "nowrap",
+          "justify": "flex-start",
+          "alignItems": "stretch",
+          "alignContent": "flex-start",
+          "style": {
+            "backgroundColor": "#0f1318",
+            "borderRadius": "14px",
+            "padding": "18px 20px",
+            "margin": "8px 40px 0 40px",
+            "border": "1px solid #1c2230"
+          }
+        },
+        "meta": {
+          "name": "facts"
+        },
+        "position": {
+          "basis": "auto",
+          "grow": 0,
+          "shrink": 0
+        },
+        "custom": {},
+        "children": [
+          {
+            "type": "ia.display.label",
+            "version": 0,
+            "props": {
+              "text": "UNDER THE HOOD",
+              "style": {
+                "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+                "fontSize": "11px",
+                "fontWeight": "700",
+                "letterSpacing": "0.1em",
+                "color": "#8b95a5",
+                "marginBottom": "8px"
+              }
+            },
+            "meta": {
+              "name": "factsTitle"
+            },
+            "position": {
+              "basis": "auto",
+              "grow": 0,
+              "shrink": 0
+            }
+          },
+          {
+            "type": "ia.container.flex",
+            "version": 0,
+            "props": {
+              "direction": "row",
+              "wrap": "nowrap",
+              "justify": "flex-start",
+              "alignItems": "stretch",
+              "alignContent": "flex-start",
+              "style": {
+                "marginTop": "4px"
+              }
+            },
+            "meta": {
+              "name": "engine"
+            },
+            "position": {
+              "basis": "auto",
+              "grow": 0,
+              "shrink": 0
+            },
+            "custom": {},
+            "children": [
+              {
+                "type": "ia.display.label",
+                "version": 0,
+                "props": {
+                  "text": "Engine",
+                  "style": {
+                    "fontFamily": "ui-monospace, Menlo, Consolas, monospace",
+                    "fontSize": "12px",
+                    "color": "#8b95a5"
+                  }
+                },
+                "meta": {
+                  "name": "k"
+                },
+                "position": {
+                  "basis": "110px",
+                  "grow": 0,
+                  "shrink": 0
+                }
+              },
+              {
+                "type": "ia.display.label",
+                "version": 0,
+                "props": {
+                  "text": "Chocolate Heretic \u2192 WebAssembly (same upstream)",
+                  "style": {
+                    "fontFamily": "ui-monospace, Menlo, Consolas, monospace",
+                    "fontSize": "12px",
+                    "color": "#e6e9ef"
+                  }
+                },
+                "meta": {
+                  "name": "v"
+                },
+                "position": {
+                  "basis": "auto",
+                  "grow": 1,
+                  "shrink": 1
+                }
+              }
+            ]
+          },
+          {
+            "type": "ia.container.flex",
+            "version": 0,
+            "props": {
+              "direction": "row",
+              "wrap": "nowrap",
+              "justify": "flex-start",
+              "alignItems": "stretch",
+              "alignContent": "flex-start",
+              "style": {
+                "marginTop": "4px"
+              }
+            },
+            "meta": {
+              "name": "iwad"
+            },
+            "position": {
+              "basis": "auto",
+              "grow": 0,
+              "shrink": 0
+            },
+            "custom": {},
+            "children": [
+              {
+                "type": "ia.display.label",
+                "version": 0,
+                "props": {
+                  "text": "IWAD",
+                  "style": {
+                    "fontFamily": "ui-monospace, Menlo, Consolas, monospace",
+                    "fontSize": "12px",
+                    "color": "#8b95a5"
+                  }
+                },
+                "meta": {
+                  "name": "k"
+                },
+                "position": {
+                  "basis": "110px",
+                  "grow": 0,
+                  "shrink": 0
+                }
+              },
+              {
+                "type": "ia.display.label",
+                "version": 0,
+                "props": {
+                  "text": "heretic1.wad \u00b7 saves in saves/<user>/game-heretic1/",
+                  "style": {
+                    "fontFamily": "ui-monospace, Menlo, Consolas, monospace",
+                    "fontSize": "12px",
+                    "color": "#e6e9ef"
+                  }
+                },
+                "meta": {
+                  "name": "v"
+                },
+                "position": {
+                  "basis": "auto",
+                  "grow": 1,
+                  "shrink": 1
+                }
+              }
+            ]
+          },
+          {
+            "type": "ia.container.flex",
+            "version": 0,
+            "props": {
+              "direction": "row",
+              "wrap": "nowrap",
+              "justify": "flex-start",
+              "alignItems": "stretch",
+              "alignContent": "flex-start",
+              "style": {
+                "marginTop": "4px"
+              }
+            },
+            "meta": {
+              "name": "tags"
+            },
+            "position": {
+              "basis": "auto",
+              "grow": 0,
+              "shrink": 0
+            },
+            "custom": {},
+            "children": [
+              {
+                "type": "ia.display.label",
+                "version": 0,
+                "props": {
+                  "text": "Tags",
+                  "style": {
+                    "fontFamily": "ui-monospace, Menlo, Consolas, monospace",
+                    "fontSize": "12px",
+                    "color": "#8b95a5"
+                  }
+                },
+                "meta": {
+                  "name": "k"
+                },
+                "position": {
+                  "basis": "110px",
+                  "grow": 0,
+                  "shrink": 0
+                }
+              },
+              {
+                "type": "ia.display.label",
+                "version": 0,
+                "props": {
+                  "text": "[Doom]Players/<player>/*  \u00b7  Game = heretic",
+                  "style": {
+                    "fontFamily": "ui-monospace, Menlo, Consolas, monospace",
+                    "fontSize": "12px",
+                    "color": "#e6e9ef"
+                  }
+                },
+                "meta": {
+                  "name": "v"
+                },
+                "position": {
+                  "basis": "auto",
+                  "grow": 1,
+                  "shrink": 1
+                }
+              }
+            ]
+          },
+          {
+            "type": "ia.container.flex",
+            "version": 0,
+            "props": {
+              "direction": "row",
+              "wrap": "nowrap",
+              "justify": "flex-start",
+              "alignItems": "stretch",
+              "alignContent": "flex-start",
+              "style": {
+                "marginTop": "4px"
+              }
+            },
+            "meta": {
+              "name": "wads"
+            },
+            "position": {
+              "basis": "auto",
+              "grow": 0,
+              "shrink": 0
+            },
+            "custom": {},
+            "children": [
+              {
+                "type": "ia.display.label",
+                "version": 0,
+                "props": {
+                  "text": "Your WADs",
+                  "style": {
+                    "fontFamily": "ui-monospace, Menlo, Consolas, monospace",
+                    "fontSize": "12px",
+                    "color": "#8b95a5"
+                  }
+                },
+                "meta": {
+                  "name": "k"
+                },
+                "position": {
+                  "basis": "110px",
+                  "grow": 0,
+                  "shrink": 0
+                }
+              },
+              {
+                "type": "ia.display.label",
+                "version": 0,
+                "props": {
+                  "text": "data/modules/com.mustrysolutions.doom/wads/ on the gateway",
+                  "style": {
+                    "fontFamily": "ui-monospace, Menlo, Consolas, monospace",
+                    "fontSize": "12px",
+                    "color": "#e6e9ef"
+                  }
+                },
+                "meta": {
+                  "name": "v"
+                },
+                "position": {
+                  "basis": "auto",
+                  "grow": 1,
+                  "shrink": 1
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "Mustry Doom \u00b7 a free Perspective module \u00b7 GPL-2.0 \u00b7 DOOM is a trademark of id Software LLC; Heretic of Raven Software / id Software.",
+          "style": {
+            "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+            "fontSize": "11px",
+            "color": "#5b6573",
+            "padding": "24px 40px 32px 40px"
+          }
+        },
+        "meta": {
+          "name": "footer"
+        },
+        "position": {
+          "basis": "auto",
+          "grow": 0,
+          "shrink": 0
+        }
+      }
+    ]
+  }
+}

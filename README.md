@@ -103,9 +103,12 @@ above. That is a demo project, and it is one download away.
 
 Every release also carries `Mustry-Doom-Demo-Project.zip`. In the Designer,
 File, Import, pick the zip, import everything. You get project `DoomDemo`
-with the control-room view at `/`, the deathmatch arena at
-`/arena/host/<player>` and `/arena/join/<player>`, and `/wad/<iwad>` for a
-WAD of your own. The tags it uses are created the first time a view opens.
+with a launcher at `/` that lists every game and its pages: the Doom
+control room at `/doom/control-room`, the deathmatch arena at
+`/arena/host/<player>` and `/arena/join/<player>`, `/wad/<iwad>` for a WAD
+of your own, `/game/heretic` for Heretic, and an overview per game at
+`/doom` and `/heretic`. The tags it uses are created the first time a view
+opens.
 
 **The full experience needs three things.** Two of them are optional, and
 the view tells you which ones it found: three pills in the header, green when
