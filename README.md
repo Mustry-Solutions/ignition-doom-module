@@ -60,8 +60,8 @@ provides the game and the tags; the screen around them is this project.
 
 *The control room. Tiles and chart are ordinary tags: the component writes
 its telemetry into the module's own `[Doom]` provider and the plant side
-mirrors it with history and alarms. Those breaks in the trend are engine
-restarts, not network loss.*
+mirrors it with history and alarms. The three pills in the header are the
+requirements check: this gateway has the module, Embr Charts and a historian.*
 
 ![The line is stopped: the header pill turns red, the "Line stopped" alarm sits unacknowledged in the table, and Doom shows its pause banner.](docs/images/alarm-pause.png)
 
@@ -92,7 +92,7 @@ itself with each player's telemetry, save games per user, and the deathmatch
 relay. All of it works from a bare component with default settings.
 
 **What it does not give you:** the control-room screen in the pictures
-below. That is a demo project, and it is one download away.
+above. That is a demo project, and it is one download away.
 
 ### The demo project
 
@@ -102,11 +102,19 @@ with the control-room view at `/`, the deathmatch arena at
 `/arena/host/<player>` and `/arena/join/<player>`, and `/wad/<iwad>` for a
 WAD of your own. The tags it uses are created the first time a view opens.
 
-The trend in the control room wants two optional modules: [Embr Charts](https://github.com/mussonindustrial/embr/releases)
-for the chart and a tag history provider, for instance the
-[Mustry TimescaleDB Historian](https://github.com/Mustry-Solutions/timescaledb-historian-module),
-for the data. Without them the chart card says so and the rest of the page
-works.
+**The full experience needs three things.** Two of them are optional, and
+the view tells you which ones it found: three pills in the header, green when
+the piece is there and grey when it is not. Hover one for what to do.
+
+| Piece | What it adds | Where |
+|---|---|---|
+| **Mustry Doom** module | The game, the `[Doom]` tags, save games, deathmatch. Everything except the trend. | This repo's [releases](https://github.com/Mustry-Solutions/ignition-doom-module/releases) |
+| **Embr Charts** (optional) | Draws the five-minute vitals trend. | Musson Industrial's [releases](https://github.com/mussonindustrial/embr/releases): the `Embr-Charts-Ignition83` file. Free, MIT. |
+| A **tag history provider** (optional) | Data for the trend. The demo enables history on its tags when it finds one. | Any historian. We use the [Mustry TimescaleDB Historian](https://github.com/Mustry-Solutions/timescaledb-historian-module) (needs a PostgreSQL/TimescaleDB database). |
+
+Without the optional two, the chart card says which one is missing and the
+rest of the page works. Add them later and reload the page: the tags pick up
+history on the next open.
 
 ---
 

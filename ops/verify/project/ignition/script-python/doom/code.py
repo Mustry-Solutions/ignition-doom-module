@@ -18,16 +18,54 @@
 # project), fall back to whatever historian exists, else no history at all.
 PREFERRED_HISTORIAN = "Doom Historian"
 
+# Module ids the full demo wants, as module.xml declares them.
+DOOM_MODULE = "com.mustrysolutions.doom"
+EMBR_CHARTS_MODULE = "com.mussonindustrial.embr.charts"
+
 
 def historian():
-    """The tag history provider to use, or None when the gateway has none."""
+    """The tag history provider to use, or None when the gateway has none.
+
+    8.3 has no script call that lists historians by name; browsing the
+    historical tag tree from its root returns one node per provider, as
+    "histprov:<name>". (system.tag.getHistorianProviders does not exist.)"""
+    names = []
     try:
-        names = list(system.tag.getHistorianProviders())
-    except Exception:
-        names = []
+        for node in system.tag.browseHistoricalTags("").getResults():
+            path = str(node.getPath())
+            if path.startswith("histprov:"):
+                names.append(path[len("histprov:"):].split(":")[0])
+    except Exception as e:
+        system.util.getLogger("MustryDoom.verify").warn("Could not list historian providers: %s" % e)
     if PREFERRED_HISTORIAN in names:
         return PREFERRED_HISTORIAN
     return names[0] if names else None
+
+
+def running_modules():
+    """Ids of the modules this gateway is running (system.util.getModules reports State "ACTIVE")."""
+    ids = set()
+    try:
+        for row in system.dataset.toPyDataSet(system.util.getModules()):
+            if str(row["State"]).lower() in ("active", "running"):
+                ids.add(str(row["Id"]))
+    except Exception as e:
+        system.util.getLogger("MustryDoom.verify").warn("Could not list modules: %s" % e)
+    return ids
+
+
+def requirements():
+    """What the full demo needs versus what this gateway has. Drives the
+    header pills and the chart placeholder in the DoomDemo view:
+    {"doom": bool, "embr": bool, "history": bool, "historian": name or None}."""
+    running = running_modules()
+    provider = historian()
+    return {
+        "doom": DOOM_MODULE in running,
+        "embr": EMBR_CHARTS_MODULE in running,
+        "history": provider is not None,
+        "historian": provider,
+    }
 
 
 def member(player, name, data_type, doc, alarms=None):

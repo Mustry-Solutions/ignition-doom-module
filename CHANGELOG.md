@@ -18,6 +18,28 @@ are semver. Ignition's module version is numeric only, so releases are plain
 - `GET /system/doom-relay/` answers with the relay's status: live arenas,
   whether each has a server, how many peers. No player names; the path is
   unauthenticated.
+- Demo project: three pills in the control-room header show whether the Doom
+  module, Embr Charts and a tag history provider are present on this gateway,
+  with a tooltip saying where to get a missing one. The chart placeholder
+  names the missing piece and the chart caption names the historian in use.
+- README: a "full experience" table listing the three pieces and where each
+  comes from.
+- `ops/`: container names and ports can be overridden per checkout, so a
+  worktree can run a second dev gateway beside the main one. Environment
+  variables now win over `.env`.
+- e2e: the header pills must all be green on the CI gateway.
+
+### Fixed
+
+- Demo project: history was silently never enabled on the demo tags since
+  0.1.2. The historian lookup called `system.tag.getHistorianProviders`,
+  which does not exist in 8.3; the error was swallowed and the script
+  concluded the gateway had no historian. Providers are now read from
+  `system.tag.browseHistoricalTags("")`. Reopening the view after upgrading
+  the project rebuilds the player folder with history on.
+- Demo project: the chart component is not rendered at all when Embr Charts
+  or a historian is missing, instead of Perspective's missing-component box
+  covering the explanation.
 
 ## [0.1.2] - 2026-09-17
 

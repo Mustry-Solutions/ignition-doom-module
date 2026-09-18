@@ -258,6 +258,13 @@ turn-left tag control and asserts the frame actually changed, and flips
 The gateway comes up at http://localhost:9188 (admin / password) with a
 `verify` project mounted from `ops/verify/project`. Open
 http://localhost:9188/data/perspective/client/verify and click the game.
+A second checkout (a worktree, say) can run its own gateway beside it by
+overriding the container names and ports:
+
+```bash
+CONTAINER_NAME=mdoom-b TIMESCALE_CONTAINER_NAME=mdoom-b-db \
+GATEWAY_HTTP_PORT=9288 GATEWAY_HTTPS_PORT=9243 TIMESCALE_PORT=5588 ops/fresh.sh
+```
 
 The compose file also starts TimescaleDB, and `ops/fresh.sh` seeds a
 "Doom Historian" profile for the [Mustry TimescaleDB Historian](https://github.com/Mustry-Solutions/timescaledb-historian-module)

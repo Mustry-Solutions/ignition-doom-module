@@ -97,6 +97,18 @@ test('doom: live telemetry reaches the outputs and the bound tags', async ({ pag
     await expect(page.getByText(/output\.player: Player1/)).toBeVisible();
 });
 
+test('demo: the header pills report the Doom module, Embr Charts and a historian present', async ({ page }) => {
+    // The dev/CI gateway stages both optional modules and seeds the "Doom
+    // Historian" profile, so all three must be found. A grey pill here means
+    // the detection broke (0.1.2 shipped with history silently off because it
+    // called a system.tag function that does not exist).
+    await openRoute(page, '/', '.mustry-doom');
+    await expect(page.getByText('\u2713 DOOM MODULE')).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText('\u2713 EMBR CHARTS')).toBeVisible();
+    await expect(page.getByText('\u2713 HISTORY')).toBeVisible();
+    await expect(page.getByText(/MARINE VITALS \u00b7 DOOM HISTORIAN/)).toBeVisible();
+});
+
 test('doom: quitting from the in-game menu leaves a restartable component, Restart brings it back', async ({ page }) => {
     const root = await startGame(page);
     // Real keys through the focused canvas: Escape opens the menu, Quit Game is

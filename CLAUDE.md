@@ -148,6 +148,11 @@ inside the container is a symlink to stdout: use `docker logs`, not `grep`.
   `scales.x.type = "time"` (moment adapter is bundled).
 - The e2e spec relies on toggle DOM order fire, forward, turnLeft, use,
   lineRunning and on the readout text patterns; keep them when restyling.
+- `view.custom.requirements` (expression `now(30000)` + script transform
+  calling `doom.requirements()`) is the one gateway check behind the three
+  header pills (reqDoom/reqEmbr/reqHistory), the chart caption and the
+  chart placeholder text. Module presence comes from `system.util.getModules`
+  by module id; the historian from `doom.historian()`.
 
 ## Verify project tags
 
@@ -165,6 +170,9 @@ boot, so do not reintroduce it without confirming the 8.3 format.
 ./gradlew build                 # .modl + jest + Java (gateway JUnit: save store, relay tickets)
 cd web && npx tsc --noEmit && npm test
 ops/fresh.sh                    # unattended dev gateway on :9188
+# A second checkout (worktree) beside it: CONTAINER_NAME=mdoom-b TIMESCALE_CONTAINER_NAME=mdoom-b-db
+#   GATEWAY_HTTP_PORT=9288 GATEWAY_HTTPS_PORT=9243 TIMESCALE_PORT=5588 ops/fresh.sh
+# Never tear down a container another checkout owns: `docker inspect <name>` shows its mounts.
 ops/deploy.sh                   # reload a new build
 ops/e2e.sh [--fresh|--no-deploy] # Playwright smoke test (e2e/), what CI runs
 ```

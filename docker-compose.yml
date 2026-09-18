@@ -24,7 +24,7 @@ services:
   # trust auth, no password (the seeded historian profile has none either).
   timescaledb:
     image: timescale/timescaledb:latest-pg17
-    container_name: mdoom-timescaledb
+    container_name: ${TIMESCALE_CONTAINER_NAME:-mdoom-timescaledb}
     environment:
       POSTGRES_DB: historian
       POSTGRES_USER: postgres
@@ -42,7 +42,7 @@ services:
 
   gateway:
     image: inductiveautomation/ignition:8.3.6
-    container_name: mdoom-ignition
+    container_name: ${CONTAINER_NAME:-mdoom-ignition}
     depends_on:
       init:
         condition: service_completed_successfully

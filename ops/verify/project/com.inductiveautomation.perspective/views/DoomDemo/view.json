@@ -1,6 +1,12 @@
 {
   "custom": {
-    "lineUnacked": 0
+    "lineUnacked": 0,
+    "requirements": {
+      "doom": true,
+      "embr": true,
+      "history": true,
+      "historian": null
+    }
   },
   "params": {
     "player": "Player1"
@@ -74,7 +80,7 @@
         "position": {
           "x": 170,
           "y": 22,
-          "width": 600,
+          "width": 340,
           "height": 20
         }
       },
@@ -82,7 +88,7 @@
         "type": "ia.display.label",
         "version": 0,
         "props": {
-          "text": "Telemetry \u2192 the module's [Doom] tag provider \u2192 plant tags with history and alarms \u2192 TimescaleDB. An unacknowledged line alarm pauses the game.",
+          "text": "Telemetry \u2192 the module's [Doom] tag provider \u2192 plant tags with history and alarms \u2192 the historian. An unacknowledged line alarm pauses the game.",
           "style": {
             "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
             "color": "#8b95a5",
@@ -97,6 +103,198 @@
           "y": 42,
           "width": 860,
           "height": 18
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "\u2713 DOOM MODULE",
+          "style": {
+            "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+            "fontSize": "10px",
+            "fontWeight": "700",
+            "letterSpacing": "0.08em",
+            "textAlign": "center",
+            "borderRadius": "12px",
+            "color": "#2ecc71",
+            "backgroundColor": "#173325"
+          }
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if({view.custom.requirements.doom}, \"\u2713 DOOM MODULE\", \"\u2717 DOOM MODULE\")"
+              }
+            }
+          },
+          "props.style.color": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if({view.custom.requirements.doom}, \"#2ecc71\", \"#6b7687\")"
+              }
+            }
+          },
+          "props.style.backgroundColor": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if({view.custom.requirements.doom}, \"#173325\", \"#1b2129\")"
+              }
+            }
+          },
+          "meta.tooltip.text": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if({view.custom.requirements.doom}, \"Mustry Doom module: running. The game, the [Doom] tag provider, save games and the deathmatch relay.\", \"Mustry Doom module not running. Nothing on this page works without it: github.com/Mustry-Solutions/ignition-doom-module/releases\")"
+              }
+            }
+          }
+        },
+        "meta": {
+          "name": "reqDoom",
+          "tooltip": {
+            "enabled": true,
+            "text": "Mustry Doom module: running. The game, the [Doom] tag provider, save games and the deathmatch relay."
+          }
+        },
+        "position": {
+          "x": 520,
+          "y": 20,
+          "width": 120,
+          "height": 24
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "\u2713 EMBR CHARTS",
+          "style": {
+            "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+            "fontSize": "10px",
+            "fontWeight": "700",
+            "letterSpacing": "0.08em",
+            "textAlign": "center",
+            "borderRadius": "12px",
+            "color": "#2ecc71",
+            "backgroundColor": "#173325"
+          }
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if({view.custom.requirements.embr}, \"\u2713 EMBR CHARTS\", \"\u2717 EMBR CHARTS\")"
+              }
+            }
+          },
+          "props.style.color": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if({view.custom.requirements.embr}, \"#2ecc71\", \"#6b7687\")"
+              }
+            }
+          },
+          "props.style.backgroundColor": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if({view.custom.requirements.embr}, \"#173325\", \"#1b2129\")"
+              }
+            }
+          },
+          "meta.tooltip.text": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if({view.custom.requirements.embr}, \"Embr Charts: installed. Draws the vitals trend.\", \"Embr Charts not installed: the trend card shows a placeholder. Free module: github.com/mussonindustrial/embr/releases (pick the Ignition 8.3 build).\")"
+              }
+            }
+          }
+        },
+        "meta": {
+          "name": "reqEmbr",
+          "tooltip": {
+            "enabled": true,
+            "text": "Embr Charts: installed. Draws the vitals trend."
+          }
+        },
+        "position": {
+          "x": 648,
+          "y": 20,
+          "width": 120,
+          "height": 24
+        }
+      },
+      {
+        "type": "ia.display.label",
+        "version": 0,
+        "props": {
+          "text": "\u2713 HISTORY",
+          "style": {
+            "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+            "fontSize": "10px",
+            "fontWeight": "700",
+            "letterSpacing": "0.08em",
+            "textAlign": "center",
+            "borderRadius": "12px",
+            "color": "#2ecc71",
+            "backgroundColor": "#173325"
+          }
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if({view.custom.requirements.history}, \"\u2713 HISTORY\", \"\u2717 HISTORY\")"
+              }
+            }
+          },
+          "props.style.color": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if({view.custom.requirements.history}, \"#2ecc71\", \"#6b7687\")"
+              }
+            }
+          },
+          "props.style.backgroundColor": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if({view.custom.requirements.history}, \"#173325\", \"#1b2129\")"
+              }
+            }
+          },
+          "meta.tooltip.text": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if({view.custom.requirements.history}, \"Tag history provider: \" + {view.custom.requirements.historian} + \". The demo tags historize into it.\", \"No tag history provider on this gateway: nothing to trend. Any historian works, e.g. the Mustry TimescaleDB Historian: github.com/Mustry-Solutions/timescaledb-historian-module. Reload the page after adding one.\")"
+              }
+            }
+          }
+        },
+        "meta": {
+          "name": "reqHistory",
+          "tooltip": {
+            "enabled": true,
+            "text": "Tag history provider: {historian}. The demo tags historize into it."
+          }
+        },
+        "position": {
+          "x": 776,
+          "y": 20,
+          "width": 120,
+          "height": 24
         }
       },
       {
@@ -1089,6 +1287,16 @@
           "y": 630,
           "width": 600,
           "height": 16
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "\"MARINE VITALS \u00b7 \" + upper(coalesce({view.custom.requirements.historian}, \"no historian\")) + \" \u00b7 LAST 5 MIN\""
+              }
+            }
+          }
         }
       },
       {
@@ -1113,6 +1321,16 @@
           "y": 700,
           "width": 772,
           "height": 60
+        },
+        "propConfig": {
+          "props.text": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "if({view.custom.requirements.embr} && {view.custom.requirements.history}, \"\", if(!{view.custom.requirements.embr} && !{view.custom.requirements.history}, \"The trend needs two optional modules: Embr Charts (the chart) and a tag history provider such as the Mustry TimescaleDB Historian (the data). The grey pills in the header show what is missing; everything else on this page works without them.\", if(!{view.custom.requirements.embr}, \"History is on (\" + {view.custom.requirements.historian} + \") but Embr Charts is not installed, so there is nothing to draw the trend with. Install Embr Charts (free, Ignition 8.3 build) and reload.\", \"Embr Charts is installed but this gateway has no tag history provider, so there is nothing to trend. Add one, for instance the Mustry TimescaleDB Historian, and reload: the demo enables history on its tags when the view opens.\")))"
+              }
+            }
+          }
         }
       },
       {
@@ -1191,6 +1409,14 @@
                   "code": "\tplayer = self.view.params.player\n\tbase = \"[default]Doom/Players/%s/\" % player\n\tseries = [(\"Health\", \"#e24b4a\"), (\"Armor\", \"#2ecc71\"), (\"Ammo\", \"#f1c40f\")]\n\tend = system.date.now()\n\tstart = system.date.addMinutes(end, -5)\n\ttry:\n\t\tds = system.tag.queryTagHistory(paths=[base + name for name, _ in series], startDate=start, endDate=end, returnFormat=\"Wide\", aggregationMode=\"LastValue\", returnSize=-1)\n\texcept Exception:\n\t\treturn []\n\tpds = system.dataset.toPyDataSet(ds)\n\tout = []\n\tfor i, (name, color) in enumerate(series):\n\t\tpts = []\n\t\tfor row in pds:\n\t\t\ty = row[i + 1]\n\t\t\tif y is None:\n\t\t\t\tcontinue\n\t\t\tt = row[0]\n\t\t\tpts.append({\"x\": t.getTime() if hasattr(t, \"getTime\") else t, \"y\": y})\n\t\tout.append({\"label\": name, \"data\": pts, \"borderColor\": color, \"backgroundColor\": color + \"33\", \"borderWidth\": 2, \"pointRadius\": 0, \"stepped\": True, \"tension\": 0})\n\treturn out"
                 }
               ]
+            }
+          },
+          "meta.visible": {
+            "binding": {
+              "type": "expr",
+              "config": {
+                "expression": "{view.custom.requirements.embr} && {view.custom.requirements.history}"
+              }
             }
           }
         },
@@ -1309,6 +1535,20 @@
     "params.player": {
       "paramDirection": "input",
       "persistent": true
+    },
+    "custom.requirements": {
+      "binding": {
+        "type": "expr",
+        "config": {
+          "expression": "now(30000)"
+        },
+        "transforms": [
+          {
+            "type": "script",
+            "code": "\t# Which of the three pieces of the full demo this gateway has (project library doom.requirements()).\n\treturn doom.requirements()"
+          }
+        ]
+      }
     }
   }
 }

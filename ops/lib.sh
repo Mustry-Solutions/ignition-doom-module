@@ -21,7 +21,6 @@ SIGNING_DNAME="CN=Mustry Solutions (Dev), O=Mustry Solutions, C=BE"
 
 # Must match MODULE_ID in common/.../MustryDoomModule.java.
 MODULE_ID="com.mustrysolutions.doom"
-CONTAINER_NAME="mdoom-ignition"
 
 # Use Java 17 for Gradle (matches the module's toolchain).
 JAVA_17_HOME="/Library/Java/JavaVirtualMachines/temurin-17.jdk/Contents/Home"
@@ -29,12 +28,20 @@ if [[ -d "${JAVA_17_HOME}" ]]; then
   export JAVA_HOME="${JAVA_17_HOME}"
 fi
 
-# Read host port overrides from .env (if present) so the printed URL matches compose.
+# Read host port overrides from .env (if present) so the printed URL matches
+# compose. Variables already in the environment win over .env, as they do for
+# compose itself, so a one-off override on the command line works.
 if [[ -f "${PROJECT_ROOT}/.env" ]]; then
-  # shellcheck disable=SC1091
-  set -a; source "${PROJECT_ROOT}/.env"; set +a
+  while IFS='=' read -r k v; do
+    [[ -z "${k}" || "${k}" == \#* ]] && continue
+    if [[ -z "${!k:-}" ]]; then export "${k}=${v}"; fi
+  done < "${PROJECT_ROOT}/.env"
 fi
 GATEWAY_HTTP_PORT="${GATEWAY_HTTP_PORT:-9188}"
+# Container names are overridable (with the ports) so two checkouts, e.g. a
+# worktree next to main, can each run their own gateway. Exported for compose.
+export CONTAINER_NAME="${CONTAINER_NAME:-mdoom-ignition}"
+export TIMESCALE_CONTAINER_NAME="${TIMESCALE_CONTAINER_NAME:-mdoom-timescaledb}"
 GATEWAY_URL="http://localhost:${GATEWAY_HTTP_PORT}"
 ADMIN_USER="admin"
 ADMIN_PASS="password"
