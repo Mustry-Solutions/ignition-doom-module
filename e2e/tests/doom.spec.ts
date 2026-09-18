@@ -192,6 +192,16 @@ test('deathmatch: two sessions meet through the gateway relay and both reach the
         await expect(hostPage.getByText(/output\.player: Player1/)).toBeVisible();
         await expect(joinPage.getByText(/output\.player: Player2/)).toBeVisible();
         await expect(hostPage.getByText(/netPlayers: 2/)).toBeVisible({ timeout: 30_000 });
+
+        // The relay's status route sees the arena: a server and one peer, no names.
+        const status = await hostPage.evaluate(async () => {
+            const r = await fetch('/system/doom-relay/');
+            return { ok: r.ok, body: await r.json() as { arenas: { arena: string; server: boolean; peers: number }[] } };
+        });
+        expect(status.ok).toBe(true);
+        const arena = status.body.arenas.find((a) => a.arena === 'e2e');
+        expect(arena).toEqual({ arena: 'e2e', server: true, peers: 1 });
+        expect(JSON.stringify(status.body)).not.toMatch(/Player[12]/);
     } finally {
         await joinCtx.close();
     }

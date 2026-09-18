@@ -6,6 +6,12 @@ are semver. Ignition's module version is numeric only, so releases are plain
 
 ## [Unreleased]
 
+### Added
+
+- `GET /system/doom-relay/` answers with the relay's status: live arenas,
+  whether each has a server, how many peers. No player names; the path is
+  unauthenticated.
+
 ## [0.1.2] - 2026-09-17
 
 ### Added
