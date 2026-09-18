@@ -6,6 +6,13 @@ are semver. Ignition's module version is numeric only, so releases are plain
 
 ## [Unreleased]
 
+### Changed
+
+- Demo project: a launcher at `/` with a card per game (Doom, Heretic;
+  Hexen and Strife as planned) and an overview page per game (`/doom`,
+  `/heretic`). The control room moved from `/` to `/doom/control-room`; every
+  game view's title links back to the launcher.
+
 ### Added
 
 - Heretic. `config.game = heretic` runs Chocolate Heretic (built from the

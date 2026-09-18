@@ -243,6 +243,24 @@ controls, so both ways of playing drive the same engine bindings.
 One engine per browser page: a second Doom component on the same page reports
 `busy`.
 
+## Verify project
+
+`ops/verify/project` is mounted into the dev gateway as project `verify`
+(and packaged as the `DoomDemo` release asset). Its pages:
+
+| Route | View | What |
+|---|---|---|
+| `/` | `Launcher` | One card per game: Doom and Heretic with their pages, Hexen and Strife as planned (links to their issues). |
+| `/doom`, `/heretic` | `DoomHub`, `HereticHub` | A game's overview: its pages with descriptions and routes, and the engine/IWAD/tag facts. |
+| `/doom/control-room` | `DoomDemo` | The control room: tiles from the `[Doom]` provider, the line alarm, tag-bound controls, the historian trend. |
+| `/arena/:role/:player[/:arena[/:game]]` | `DoomArena` | Deathmatch host or joiner. |
+| `/wad/:iwad[/:pwad]`, `/game/:game` | `DoomWad` | Bring-your-own-WAD lab, or a game with its bundled IWAD. |
+
+The launcher and the hubs are generated: `ops/verify/tools/build_launcher.py`
+holds the `GAMES` table (name, colour, tagline, sections with routes); add a
+game or a page there, run it, commit the JSON. Every game view's title is a
+link back to `/`.
+
 ## Build
 
 Requires Java 17. Node is downloaded by the build.

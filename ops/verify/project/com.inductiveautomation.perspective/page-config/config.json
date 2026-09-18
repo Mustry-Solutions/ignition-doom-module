@@ -1,7 +1,7 @@
 {
  "pages": {
   "/": {
-   "viewPath": "DoomDemo",
+   "viewPath": "Launcher",
    "viewParams": {}
   },
   "/arena/:role/:player": {
@@ -60,6 +60,18 @@
     "players": 2,
     "game": "doom"
    }
+  },
+  "/doom": {
+   "viewPath": "DoomHub",
+   "viewParams": {}
+  },
+  "/heretic": {
+   "viewPath": "HereticHub",
+   "viewParams": {}
+  },
+  "/doom/control-room": {
+   "viewPath": "DoomDemo",
+   "viewParams": {}
   }
  }
 }
