@@ -124,6 +124,18 @@ moment `config.players` marines are in the lobby. Rules come from the host's
 8-byte frame header (destination and source ids) and forwards; nothing about
 the game is interpreted on the gateway.
 
+A plain `GET /system/doom-relay/` (no WebSocket upgrade) returns the relay's
+status as JSON: `{"arenas": [{"arena", "server", "peers"}], "count"}`. It is
+unauthenticated like the relay path itself, so it names arenas and counts
+peers but never players; the `[Doom]` tag provider has the per-player view.
+
+The WebSocket upgrade through `WebResourceManager.addServlet` is verified on
+8.3.6 only. [DivCurl/ignition-doom](https://github.com/DivCurl/ignition-doom)
+found that on 8.3.1 Ignition hands the servlet an `HttpServletRequestWrapper`
+that Jetty 12's upgrade refuses, and unwraps it in an overridden `service()`.
+This module has no such workaround; if an older 8.3.x logs a failed upgrade
+on `/system/doom-relay/`, that is the first thing to try.
+
 The verify project has an arena page: open
 `/data/perspective/client/verify/arena/host/Player1` in one browser and
 `.../arena/join/Player2` in another (an optional third segment picks the

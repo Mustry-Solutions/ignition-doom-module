@@ -6,7 +6,12 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.inductiveautomation.ignition.common.gson.JsonArray;
+import com.inductiveautomation.ignition.common.gson.JsonObject;
 import com.inductiveautomation.ignition.common.util.LoggerEx;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServlet;
 import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServletFactory;
@@ -35,6 +40,12 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
  * {@link DoomRelayTickets}); anything else is refused with 403. The engine
  * reconnects during a netgame, so a ticket stays valid for the session. The relay is
  * reachable at {@code /system/doom-relay/<arena>} on the gateway.
+ *
+ * <p>Status: a plain (non-upgrade) GET on the servlet answers with JSON listing
+ * the live arenas, whether each has a server and how many peers it holds.
+ * Nothing that identifies a player is included: the path is unauthenticated,
+ * and the {@code [Doom]} tag provider already carries the per-player picture
+ * for anyone with tag access.
  */
 public class DoomRelayServlet extends JettyWebSocketServlet {
 
@@ -81,6 +92,33 @@ public class DoomRelayServlet extends JettyWebSocketServlet {
         int size() {
             return peers.size();
         }
+    }
+
+    /** Arenas as JSON, for {@link #doGet}. Package-private for tests. */
+    static JsonObject status() {
+        JsonObject out = new JsonObject();
+        JsonArray arenas = new JsonArray();
+        ARENAS.values().stream().sorted((a, b) -> a.name.compareTo(b.name)).forEach(a -> {
+            JsonObject o = new JsonObject();
+            o.addProperty("arena", a.name);
+            Session server = a.server;
+            o.addProperty("server", server != null && server.isOpen());
+            o.addProperty("peers", a.size());
+            arenas.add(o);
+        });
+        out.add("arenas", arenas);
+        out.addProperty("count", arenas.size());
+        return out;
+    }
+
+    /** {@code GET /system/doom-relay/} without a WebSocket upgrade: the relay's status. */
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws java.io.IOException {
+        resp.setStatus(HttpServletResponse.SC_OK);
+        resp.setContentType("application/json");
+        resp.setCharacterEncoding("UTF-8");
+        resp.setHeader("Cache-Control", "no-store");
+        resp.getWriter().write(status().toString());
     }
 
     @Override
