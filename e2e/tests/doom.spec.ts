@@ -4,7 +4,7 @@ import path from 'path';
 import { PNG } from 'pngjs';
 import { test, expect, openRoute } from './helpers';
 
-// The DoomDemo view (route "/"): the Doom component plus toggle switches bound
+// The DoomDemo view (route "/doom/control-room"): the Doom component plus toggle switches bound
 // bidirectionally to data.controls.* and to the [default]Doom/Line/Running tag
 // (state.paused is an expression on that tag: line stops, Doom pauses).
 // DOM order of the toggles: fire, forward, turnLeft, use, lineRunning.
@@ -15,7 +15,7 @@ const toggle = (page: Page, index: number) =>
     page.locator('[data-component="ia.input.toggle-switch"]').nth(index).locator('.ia_toggleSwitch');
 
 async function startGame(page: Page) {
-    const root = await openRoute(page, '/', '.mustry-doom');
+    const root = await openRoute(page, '/doom/control-room', '.mustry-doom');
     await expect(root).toHaveClass(/mustry-doom--idle/);
     await root.locator('.mustry-doom__splash').click();
     // Engine download + WAD preload + first tic. Generous: CI runners are slow.
@@ -109,7 +109,7 @@ test('demo: the header pills report the Doom module, Embr Charts and whether a h
     // system.tag function that does not exist).
     const historianStaged = readdirSync(path.join(__dirname, '..', '..', 'ops', 'modules'))
         .some((f) => /historian/i.test(f) && f.endsWith('.modl'));
-    await openRoute(page, '/', '.mustry-doom');
+    await openRoute(page, '/doom/control-room', '.mustry-doom');
     await expect(page.getByText('\u2713 DOOM MODULE')).toBeVisible({ timeout: 20_000 });
     await expect(page.getByText('\u2713 EMBR CHARTS')).toBeVisible();
     if (historianStaged) {
@@ -179,7 +179,7 @@ test('doom: an unauthenticated session keeps its saves in the tab, never in a sh
 test('relay: a WebSocket without a gateway-issued ticket is refused', async ({ page, consoleErrors }) => {
     // Straight from the page's origin, no component involved: the handshake
     // must fail (403). A ticketed one is exercised by the deathmatch test.
-    await openRoute(page, '/', '.mustry-doom');
+    await openRoute(page, '/doom/control-room', '.mustry-doom');
     const result = await page.evaluate(() => new Promise<string>((resolve) => {
         const ws = new WebSocket(`ws://${location.host}/system/doom-relay/e2e`);
         ws.onopen = () => { ws.close(); resolve('open'); };
@@ -309,4 +309,35 @@ test('heretic: deathmatch through the same relay, both marines reach E1M1', asyn
     } finally {
         await joinCtx.close();
     }
+});
+
+// The launcher at / and the per-game hubs (ops/verify/tools/build_launcher.py).
+test('launcher: every game has a card, the hubs list their sections, and the links navigate', async ({ page }) => {
+    await openRoute(page, '/', '.flex-container');
+    await expect(page.getByText('MUSTRY DOOM', { exact: true })).toBeVisible({ timeout: 30_000 });
+    for (const game of ['DOOM', 'HERETIC', 'HEXEN', 'STRIFE']) {
+        await expect(page.getByText(game, { exact: true })).toBeVisible();
+    }
+    await expect(page.getByText('SHIPS', { exact: true })).toHaveCount(2);
+    await expect(page.getByText('PLANNED', { exact: true })).toHaveCount(2);
+
+    // Card link -> the control room, whose DOOM title leads back to the launcher.
+    await page.getByText('Control room', { exact: true }).click();
+    await expect(page.locator('.mustry-doom')).toBeVisible({ timeout: 30_000 });
+    await expect(page).toHaveURL(/\/doom\/control-room$/);
+    await page.getByText('DOOM', { exact: true }).first().click();
+    await expect(page.getByText('MUSTRY DOOM', { exact: true })).toBeVisible({ timeout: 30_000 });
+
+    // Hubs: one per shipping game, section cards carry their routes.
+    await page.getByText('Overview →').first().click();
+    await expect(page).toHaveURL(/\/doom$/);
+    await expect(page.getByText('/doom/control-room', { exact: true })).toBeVisible();
+    await expect(page.getByText('/arena/host/Player1/default/doom', { exact: true })).toBeVisible();
+    await page.getByText('← All games').click();
+    await page.getByText('Overview →').nth(1).click();
+    await expect(page).toHaveURL(/\/heretic$/);
+    await expect(page.getByText('/arena/host/Corvus1/htic/heretic', { exact: true })).toBeVisible();
+    await page.getByText('Play', { exact: true }).click();
+    await expect(page).toHaveURL(/\/game\/heretic$/);
+    await expect(page.locator('.mustry-doom')).toBeVisible({ timeout: 30_000 });
 });
