@@ -1,5 +1,5 @@
 // Reads the Perspective PropertyTree into the typed props the component uses.
-import { DoomConfig, DoomControls, HOLD_CONTROLS, normMultiplayer, normNetRules } from './doomLogic';
+import { DoomConfig, DoomControls, HOLD_CONTROLS, normGame, normMultiplayer, normNetRules } from './doomLogic';
 
 /** The PropertyTree readers we use — kept structural so the mapper is node-testable. */
 export interface PropReader {
@@ -24,6 +24,7 @@ export function mapDoomProps(tree: PropReader): DoomProps {
     controls.weapon = tree.readNumber('data.controls.weapon', 0);
     return {
         config: {
+            game: normGame(tree.readString('config.game', 'doom')),
             autoStart: tree.readBoolean('config.autoStart', false),
             statsIntervalMs: tree.readNumber('config.statsIntervalMs', 250),
             persistSaves: tree.readBoolean('config.persistSaves', true),

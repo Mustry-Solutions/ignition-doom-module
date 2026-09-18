@@ -2,6 +2,8 @@
 // key definitions and control diffing. No DOM, no perspective-client — node-tested.
 
 export interface DoomConfig {
+    /** Which engine and shareware episode: 'doom' (default) or 'heretic'. */
+    game: GameId;
     autoStart: boolean;
     statsIntervalMs: number;
     persistSaves: boolean;
@@ -28,6 +30,70 @@ export interface DoomConfig {
     showHud: boolean;
     playLabel: string;
     extraArgs: string;
+}
+
+// --- the games --------------------------------------------------------------
+// Everything that differs between the Chocolate Doom family members lives in
+// this table; the component never spells out a game's file names elsewhere.
+
+export type GameId = 'doom' | 'heretic';
+
+export interface GameDef {
+    id: GameId;
+    title: string;
+    /** Where the gateway serves this game's engine, IWAD and config. */
+    enginePath: string;
+    script: string;
+    /** The freely redistributable shareware IWAD that ships in the module (a WAD key). */
+    bundledIwad: string;
+    /** The vanilla config file the engine reads (-config). */
+    configFile: string;
+    /**
+     * IWAD file names the engine accepts (d_iwad.c): Chocolate Doom identifies
+     * an IWAD by NAME and refuses anything else as "Unknown or invalid IWAD file".
+     */
+    knownIwads: readonly string[];
+    /** The slot file the engine writes into -savedir. */
+    saveFile(slot: number): string;
+    /** The engine has -altdeath (Doom II rules); Heretic only has -deathmatch. */
+    altdeath: boolean;
+    /** The engine refuses -file with the shareware IWAD ("Register!"). Doom does, Heretic does not. */
+    sharewareRefusesPwads: boolean;
+    /** Highest episode -warp accepts. */
+    maxEpisode: number;
+}
+
+export const GAMES: Record<GameId, GameDef> = {
+    doom: {
+        id: 'doom',
+        title: 'Doom',
+        enginePath: '/res/mustry-doom/doom/',
+        script: 'websockets-doom.js',
+        bundledIwad: 'doom1',
+        configFile: 'default.cfg',
+        knownIwads: ['doom', 'doom1', 'doom2', 'plutonia', 'tnt', 'chex', 'hacx', 'freedm', 'freedoom1', 'freedoom2'],
+        saveFile: (slot) => `doomsav${slot}.dsg`,
+        altdeath: true,
+        sharewareRefusesPwads: true,
+        maxEpisode: 4
+    },
+    heretic: {
+        id: 'heretic',
+        title: 'Heretic',
+        enginePath: '/res/mustry-doom/heretic/',
+        script: 'websockets-heretic.js',
+        bundledIwad: 'heretic1',
+        configFile: 'heretic.cfg',
+        knownIwads: ['heretic', 'heretic1'],
+        saveFile: (slot) => `hticsav${slot}.hsg`,
+        altdeath: false,
+        sharewareRefusesPwads: false,
+        maxEpisode: 5
+    }
+};
+
+export function normGame(s: unknown): GameId {
+    return s === 'heretic' ? 'heretic' : 'doom';
 }
 
 export type Multiplayer = 'off' | 'host' | 'join';
@@ -170,13 +236,8 @@ export function engineSize(frameWidth: number, frameHeight: number): PixelSize {
 // page with a ticket from its delegate and written into the engine's in-memory
 // filesystem before main(). Keys are case-insensitive names without ".wad".
 
-export const BUNDLED_IWAD = 'doom1';
-/**
- * Chocolate Doom identifies an IWAD by its FILE NAME (d_iwad.c), not its
- * contents, and refuses anything else with "Unknown or invalid IWAD file".
- * So the operator's file must carry one of these names (case does not matter).
- */
-export const KNOWN_IWADS = ['doom', 'doom1', 'doom2', 'plutonia', 'tnt', 'chex', 'hacx', 'freedm', 'freedoom1', 'freedoom2'] as const;
+/** Doom's bundled IWAD key; kept as a name because the gateway's save layout treats it specially. */
+export const BUNDLED_IWAD = GAMES.doom.bundledIwad;
 /** Where the hook serves operator WADs (see DoomGatewayHook.mountRouteHandlers). */
 export const WADS_PATH = '/data/mustry-doom/wads/';
 export const WAD_TICKET_HEADER = 'X-Doom-Ticket';
@@ -194,10 +255,10 @@ export function wadKey(raw: unknown): string | null {
     return k === '' ? null : k;
 }
 
-/** True when the config asks for the bundled IWAD (empty, "doom1", "doom1.wad" or junk). */
-export function isBundledIwad(iwad: string): boolean {
+/** True when the config asks for the game's bundled IWAD (empty, "doom1", "doom1.wad" or junk). */
+export function isBundledIwad(iwad: string, game: GameDef = GAMES.doom): boolean {
     const k = wadKey(iwad);
-    return k === null || k === BUNDLED_IWAD;
+    return k === null || k === game.bundledIwad;
 }
 
 /** The engine filesystem name for a WAD key. */
@@ -226,23 +287,24 @@ export interface WadPlan {
  * IWAD falls back to shareware, an unknown PWAD is dropped; both are named in
  * the error so the operator learns it from output.wadError, not a black canvas.
  */
-export function planWads(cfg: { iwad: string; pwads: string[] }, available: string[] | null): WadPlan {
+export function planWads(cfg: { iwad: string; pwads: string[] }, available: string[] | null, game: GameDef = GAMES.doom): WadPlan {
     const have = new Set((available || []).map((a) => wadKey(a)).filter((k): k is string => k !== null));
     const problems: string[] = [];
-    let iwad = BUNDLED_IWAD;
-    if (!isBundledIwad(cfg.iwad)) {
+    const bundled = game.bundledIwad;
+    let iwad = bundled;
+    if (!isBundledIwad(cfg.iwad, game)) {
         const k = wadKey(cfg.iwad) as string;
-        if (!(KNOWN_IWADS as readonly string[]).includes(k)) {
-            problems.push(`IWAD "${cfg.iwad}": the engine only recognises IWADs by their canonical file name (${KNOWN_IWADS.join(', ')}); playing ${BUNDLED_IWAD}`);
+        if (!game.knownIwads.includes(k)) {
+            problems.push(`IWAD "${cfg.iwad}": the ${game.title} engine only recognises IWADs by their canonical file name (${game.knownIwads.join(', ')}); playing ${bundled}`);
         } else if (available === null) {
-            problems.push(`IWAD "${cfg.iwad}" needs the gateway channel; playing ${BUNDLED_IWAD}`);
+            problems.push(`IWAD "${cfg.iwad}" needs the gateway channel; playing ${bundled}`);
         } else if (have.has(k)) {
             iwad = k;
         } else {
-            problems.push(`IWAD "${cfg.iwad}" is not in the gateway's wads folder; playing ${BUNDLED_IWAD}`);
+            problems.push(`IWAD "${cfg.iwad}" is not in the gateway's wads folder; playing ${bundled}`);
         }
     } else if (typeof cfg.iwad === 'string' && cfg.iwad.trim() !== '' && wadKey(cfg.iwad) === null) {
-        problems.push(`IWAD "${cfg.iwad}" is not a valid name; playing ${BUNDLED_IWAD}`);
+        problems.push(`IWAD "${cfg.iwad}" is not a valid name; playing ${bundled}`);
     }
     const pwads: string[] = [];
     for (const raw of Array.isArray(cfg.pwads) ? cfg.pwads : []) {
@@ -261,7 +323,7 @@ export function planWads(cfg: { iwad: string; pwads: string[] }, available: stri
             pwads.push(k);
         }
     }
-    const fetch = iwad === BUNDLED_IWAD ? [...pwads] : [iwad, ...pwads];
+    const fetch = iwad === bundled ? [...pwads] : [iwad, ...pwads];
     return { iwad, pwads, fetch, error: problems.join('; ') };
 }
 
@@ -321,20 +383,27 @@ export interface GameFiles {
     commercial: boolean;
 }
 
-export const BUNDLED_GAME: GameFiles = { iwad: BUNDLED_IWAD, pwads: [], commercial: false };
+/** The game's shareware episode and nothing else. */
+export function bundledFiles(game: GameDef = GAMES.doom): GameFiles {
+    return { iwad: game.bundledIwad, pwads: [], commercial: false };
+}
 
-/** Chocolate Doom command line for a config and window size. */
+export const BUNDLED_GAME: GameFiles = bundledFiles(GAMES.doom);
+
+/** Chocolate Doom/Heretic command line for a config and window size. */
 export function buildArgs(cfg: DoomConfig, size: PixelSize = { width: RENDER_WIDTH, height: RENDER_HEIGHT }, relay?: string,
-    game: GameFiles = BUNDLED_GAME): string[] {
+    files?: GameFiles): string[] {
+    const game = GAMES[normGame(cfg.game)];
+    const wads = files || bundledFiles(game);
     const args = [
-        '-iwad', wadFileName(game.iwad),
-        '-config', 'default.cfg',
+        '-iwad', wadFileName(wads.iwad),
+        '-config', game.configFile,
         '-savedir', SAVE_DIR,
         '-window', '-nogui',
         '-width', String(size.width), '-height', String(size.height)
     ];
-    if (game.pwads.length > 0) {
-        args.push('-file', ...game.pwads.map(wadFileName));
+    if (wads.pwads.length > 0) {
+        args.push('-file', ...wads.pwads.map(wadFileName));
     }
     if (!cfg.sound) {
         args.push('-nosfx');
@@ -349,10 +418,10 @@ export function buildArgs(cfg: DoomConfig, size: PixelSize = { width: RENDER_WID
     args.push('-skill', String(skill));
     if (cfg.warp) {
         // Doom II has no episodes: -warp takes the map alone.
-        if (game.commercial) {
+        if (wads.commercial) {
             args.push('-warp', String(clampInt(cfg.map, 1, 32, 1)));
         } else {
-            args.push('-warp', String(clampInt(cfg.episode, 1, 4, 1)), String(clampInt(cfg.map, 1, 9, 1)));
+            args.push('-warp', String(clampInt(cfg.episode, 1, game.maxEpisode, 1)), String(clampInt(cfg.map, 1, 9, 1)));
         }
     }
     // Netgame over the gateway relay (doom-wasm's -wss transport). The host
@@ -362,7 +431,7 @@ export function buildArgs(cfg: DoomConfig, size: PixelSize = { width: RENDER_WID
         args.push('-wss', relay);
         if (cfg.multiplayer === 'host') {
             args.push('-server', '-nodes', String(clampInt(cfg.players, 2, 4, 2)));
-            if (cfg.deathmatch === 'deathmatch') {
+            if (cfg.deathmatch === 'deathmatch' || (cfg.deathmatch === 'altdeath' && !game.altdeath)) {
                 args.push('-deathmatch');
             } else if (cfg.deathmatch === 'altdeath') {
                 args.push('-altdeath');
@@ -457,7 +526,7 @@ export function statWrites(prev: DoomStats | null, next: DoomStats): Array<[stri
 }
 
 // --- save games ---------------------------------------------------------------
-// Chocolate Doom writes slot files doomsav<N>.dsg into the -savedir directory
+// Chocolate Doom writes slot files doomsav<N>.dsg (Heretic: hticsav<N>.hsg) into the -savedir directory
 // (SAVE_DIR below, in the engine's in-memory filesystem). A save begins with a
 // 24-byte, NUL-padded description typed by the player.
 
@@ -467,8 +536,8 @@ export const SAVE_STRING_SIZE = 24;
 /** Upper bound accepted for one slot; vanilla saves are tens of KB. */
 export const MAX_SAVE_BYTES = 512 * 1024;
 
-export function saveSlotPath(slot: number): string {
-    return `${SAVE_DIR}/doomsav${slot}.dsg`;
+export function saveSlotPath(slot: number, game: GameDef = GAMES.doom): string {
+    return `${SAVE_DIR}/${game.saveFile(slot)}`;
 }
 
 export function isValidSlot(slot: unknown): slot is number {

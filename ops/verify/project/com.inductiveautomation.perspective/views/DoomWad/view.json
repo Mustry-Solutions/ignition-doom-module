@@ -1,9 +1,10 @@
 {
   "custom": {},
   "params": {
-    "iwad": "doom1",
+    "iwad": "",
     "pwad": "",
-    "player": "WadTester"
+    "player": "WadTester",
+    "game": "doom"
   },
   "props": {
     "defaultSize": {
@@ -21,6 +22,10 @@
       "persistent": true
     },
     "params.player": {
+      "paramDirection": "input",
+      "persistent": true
+    },
+    "params.game": {
       "paramDirection": "input",
       "persistent": true
     }
@@ -85,7 +90,7 @@
             "binding": {
               "type": "expr",
               "config": {
-                "expression": "\"Bring your own WAD \u00b7 IWAD \" + {view.params.iwad} + if({view.params.pwad} != \"\", \" + PWAD \" + {view.params.pwad}, \"\") + \" \u00b7 from the gateway's wads folder\""
+                "expression": "upper({view.params.game}) + \" \u00b7 IWAD \" + if({view.params.iwad} = \"\", \"bundled shareware\", {view.params.iwad}) + if({view.params.pwad} != \"\", \" + PWAD \" + {view.params.pwad}, \"\") + \" \u00b7 from the gateway's wads folder\""
               }
             }
           }
@@ -122,7 +127,8 @@
             "warp": true,
             "iwad": "",
             "pwads": [],
-            "player": ""
+            "player": "",
+            "game": "doom"
           },
           "data": {
             "controls": {
@@ -190,6 +196,14 @@
                 }
               ]
             }
+          },
+          "props.config.game": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "view.params.game"
+              }
+            }
           }
         },
         "custom": {
@@ -254,7 +268,7 @@
             "binding": {
               "type": "expr",
               "config": {
-                "expression": "\"output.state: \" + {../doom.props.output.state} + \"\\noutput.message: \" + {../doom.props.output.message} + \"\\noutput.iwad: \" + coalesce({../doom.props.output.iwad}, \"\") + \"\\noutput.wadError: \" + coalesce({../doom.props.output.wadError}, \"\") + \"\\noutput.availableWads: \" + coalesce({../doom.custom.availableWadsText}, \"\") + \"\\noutput.inLevel: \" + {../doom.props.output.inLevel} + \"  \u00b7  episode: \" + {../doom.props.output.episode} + \"  \u00b7  map: \" + {../doom.props.output.map} + \"\\n\\nThe gateway reads IWADs and PWADs from\\ndata/modules/com.mustrysolutions.doom/wads/\\n\\n/wad/doom2          play DOOM2.WAD\\n/wad/doom2/av       ... with av.wad\\n/wad/plutonia       not there? shareware + output.wadError\""
+                "expression": "\"output.state: \" + {../doom.props.output.state} + \"\\noutput.message: \" + {../doom.props.output.message} + \"\\noutput.iwad: \" + coalesce({../doom.props.output.iwad}, \"\") + \"\\noutput.wadError: \" + coalesce({../doom.props.output.wadError}, \"\") + \"\\noutput.availableWads: \" + coalesce({../doom.custom.availableWadsText}, \"\") + \"\\noutput.inLevel: \" + {../doom.props.output.inLevel} + \"  \u00b7  episode: \" + {../doom.props.output.episode} + \"  \u00b7  map: \" + {../doom.props.output.map} + \"\\n\\n/game/heretic       Heretic shareware (bundled)\\n\\nThe gateway reads IWADs and PWADs from\\ndata/modules/com.mustrysolutions.doom/wads/\\n\\n/wad/doom2          play DOOM2.WAD\\n/wad/doom2/av       ... with av.wad\\n/wad/plutonia       not there? shareware + output.wadError\""
               }
             }
           }

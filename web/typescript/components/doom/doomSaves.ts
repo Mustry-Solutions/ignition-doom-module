@@ -18,7 +18,7 @@ export const SAVE_EVENTS = {
     SLOTS: 'doom-saves-slots',
     /** gateway -> page: { error } */
     ERROR: 'doom-saves-error',
-    /** page -> gateway: { player, running, stats: {...changed} } -> module tag provider */
+    /** page -> gateway: { player, running, game, stats: {...changed} } -> module tag provider */
     TELEMETRY: 'doom-telemetry',
     /** gateway -> page: { player } the resolved [Doom]Players/<player> name */
     PLAYER: 'doom-player',
@@ -133,8 +133,8 @@ export class DoomStoreDelegate extends ComponentStoreDelegate {
     }
 
     /** Push telemetry (only the changed stats) for the gateway's [Doom] provider. */
-    publishTelemetry(player: string, running: boolean, stats: Record<string, number | boolean>): void {
-        this.fireEvent(SAVE_EVENTS.TELEMETRY, { player, running, stats });
+    publishTelemetry(player: string, running: boolean, stats: Record<string, number | boolean>, game = 'doom'): void {
+        this.fireEvent(SAVE_EVENTS.TELEMETRY, { player, running, game, stats });
     }
 
     handleEvent(eventName: string, eventObject: JsObject): void {

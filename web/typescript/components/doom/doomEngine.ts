@@ -1,11 +1,10 @@
 // DOM-facing engine plumbing: loading the Emscripten glue script once per page,
 // the one-instance-per-page guard, and synthesising keyboard events for the
 // engine's SDL layer. Deliberately thin and untested (see doomLogic for logic).
-import { KeyDef, WAD_TICKET_HEADER, wadFileName, wadUrl } from './doomLogic';
+import { GameDef, GAMES, KeyDef, WAD_TICKET_HEADER, wadFileName, wadUrl } from './doomLogic';
 
-/** Where the gateway serves the engine (see MustryDoomModule.ENGINE_PATH). */
-export const ENGINE_PATH = '/res/mustry-doom/doom/';
-export const ENGINE_SCRIPT = ENGINE_PATH + 'websockets-doom.js';
+/** Where the gateway serves the Doom engine (see MustryDoomModule.ENGINE_PATH); other games: GAMES[id].enginePath. */
+export const ENGINE_PATH = GAMES.doom.enginePath;
 
 /**
  * The canvas's element id. SDL's Emscripten backend (2.32) hardcodes its canvas
@@ -48,19 +47,22 @@ export interface DoomModuleConfig {
 
 export type DoomFactory = (config: DoomModuleConfig) => Promise<DoomModule>;
 
-let factoryPromise: Promise<DoomFactory> | null = null;
+/** One factory per engine script; keyed by URL because every game's glue defines the same global. */
+const factories = new Map<string, Promise<DoomFactory>>();
 
-/** Injects the engine's glue script once and resolves its module factory. */
-export function loadEngine(): Promise<DoomFactory> {
-    if (!factoryPromise) {
-        factoryPromise = new Promise<DoomFactory>((resolve, reject) => {
-            const existing = (window as unknown as { createDoomModule?: DoomFactory }).createDoomModule;
-            if (existing) {
-                resolve(existing);
-                return;
-            }
+/**
+ * Injects a game's glue script once and resolves its module factory. Each
+ * script sets window.createDoomModule (the build shares one EXPORT_NAME), so
+ * the factory is captured the moment its own script finishes loading and
+ * never read from the global again: a later game's script overwrites it.
+ */
+export function loadEngine(game: GameDef = GAMES.doom): Promise<DoomFactory> {
+    const url = game.enginePath + game.script;
+    let p = factories.get(url);
+    if (!p) {
+        p = new Promise<DoomFactory>((resolve, reject) => {
             const s = document.createElement('script');
-            s.src = ENGINE_SCRIPT;
+            s.src = url;
             s.async = true;
             s.onload = () => {
                 const f = (window as unknown as { createDoomModule?: DoomFactory }).createDoomModule;
@@ -71,13 +73,14 @@ export function loadEngine(): Promise<DoomFactory> {
                 }
             };
             s.onerror = () => {
-                factoryPromise = null;
-                reject(new Error(`Could not load ${ENGINE_SCRIPT}`));
+                factories.delete(url);
+                reject(new Error(`Could not load ${url}`));
             };
             document.head.appendChild(s);
         });
+        factories.set(url, p);
     }
-    return factoryPromise;
+    return p;
 }
 
 // --- operator-supplied WADs ---------------------------------------------------

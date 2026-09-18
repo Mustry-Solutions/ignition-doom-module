@@ -8,6 +8,21 @@ are semver. Ignition's module version is numeric only, so releases are plain
 
 ### Added
 
+- Heretic. `config.game = heretic` runs Chocolate Heretic (built from the
+  same upstream, `engine/patches/0002`) with Raven's shareware episode; same
+  controls, telemetry, saves (`saves/<user>/game-heretic1/`), operator WADs
+  and deathmatch relay. `[Doom]Players/<player>/Game` names the game. (#5)
+
+### Fixed
+
+- The engine build was not reproducible and, from the Docker image, produced
+  a Doom that showed FRAG and "Player 4 left the game" in single player and
+  ignored turn keys: `boolean` had two sizes across translation units under
+  C17 (Emscripten's headers include `<stdbool.h>`). `doomtype.h` now gives C
+  one `int` boolean. Both engines are rebuilt from `engine/build.sh`.
+
+### Added
+
 - Bring your own WAD: `config.iwad` and `config.pwads` play IWADs and PWADs
   the gateway operator placed in `data/modules/com.mustrysolutions.doom/wads/`.
   Downloads need a delegate-issued ticket, an unknown IWAD falls back to

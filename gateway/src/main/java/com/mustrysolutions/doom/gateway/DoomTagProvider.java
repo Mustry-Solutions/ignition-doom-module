@@ -73,12 +73,13 @@ public final class DoomTagProvider {
         STAT_TYPES.forEach((stat, type) -> provider.configureTag(path(player, tagName(stat)), type));
         provider.configureTag(path(player, "Online"), DataType.Boolean);
         provider.configureTag(path(player, "Session"), DataType.String);
+        provider.configureTag(path(player, "Game"), DataType.String);
         provider.configureTag(path(player, "LastSeen"), DataType.DateTime);
         log.infof("[%s] created Players/%s", PROVIDER_NAME, player);
     }
 
-    /** Apply a telemetry message: only the keys present are written. */
-    public void update(String player, String sessionId, boolean running, JsonObject stats) {
+    /** Apply a telemetry message: only the keys present are written. {@code game} is "doom", "heretic", ... */
+    public void update(String player, String sessionId, boolean running, String game, JsonObject stats) {
         ensure(player);
         Date now = new Date();
         if (stats != null) {
@@ -93,6 +94,9 @@ public final class DoomTagProvider {
         }
         provider.updateValue(path(player, "Online"), running, QualityCode.Good, now);
         provider.updateValue(path(player, "Session"), sessionId, QualityCode.Good, now);
+        if (game != null && !game.isBlank()) {
+            provider.updateValue(path(player, "Game"), game, QualityCode.Good, now);
+        }
         provider.updateValue(path(player, "LastSeen"), now, QualityCode.Good, now);
     }
 

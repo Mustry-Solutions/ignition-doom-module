@@ -1,27 +1,51 @@
 # Engine
 
-The game engine is [Chocolate Doom](https://www.chocolate-doom.org/) compiled to
-WebAssembly with Emscripten, via Cloudflare's
+The game engines are [Chocolate Doom](https://www.chocolate-doom.org/) and
+Chocolate Heretic compiled to WebAssembly with Emscripten, via Cloudflare's
 [doom-wasm](https://github.com/cloudflare/doom-wasm) port (GPL-2.0). The
-compiled output is committed in `gateway/src/main/resources/mounted/doom/` so
-building the module never needs Emscripten:
+compiled output is committed under `gateway/src/main/resources/mounted/<game>/`
+so building the module never needs Emscripten:
 
 | File | What | Origin |
 |---|---|---|
-| `websockets-doom.js` | Emscripten glue, exports `createDoomModule()` | built by `engine/build.sh` |
-| `websockets-doom.wasm` | the engine | built by `engine/build.sh` |
-| `doom1.wad` | Doom shareware 1.9 IWAD (sha1 `5b2e249b9c5133ec987b3ea77596381dc0d6bc1d`) | id Software, freely redistributable in full and free of charge only |
-| `default.cfg` | key bindings and engine defaults | this repo |
+| `doom/websockets-doom.js` | Emscripten glue, exports `createDoomModule()` | built by `engine/build.sh` |
+| `doom/websockets-doom.wasm` | the Doom engine | built by `engine/build.sh` |
+| `doom/doom1.wad` | Doom shareware 1.9 IWAD (sha1 `5b2e249b9c5133ec987b3ea77596381dc0d6bc1d`) | id Software, freely redistributable in full and free of charge only |
+| `doom/default.cfg` | key bindings and engine defaults | this repo |
+| `heretic/websockets-heretic.js` | Emscripten glue; also exports `createDoomModule()` (the page keys engines by script URL) | built by `engine/build.sh` |
+| `heretic/websockets-heretic.wasm` | the Heretic engine | built by `engine/build.sh` |
+| `heretic/heretic1.wad` | Heretic shareware 1.2 IWAD (sha1 `b4c50ca9bea07f7c35250a1a11906091971c05ae`), from `htic_v12.zip` on the idgames archive | Raven Software / id Software; freely distributable by electronic means, no commercial use |
+| `heretic/heretic.cfg` | the same key bindings for Heretic | this repo |
 
-`build.sh` clones the pinned upstream commit, applies `patches/`, builds in the
-official Emscripten Docker image (or locally with `--local`) and copies the two
-outputs into place. The patches are the complete source delta from upstream,
-which together with the pinned commit is the corresponding source the GPL asks
-us to make available.
+`build.sh` clones the pinned doom-wasm commit, restores `src/heretic/` from
+the Chocolate Doom commit doom-wasm was cut from (doom-wasm dropped the other
+games), applies `patches/`, builds in the official Emscripten Docker image (or
+locally with `--local`) and copies the outputs into place. The patches are the
+complete source delta from upstream, which together with the pinned commits is
+the corresponding source the GPL asks us to make available:
 
-## Key bindings (`default.cfg`)
+- `0001` adapts doom-wasm to the current Emscripten, builds a `MODULARIZE`d
+  factory, adds the Doom telemetry/save hooks, and gives `boolean` one ABI:
+  upstream's `doomtype.h` picks a 1-byte `bool` in files that saw `<stdbool.h>`
+  and a 4-byte enum elsewhere, and Emscripten's own headers pull `stdbool.h`
+  in, so under the image's default C17 the two halves of the engine disagreed
+  about `sizeof(boolean)` and shared globals (`playeringame[]`, `netgame`,
+  `paused`) read as garbage: single-player Doom showed FRAG and "Player 4 left
+  the game". A `--local` build under a C23-default clang never showed it,
+  which is why the binary committed before this fix was not reproducible
+  from the Docker build.
+- `0002` wires Heretic into the build (`src/Makefile.am`, `configure.ac`),
+  restores two mouse bindings doom-wasm dropped that Heretic's `g_game.c`
+  needs (`mouseb_speed`, `mouseb_useartifact`, in `m_controls` and the
+  `m_config` defaults table), and ports the three game-side changes doom-wasm
+  made for Doom: the browser-driven main loop (`emscripten_set_main_loop`),
+  the `doom: 10, game started` line and the save hook, plus
+  `src/heretic/mustry_stats.c` with the same stat ids.
 
-Values are DOS scancodes, as Chocolate Doom stores them.
+## Key bindings (`default.cfg`, `heretic.cfg`)
+
+Values are DOS scancodes, as Chocolate Doom stores them. Both games use the
+same table.
 
 | Action | Key | Scancode |
 |---|---|---|

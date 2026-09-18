@@ -1,0 +1,354 @@
+diff --git a/configure.ac b/configure.ac
+index f671b04a..5252936d 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -209,6 +209,7 @@ pcsound/Makefile
+ data/Makefile
+ src/Makefile
+ src/doom/Makefile
++src/heretic/Makefile
+ src/resource.rc
+ src/setup-res.rc
+ textscreen/Makefile
+diff --git a/src/Makefile.am b/src/Makefile.am
+index ca6bb5de..05d08ae9 100644
+--- a/src/Makefile.am
++++ b/src/Makefile.am
+@@ -1,9 +1,9 @@
+ 
+-SUBDIRS = doom
++SUBDIRS = doom heretic
+ 
+ execgamesdir = ${bindir}
+ 
+-execgames_PROGRAMS = @PROGRAM_PREFIX@doom
++execgames_PROGRAMS = @PROGRAM_PREFIX@doom @PROGRAM_PREFIX@heretic
+ 
+ AM_CFLAGS = -I$(top_srcdir)/textscreen            \
+             -I$(top_srcdir)/opl                   \
+@@ -112,6 +112,11 @@ endif
+ 
+ @PROGRAM_PREFIX@doom_LDADD = doom/libdoom.a $(EXTRA_LIBS)
+ 
++# Mustry: the Heretic binary from the same shared sources (same factory name;
++# the page keys engines by script URL).
++@PROGRAM_PREFIX@heretic_SOURCES=$(SOURCE_FILES_WITH_DEH)
++@PROGRAM_PREFIX@heretic_LDADD = heretic/libheretic.a $(EXTRA_LIBS)
++
+ # Make "make" aware of convenience libraries in subdirectories
+ 
+ doom/libdoom.a:
+diff --git a/src/heretic/Makefile.am b/src/heretic/Makefile.am
+index 0cc77a90..0a7d0071 100644
+--- a/src/heretic/Makefile.am
++++ b/src/heretic/Makefile.am
+@@ -29,6 +29,7 @@ info.c                 info.h                        \
+ in_lude.c                                            \
+ m_random.c             m_random.h                    \
+ mn_menu.c                                            \
++mustry_stats.c                                      \
+                        p_action.h                    \
+ p_ceilng.c                                           \
+ p_doors.c                                            \
+diff --git a/src/heretic/d_main.c b/src/heretic/d_main.c
+index 5f4c6693..be7c0d69 100644
+--- a/src/heretic/d_main.c
++++ b/src/heretic/d_main.c
+@@ -19,6 +19,8 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ 
++#include <emscripten.h>
++
+ #include "txt_main.h"
+ #include "txt_io.h"
+ 
+@@ -232,6 +234,22 @@ boolean D_GrabMouseCallback(void)
+ //
+ //---------------------------------------------------------------------------
+ 
++// Mustry: one iteration of the vanilla while(1) body, driven by the browser
++// (emscripten_set_main_loop) the way doom-wasm drives Doom's D_RunFrame.
++static void D_RunFrame(void)
++{
++    // Frame syncronous IO operations
++    I_StartFrame();
++
++    // Process one or more tics
++    // Will run at least one tic
++    TryRunTics();
++
++    // Move positional sounds
++    S_UpdateSounds(players[consoleplayer].mo);
++    D_Display();
++}
++
+ void D_DoomLoop(void)
+ {
+     if (M_CheckParm("-debugfile"))
+@@ -240,25 +258,19 @@ void D_DoomLoop(void)
+         M_snprintf(filename, sizeof(filename), "debug%i.txt", consoleplayer);
+         debugfile = fopen(filename, "w");
+     }
++
++    // Mustry: install the browser main loop before video init, as doom-wasm
++    // does for Doom (SDL needs a main loop to exist to set its timing mode).
++    emscripten_set_main_loop(D_RunFrame, 0, 0);
++
+     I_GraphicsCheckCommandLine();
+     I_SetGrabMouseCallback(D_GrabMouseCallback);
+     I_InitGraphics();
+ 
+     main_loop_started = true;
+ 
+-    while (1)
+-    {
+-        // Frame syncronous IO operations
+-        I_StartFrame();
+-
+-        // Process one or more tics
+-        // Will run at least one tic
+-        TryRunTics();
+-
+-        // Move positional sounds
+-        S_UpdateSounds(players[consoleplayer].mo);
+-        D_Display();
+-    }
++    // Prime one frame; the browser calls D_RunFrame from here on.
++    D_RunFrame();
+ }
+ 
+ /*
+diff --git a/src/heretic/d_net.c b/src/heretic/d_net.c
+index 68e12931..c215f9a9 100644
+--- a/src/heretic/d_net.c
++++ b/src/heretic/d_net.c
+@@ -219,5 +219,8 @@ void D_CheckNetGame (void)
+     SaveGameSettings(&settings);
+     D_StartNetGame(&settings, NULL);
+     LoadGameSettings(&settings);
++
++    // Mustry: same lifecycle line doom-wasm prints for Doom (code 10).
++    printf("doom: 10, game started\n");
+ }
+ 
+diff --git a/src/heretic/g_game.c b/src/heretic/g_game.c
+index fbce5e39..f2ca2828 100644
+--- a/src/heretic/g_game.c
++++ b/src/heretic/g_game.c
+@@ -54,6 +54,9 @@ void G_DoVictory(void);
+ void G_DoWorldDone(void);
+ void G_DoSaveGame(void);
+ 
++// Mustry host hook (mustry_stats.c).
++void Mustry_SaveGameWritten(int slot);
++
+ void D_PageTicker(void);
+ void D_AdvanceDemo(void);
+ 
+@@ -2185,6 +2188,9 @@ void G_DoSaveGame(void)
+     P_ArchiveSpecials();
+     SV_Close(filename);
+ 
++    // Mustry: let the host page persist the slot (see mustry_stats.c).
++    Mustry_SaveGameWritten(savegameslot);
++
+     gameaction = ga_nothing;
+     savedescription[0] = 0;
+     P_SetMessage(&players[consoleplayer], DEH_String(TXT_GAMESAVED), true);
+diff --git a/src/heretic/mustry_stats.c b/src/heretic/mustry_stats.c
+new file mode 100644
+index 00000000..31d6c2fb
+--- /dev/null
++++ b/src/heretic/mustry_stats.c
+@@ -0,0 +1,111 @@
++//
++// Mustry Doom: read-only player telemetry for the host page (Heretic).
++//
++// Same ids and semantics as src/doom/mustry_stats.c so the component reads
++// both games through one table. Everything here is a plain read of engine
++// globals; nothing is mutated.
++//
++
++#include <emscripten.h>
++
++#include "doomdef.h"
++#include "p_local.h"
++#include "../d_loop.h"
++#include "../i_timer.h"
++#include "../net_client.h"
++
++enum
++{
++    MSTAT_IN_LEVEL = 0,
++    MSTAT_HEALTH = 1,
++    MSTAT_ARMOR = 2,
++    MSTAT_AMMO = 3,       // ammo for the ready weapon, -1 when it needs none (staff, gauntlets)
++    MSTAT_WEAPON = 4,     // weapontype_t of the ready weapon (0 = staff)
++    MSTAT_KILLS = 5,
++    MSTAT_ITEMS = 6,
++    MSTAT_SECRETS = 7,
++    MSTAT_TOTAL_KILLS = 8,
++    MSTAT_TOTAL_ITEMS = 9,
++    MSTAT_TOTAL_SECRETS = 10,
++    MSTAT_EPISODE = 11,
++    MSTAT_MAP = 12,
++    MSTAT_LEVEL_SECONDS = 13,
++    MSTAT_DEAD = 14,
++    MSTAT_PAUSED = 15,
++    MSTAT_NETGAME = 16,
++    MSTAT_IN_LOBBY = 17,
++    MSTAT_NET_PLAYERS = 18
++};
++
++int Mustry_Stat(int id)
++{
++    player_t *p;
++    int in_level;
++
++    in_level = (gamestate == GS_LEVEL && gametic > 0 && !net_waiting_for_launch) ? 1 : 0;
++    p = &players[consoleplayer];
++
++    switch (id)
++    {
++        case MSTAT_IN_LEVEL:
++            return in_level;
++        case MSTAT_HEALTH:
++            return in_level ? p->health : 0;
++        case MSTAT_ARMOR:
++            return in_level ? p->armorpoints : 0;
++        case MSTAT_AMMO:
++            if (!in_level)
++                return 0;
++            if (wpnlev1info[p->readyweapon].ammo == am_noammo)
++                return -1;
++            return p->ammo[wpnlev1info[p->readyweapon].ammo];
++        case MSTAT_WEAPON:
++            return in_level ? (int) p->readyweapon : 0;
++        case MSTAT_KILLS:
++            return in_level ? p->killcount : 0;
++        case MSTAT_ITEMS:
++            return in_level ? p->itemcount : 0;
++        case MSTAT_SECRETS:
++            return in_level ? p->secretcount : 0;
++        case MSTAT_TOTAL_KILLS:
++            return in_level ? totalkills : 0;
++        case MSTAT_TOTAL_ITEMS:
++            return in_level ? totalitems : 0;
++        case MSTAT_TOTAL_SECRETS:
++            return in_level ? totalsecret : 0;
++        case MSTAT_EPISODE:
++            return gameepisode;
++        case MSTAT_MAP:
++            return gamemap;
++        case MSTAT_LEVEL_SECONDS:
++            return in_level ? leveltime / TICRATE : 0;
++        case MSTAT_DEAD:
++            return (in_level && p->playerstate == PST_DEAD) ? 1 : 0;
++        case MSTAT_PAUSED:
++            return paused ? 1 : 0;
++        case MSTAT_NETGAME:
++            return netgame ? 1 : 0;
++        case MSTAT_IN_LOBBY:
++            return net_waiting_for_launch ? 1 : 0;
++        case MSTAT_NET_PLAYERS:
++        {
++            int n = 0, i;
++            if (!netgame) return 0;
++            for (i = 0; i < MAXPLAYERS; i++) if (playeringame[i]) n++;
++            return n;
++        }
++        default:
++            return 0;
++    }
++}
++
++//
++// Save-game hook: G_DoSaveGame calls this after SV_Close wrote the slot file
++// (hticsav<N>.hsg in -savedir). The host page reads it from the in-memory
++// filesystem and persists it on the gateway per user.
++//
++EM_JS(void, Mustry_SaveGameWritten, (int slot), {
++    if (typeof Module.onDoomSaveGame === 'function') {
++        Module.onDoomSaveGame(slot);
++    }
++});
+diff --git a/src/m_config.c b/src/m_config.c
+index 422824cf..25c0ee7b 100644
+--- a/src/m_config.c
++++ b/src/m_config.c
+@@ -441,6 +441,13 @@ static default_t doom_defaults_list[] = {
+ 
+     CONFIG_VARIABLE_INT(mouseb_forward),
+ 
++    //!
++    // Mouse button to turn on running.  When held down, the player
++    // will run while moving.
++    //
++
++    CONFIG_VARIABLE_INT(mouseb_speed),
++
+     //!
+     // @game hexen strife
+     //
+@@ -1082,6 +1089,14 @@ static default_t extra_defaults_list[] = {
+ 
+     CONFIG_VARIABLE_INT(mouseb_invright),
+ 
++    //!
++    // @game heretic hexen
++    //
++    // Mouse button to use artifact.
++    //
++
++    CONFIG_VARIABLE_INT(mouseb_useartifact),
++
+     //!
+     // If non-zero, double-clicking a mouse button acts like pressing
+     // the "use" key to use an object in-game, eg. a door or switch.
+diff --git a/src/m_controls.c b/src/m_controls.c
+index 5fe21313..8530951c 100644
+--- a/src/m_controls.c
++++ b/src/m_controls.c
+@@ -119,8 +119,10 @@ int mousebturnright = -1;
+ int mousebbackward = -1;
+ int mousebuse = -1;
+ 
++int mousebspeed = 3;
+ int mousebprevweapon = -1;
+ int mousebnextweapon = -1;
++int mousebuseartifact = -1;
+ int mousebinvleft = -1;
+ int mousebinvright = -1;
+ 
+@@ -237,6 +239,7 @@ void M_BindBaseControls(void)
+ 
+     M_BindIntVariable("mouseb_fire", &mousebfire);
+     M_BindIntVariable("mouseb_strafe", &mousebstrafe);
++    M_BindIntVariable("mouseb_speed", &mousebspeed);
+     M_BindIntVariable("mouseb_forward", &mousebforward);
+ 
+     M_BindIntVariable("joyb_fire", &joybfire);
+@@ -278,6 +281,7 @@ void M_BindHereticControls(void)
+ 
+     M_BindIntVariable("mouseb_invleft", &mousebinvleft);
+     M_BindIntVariable("mouseb_invright", &mousebinvright);
++    M_BindIntVariable("mouseb_useartifact", &mousebuseartifact);
+ 
+     M_BindIntVariable("key_arti_quartz", &key_arti_quartz);
+     M_BindIntVariable("key_arti_urn", &key_arti_urn);
+diff --git a/src/m_controls.h b/src/m_controls.h
+index a3166857..ca550812 100644
+--- a/src/m_controls.h
++++ b/src/m_controls.h
+@@ -149,8 +149,10 @@ extern int mousebturnright;
+ extern int mousebbackward;
+ extern int mousebuse;
+ 
++extern int mousebspeed;
+ extern int mousebprevweapon;
+ extern int mousebnextweapon;
++extern int mousebuseartifact;
+ extern int mousebinvleft;
+ extern int mousebinvright;
+ 
