@@ -1,4 +1,6 @@
 import { Page } from '@playwright/test';
+import { readdirSync } from 'fs';
+import path from 'path';
 import { PNG } from 'pngjs';
 import { test, expect, openRoute } from './helpers';
 
@@ -97,16 +99,27 @@ test('doom: live telemetry reaches the outputs and the bound tags', async ({ pag
     await expect(page.getByText(/output\.player: Player1/)).toBeVisible();
 });
 
-test('demo: the header pills report the Doom module, Embr Charts and a historian present', async ({ page }) => {
-    // The dev/CI gateway stages both optional modules and seeds the "Doom
-    // Historian" profile, so all three must be found. A grey pill here means
-    // the detection broke (0.1.2 shipped with history silently off because it
-    // called a system.tag function that does not exist).
+test('demo: the header pills report the Doom module, Embr Charts and whether a historian exists', async ({ page }) => {
+    // The dev/CI gateway stages Embr Charts, so those two pills must be green.
+    // The historian module comes from a private sibling repo: when it is
+    // staged (ops/stage-historian.sh) fresh.sh seeds the "Doom Historian"
+    // profile and the pill must be green; CI has none and must show the
+    // degraded state instead. A wrong answer here means the detection broke
+    // (0.1.2 shipped with history silently off because it called a
+    // system.tag function that does not exist).
+    const historianStaged = readdirSync(path.join(__dirname, '..', '..', 'ops', 'modules'))
+        .some((f) => /historian/i.test(f) && f.endsWith('.modl'));
     await openRoute(page, '/', '.mustry-doom');
     await expect(page.getByText('\u2713 DOOM MODULE')).toBeVisible({ timeout: 20_000 });
     await expect(page.getByText('\u2713 EMBR CHARTS')).toBeVisible();
-    await expect(page.getByText('\u2713 HISTORY')).toBeVisible();
-    await expect(page.getByText(/MARINE VITALS \u00b7 DOOM HISTORIAN/)).toBeVisible();
+    if (historianStaged) {
+        await expect(page.getByText('\u2713 HISTORY')).toBeVisible();
+        await expect(page.getByText(/MARINE VITALS \u00b7 DOOM HISTORIAN/)).toBeVisible();
+    } else {
+        await expect(page.getByText('\u2717 HISTORY')).toBeVisible();
+        await expect(page.getByText(/MARINE VITALS \u00b7 NO HISTORIAN/)).toBeVisible();
+        await expect(page.getByText(/Embr Charts is installed but this gateway has no tag history provider/)).toBeVisible();
+    }
 });
 
 test('doom: quitting from the in-game menu leaves a restartable component, Restart brings it back', async ({ page }) => {

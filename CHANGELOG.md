@@ -27,7 +27,8 @@ are semver. Ignition's module version is numeric only, so releases are plain
 - `ops/`: container names and ports can be overridden per checkout, so a
   worktree can run a second dev gateway beside the main one. Environment
   variables now win over `.env`.
-- e2e: the header pills must all be green on the CI gateway.
+- e2e: the header pills must match what the gateway has (CI, which has no
+  historian, exercises the degraded chart card).
 
 ### Fixed
 
