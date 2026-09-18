@@ -1,7 +1,7 @@
 // DOM-facing engine plumbing: loading the Emscripten glue script once per page,
 // the one-instance-per-page guard, and synthesising keyboard events for the
 // engine's SDL layer. Deliberately thin and untested (see doomLogic for logic).
-import { KeyDef } from './doomLogic';
+import { KeyDef, WAD_TICKET_HEADER, wadFileName, wadUrl } from './doomLogic';
 
 /** Where the gateway serves the engine (see MustryDoomModule.ENGINE_PATH). */
 export const ENGINE_PATH = '/res/mustry-doom/doom/';
@@ -78,6 +78,26 @@ export function loadEngine(): Promise<DoomFactory> {
         });
     }
     return factoryPromise;
+}
+
+// --- operator-supplied WADs ---------------------------------------------------
+
+/**
+ * Fetch one operator WAD from the gateway with a download ticket. Resolves
+ * null for a 404 (the plan already checked the listing, so this is a race
+ * with the operator removing the file); anything else rejects.
+ */
+export function fetchWad(key: string, ticket: string): Promise<Uint8Array | null> {
+    return fetch(wadUrl(key), { headers: { [WAD_TICKET_HEADER]: ticket }, credentials: 'same-origin' })
+        .then((r) => {
+            if (r.status === 404) {
+                return null;
+            }
+            if (!r.ok) {
+                throw new Error(`${wadFileName(key)}: HTTP ${r.status}`);
+            }
+            return r.arrayBuffer().then((b) => new Uint8Array(b));
+        });
 }
 
 // --- one running engine per page -------------------------------------------

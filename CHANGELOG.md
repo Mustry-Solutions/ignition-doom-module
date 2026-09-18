@@ -8,6 +8,13 @@ are semver. Ignition's module version is numeric only, so releases are plain
 
 ### Added
 
+- Bring your own WAD: `config.iwad` and `config.pwads` play IWADs and PWADs
+  the gateway operator placed in `data/modules/com.mustrysolutions.doom/wads/`.
+  Downloads need a delegate-issued ticket, an unknown IWAD falls back to
+  shareware with `output.wadError` set, PWADs on shareware data are skipped
+  (the engine would refuse them), Doom II-style IWADs warp by map alone, and
+  each custom IWAD keeps its own save slots. `output.iwad`,
+  `output.availableWads`. The module still ships shareware only. (#2)
 - `GET /system/doom-relay/` answers with the relay's status: live arenas,
   whether each has a server, how many peers. No player names; the path is
   unauthenticated.

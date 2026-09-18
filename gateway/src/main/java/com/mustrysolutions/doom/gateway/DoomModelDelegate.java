@@ -3,6 +3,7 @@ package com.mustrysolutions.doom.gateway;
 import java.util.Base64;
 
 import com.inductiveautomation.ignition.common.auth.web.WebAuthUser;
+import com.inductiveautomation.ignition.common.gson.JsonArray;
 import com.inductiveautomation.ignition.common.gson.JsonObject;
 import com.inductiveautomation.perspective.gateway.api.Component;
 import com.inductiveautomation.perspective.gateway.api.ComponentModelDelegate;
@@ -26,8 +27,13 @@ public class DoomModelDelegate extends ComponentModelDelegate {
     /** page -> gateway: { arena, player } ; gateway -> page: { arena, ticket } */
     static final String EVT_TICKET = "doom-relay-ticket";
     static final String EVT_TICKET_OK = "doom-relay-ticket-ok";
+    /** page -> gateway: {} please let me download operator-supplied WADs. */
+    static final String EVT_WADS = "doom-wads";
+    /** gateway -> page: { ticket, wads: [keys] } */
+    static final String EVT_WADS_OK = "doom-wads-ok";
 
     private final DoomSaveStore store;
+    private final DoomWadStore wads;
     private final DoomTagProvider tags;
     /** The [Doom]Players/<player> folder this session feeds, once telemetry named it. */
     private volatile String player;
@@ -35,8 +41,9 @@ public class DoomModelDelegate extends ComponentModelDelegate {
     public DoomModelDelegate(Component component, DoomTagProvider tags) {
         super(component);
         this.tags = tags;
-        this.store = new DoomSaveStore(
-            component.getSession().getGatewayContext().getSystemManager().getDataDir().toPath());
+        java.nio.file.Path data = component.getSession().getGatewayContext().getSystemManager().getDataDir().toPath();
+        this.store = new DoomSaveStore(data);
+        this.wads = new DoomWadStore(data);
     }
 
     @Override
@@ -124,15 +131,25 @@ public class DoomModelDelegate extends ComponentModelDelegate {
                 out.addProperty("arena", arena);
                 out.addProperty("ticket", ticket);
                 fireEvent(EVT_TICKET_OK, out);
+            } else if (EVT_WADS.equals(name)) {
+                // Admission to the WAD download route, plus what is there, so the
+                // page can fall back to shareware without a 404 round-trip.
+                JsonObject out = new JsonObject();
+                out.addProperty("ticket", DoomRelayTickets.issueWad(issuerId()));
+                JsonArray list = new JsonArray();
+                wads.list().forEach(list::add);
+                out.add("wads", list);
+                fireEvent(EVT_WADS_OK, out);
             } else if (EVT_LIST.equals(name)) {
-                sendSlots();
+                sendSlots(game(message.getEvent()));
             } else if (EVT_PUT.equals(name)) {
+                JsonObject payload = message.getEvent();
+                String game = game(payload);
                 String owner = owner();
                 if (owner == null) {
-                    sendSlots(); // reports owner "" so the page keeps the save in the tab
+                    sendSlots(game); // reports owner "" so the page keeps the save in the tab
                     return;
                 }
-                JsonObject payload = message.getEvent();
                 if (payload == null || !payload.has("slot") || !payload.has("data")) {
                     error("save payload needs slot and data");
                     return;
@@ -140,9 +157,9 @@ public class DoomModelDelegate extends ComponentModelDelegate {
                 int slot = payload.get("slot").getAsInt();
                 String description = payload.has("description") ? payload.get("description").getAsString() : "";
                 byte[] bytes = Base64.getDecoder().decode(payload.get("data").getAsString());
-                store.put(owner, slot, description, bytes);
-                log.debugf("Stored Doom save slot %d for %s (%d bytes)", slot, owner, bytes.length);
-                sendSlots();
+                store.put(owner, game, slot, description, bytes);
+                log.debugf("Stored Doom save slot %d for %s/%s (%d bytes)", slot, owner, game.isEmpty() ? "doom1" : game, bytes.length);
+                sendSlots(game);
             }
         } catch (IllegalArgumentException e) {
             error(e.getMessage());
@@ -152,12 +169,19 @@ public class DoomModelDelegate extends ComponentModelDelegate {
         }
     }
 
-    private void sendSlots() throws Exception {
+    /** The IWAD a save request is for ("" = the bundled shareware one). */
+    private static String game(JsonObject payload) {
+        return payload != null && payload.has("iwad") && !payload.get("iwad").isJsonNull()
+            ? payload.get("iwad").getAsString() : "";
+    }
+
+    private void sendSlots(String game) throws Exception {
         String owner = owner();
         JsonObject out = new JsonObject();
         out.addProperty("owner", owner == null ? "" : owner);
         out.addProperty("authenticated", authenticated());
-        out.add("slots", owner == null ? new com.inductiveautomation.ignition.common.gson.JsonArray() : store.list(owner));
+        out.addProperty("iwad", game);
+        out.add("slots", owner == null ? new JsonArray() : store.list(owner, game));
         fireEvent(EVT_SLOTS, out);
     }
 

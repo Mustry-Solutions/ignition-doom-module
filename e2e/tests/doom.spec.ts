@@ -206,3 +206,41 @@ test('deathmatch: two sessions meet through the gateway relay and both reach the
         await joinCtx.close();
     }
 });
+
+// Operator-supplied WADs: ops/lib.sh seeds the gateway's wads folder with the
+// shareware IWAD under the name doom.wad (the engine identifies IWADs by file
+// name). The DoomWad view binds config.iwad / config.pwads to the route.
+test('wads: an operator IWAD from the gateway folder runs, with a ticketed download', async ({ page, consoleErrors }) => {
+    const root = await openRoute(page, '/wad/doom', '.mustry-doom');
+    await root.locator('.mustry-doom__splash').click();
+    await expect(root).toHaveClass(/mustry-doom--running/, { timeout: 60_000 });
+    await expect(page.getByText(/output\.iwad: doom\s/)).toBeVisible();
+    await expect(page.getByText(/output\.wadError:\s*\n/)).toBeVisible();
+    await expect(page.getByText(/output\.availableWads: doom/)).toBeVisible();
+    await expect(page.getByText(/output\.inLevel: true/)).toBeVisible({ timeout: 30_000 });
+    // The download route itself is closed to anyone without a delegate-issued ticket.
+    const status = await page.evaluate(async () => (await fetch('/data/mustry-doom/wads/doom.wad')).status);
+    expect(status).toBe(403);
+    // That refusal is the browser's console error here, not the session's.
+    const refused = consoleErrors.findIndex((e) => /403/.test(e));
+    expect(refused).toBeGreaterThanOrEqual(0);
+    consoleErrors.splice(refused, 1);
+});
+
+test('wads: an IWAD the gateway does not have falls back to shareware and says so; a missing PWAD is skipped', async ({ page }) => {
+    const root = await openRoute(page, '/wad/plutonia/nope', '.mustry-doom');
+    await root.locator('.mustry-doom__splash').click();
+    await expect(root).toHaveClass(/mustry-doom--running/, { timeout: 60_000 });
+    await expect(page.getByText(/output\.iwad: doom1/)).toBeVisible();
+    await expect(page.getByText(/IWAD "plutonia" is not in the gateway's wads folder; playing doom1/)).toBeVisible();
+    await expect(page.getByText(/PWAD "nope" is not in the gateway's wads folder; skipped/)).toBeVisible();
+    await expect(page.getByText(/output\.inLevel: true/)).toBeVisible({ timeout: 30_000 });
+});
+
+test('wads: a PWAD on shareware data is refused before the engine can die on it', async ({ page }) => {
+    const root = await openRoute(page, '/wad/doom1/doom', '.mustry-doom');
+    await root.locator('.mustry-doom__splash').click();
+    await expect(root).toHaveClass(/mustry-doom--running/, { timeout: 60_000 });
+    await expect(page.getByText(/PWADs need a registered IWAD/)).toBeVisible();
+    await expect(page.getByText(/output\.inLevel: true/)).toBeVisible({ timeout: 30_000 });
+});

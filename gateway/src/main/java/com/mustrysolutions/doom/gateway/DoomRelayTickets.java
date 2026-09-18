@@ -14,8 +14,18 @@ import java.util.concurrent.ConcurrentHashMap;
  * A ticket is valid for its component's whole netgame (the engine reopens the
  * socket when the server side sends its first reply, so one handshake is not
  * enough); it expires after a while and dies with the session's delegate.
+ *
+ * <p>The same registry admits WAD downloads: operator-supplied WADs under
+ * the hook's {@code /data/mustry-doom/wads/} route are served only to a page
+ * holding a ticket issued for the {@link #WAD_SCOPE} pseudo-arena, so a
+ * registered IWAD the operator dropped in is not a public download for
+ * anyone who can reach the gateway's port. The two kinds never cross: a WAD
+ * ticket is refused by the relay and vice versa.
  */
 public final class DoomRelayTickets {
+
+    /** Pseudo-arena for WAD download tickets; unreachable as a real arena (arenaKey strips '#'). */
+    static final String WAD_SCOPE = "#wads";
 
     /** Long enough for a lobby wait plus a match; the delegate revokes it earlier when the session ends. */
     private static final long TTL_MS = 4 * 60 * 60 * 1000L;
@@ -55,6 +65,17 @@ public final class DoomRelayTickets {
         TICKETS.put(token, new Ticket(arena, issuer, player, System.currentTimeMillis() + TTL_MS));
         sweep();
         return token;
+    }
+
+    /** A ticket that admits its holder to the WAD download route. */
+    public static String issueWad(String issuer) {
+        return issue(WAD_SCOPE, issuer, "");
+    }
+
+    /** True when a valid ticket admits WAD downloads (never the relay). */
+    public static boolean redeemWad(String token) {
+        Ticket t = redeem(token);
+        return t != null && WAD_SCOPE.equals(t.arena);
     }
 
     /**

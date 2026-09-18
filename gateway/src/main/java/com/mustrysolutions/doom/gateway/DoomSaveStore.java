@@ -23,6 +23,10 @@ import com.mustrysolutions.doom.common.MustryDoomModule;
  * plus an {@code index.json} with the slot descriptions and timestamps.
  * Owners are sanitised usernames (or "anonymous"); a session can only reach
  * its own folder because the delegate derives the owner from the session.
+ * Saves made with an operator-supplied IWAD live one level down, in
+ * {@code <owner>/game-<iwad>/}: a Doom II save loaded into shareware Doom is
+ * a crash, so the slots of different games never mix. The bundled shareware
+ * IWAD keeps the owner's folder itself (the layout that existed before).
  */
 public final class DoomSaveStore {
 
@@ -52,24 +56,41 @@ public final class DoomSaveStore {
         return slot >= 0 && slot < SLOTS;
     }
 
-    private Path ownerDir(String owner) {
-        return root.resolve(owner);
+    /** The bundled IWAD's key; its saves stay in the owner's own folder. */
+    public static final String BUNDLED_IWAD = "doom1";
+
+    /** The folder for an owner's saves of one game; {@code game} is a WAD key or empty for shareware. */
+    static Path gameDir(Path root, String owner, String game) {
+        Path dir = root.resolve(owner);
+        String key = DoomWadStore.key(game);
+        if (key == null || BUNDLED_IWAD.equals(key)) {
+            return dir;
+        }
+        return dir.resolve("game-" + key);
     }
 
-    private Path slotFile(String owner, int slot) {
-        return ownerDir(owner).resolve("slot" + slot + ".dsg");
+    private Path ownerDir(String owner, String game) {
+        return gameDir(root, owner, game);
     }
 
-    private Path indexFile(String owner) {
-        return ownerDir(owner).resolve("index.json");
+    private Path slotFile(String owner, String game, int slot) {
+        return ownerDir(owner, game).resolve("slot" + slot + ".dsg");
     }
 
-    /** Every stored slot for the owner, with its bytes base64-encoded under "data". */
+    private Path indexFile(String owner, String game) {
+        return ownerDir(owner, game).resolve("index.json");
+    }
+
     public synchronized JsonArray list(String owner) throws IOException {
-        JsonObject index = readIndex(owner);
+        return list(owner, "");
+    }
+
+    /** Every stored slot for the owner and game, with its bytes base64-encoded under "data". */
+    public synchronized JsonArray list(String owner, String game) throws IOException {
+        JsonObject index = readIndex(owner, game);
         JsonArray out = new JsonArray();
         for (int slot = 0; slot < SLOTS; slot++) {
-            Path f = slotFile(owner, slot);
+            Path f = slotFile(owner, game, slot);
             if (!Files.isRegularFile(f)) {
                 continue;
             }
@@ -86,31 +107,35 @@ public final class DoomSaveStore {
         return out;
     }
 
-    /** Store one slot atomically and record it in the index. */
     public synchronized void put(String owner, int slot, String description, byte[] bytes) throws IOException {
+        put(owner, "", slot, description, bytes);
+    }
+
+    /** Store one slot atomically and record it in the index. */
+    public synchronized void put(String owner, String game, int slot, String description, byte[] bytes) throws IOException {
         if (!isValidSlot(slot)) {
             throw new IllegalArgumentException("slot out of range: " + slot);
         }
         if (bytes.length == 0 || bytes.length > MAX_SLOT_BYTES) {
             throw new IllegalArgumentException("slot size out of range: " + bytes.length + " bytes");
         }
-        Files.createDirectories(ownerDir(owner));
-        Path target = slotFile(owner, slot);
+        Files.createDirectories(ownerDir(owner, game));
+        Path target = slotFile(owner, game, slot);
         Path tmp = target.resolveSibling(target.getFileName() + ".tmp");
         Files.write(tmp, bytes);
         Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
 
-        JsonObject index = readIndex(owner);
+        JsonObject index = readIndex(owner, game);
         JsonObject meta = new JsonObject();
         meta.addProperty("description", description == null ? "" : description);
         meta.addProperty("savedAt", Instant.now().toString());
         meta.addProperty("size", bytes.length);
         index.add(String.valueOf(slot), meta);
-        Files.writeString(indexFile(owner), index.toString(), StandardCharsets.UTF_8);
+        Files.writeString(indexFile(owner, game), index.toString(), StandardCharsets.UTF_8);
     }
 
-    private JsonObject readIndex(String owner) throws IOException {
-        Path f = indexFile(owner);
+    private JsonObject readIndex(String owner, String game) throws IOException {
+        Path f = indexFile(owner, game);
         if (!Files.isRegularFile(f)) {
             return new JsonObject();
         }

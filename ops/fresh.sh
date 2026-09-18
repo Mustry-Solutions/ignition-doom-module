@@ -20,6 +20,7 @@ wait_for_gateway 60
 wait_for_modules_registry 60
 accept_staged_module
 wait_for_commissioned 60
+seed_verify_wads
 # Second pass: the config tree exists now; drop in the committed gateway
 # config (historian profile) and restart once more.
 if [[ -d "${OPS_DIR}/gateway-config" ]]; then

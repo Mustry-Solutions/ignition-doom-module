@@ -16,6 +16,7 @@ info "Starting the Ignition gateway container..."
 "${COMPOSE[@]}" up -d
 
 wait_for_gateway 60 || true
+seed_verify_wads
 
 echo
 ok "Gateway is running. Your signed module is staged and awaiting commissioning."

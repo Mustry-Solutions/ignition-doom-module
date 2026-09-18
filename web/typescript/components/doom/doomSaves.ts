@@ -25,8 +25,18 @@ export const SAVE_EVENTS = {
     /** page -> gateway: { arena, player }: please admit me to the relay */
     TICKET: 'doom-relay-ticket',
     /** gateway -> page: { arena, ticket } single-use relay admission */
-    TICKET_OK: 'doom-relay-ticket-ok'
+    TICKET_OK: 'doom-relay-ticket-ok',
+    /** page -> gateway: {} let me download operator-supplied WADs */
+    WADS: 'doom-wads',
+    /** gateway -> page: { ticket, wads: [keys] } */
+    WADS_OK: 'doom-wads-ok'
 } as const;
+
+/** What the gateway holds in its wads folder, plus the ticket that downloads it. */
+export interface WadAccess {
+    ticket: string;
+    wads: string[];
+}
 
 export interface DoomSavesState {
     /** Save-game owner; empty when the session is unauthenticated (saves stay in the tab). */
@@ -36,6 +46,8 @@ export interface DoomSavesState {
     player: string;
     /** Slots the gateway holds for this user, with data when they came from LIST. */
     slots: SavedSlot[];
+    /** The IWAD key the slots were listed for ("" = bundled shareware). */
+    slotsIwad: string;
     loaded: boolean;
     lastError: string;
 }
@@ -45,7 +57,10 @@ export class DoomStoreDelegate extends ComponentStoreDelegate {
     private authenticated = false;
     private player = '';
     private ticketWaiters: Array<(ticket: string) => void> = [];
+    private wadWaiters: Array<(access: WadAccess) => void> = [];
+    private slotWaiters: Array<() => void> = [];
     private slots: SavedSlot[] = [];
+    private slotsIwad = '';
     private loaded = false;
     private lastError = '';
 
@@ -56,16 +71,49 @@ export class DoomStoreDelegate extends ComponentStoreDelegate {
     mapStateToProps(): DoomSavesState {
         return {
             owner: this.owner, authenticated: this.authenticated, player: this.player,
-            slots: this.slots, loaded: this.loaded, lastError: this.lastError
+            slots: this.slots, slotsIwad: this.slotsIwad, loaded: this.loaded, lastError: this.lastError
         };
     }
 
-    requestSlots(): void {
-        this.fireEvent(SAVE_EVENTS.LIST, {});
+    /** Ask for the user's slots of one game ("" = bundled shareware). */
+    requestSlots(iwad = ''): void {
+        this.fireEvent(SAVE_EVENTS.LIST, { iwad });
     }
 
-    putSlot(slot: number, description: string, data: string): void {
-        this.fireEvent(SAVE_EVENTS.PUT, { slot, description, data });
+    /** requestSlots, resolved when the listing arrives (or after a timeout, with whatever is there). */
+    loadSlots(iwad: string): Promise<void> {
+        return new Promise<void>((resolve) => {
+            const timer = window.setTimeout(() => {
+                this.slotWaiters = this.slotWaiters.filter((w) => w !== done);
+                resolve();
+            }, 10_000);
+            const done = () => {
+                window.clearTimeout(timer);
+                resolve();
+            };
+            this.slotWaiters.push(done);
+            this.requestSlots(iwad);
+        });
+    }
+
+    putSlot(slot: number, description: string, data: string, iwad = ''): void {
+        this.fireEvent(SAVE_EVENTS.PUT, { slot, description, data, iwad });
+    }
+
+    /** Ask the gateway for a WAD download ticket and its list of operator WADs. */
+    requestWads(): Promise<WadAccess> {
+        return new Promise<WadAccess>((resolve, reject) => {
+            const timer = window.setTimeout(() => {
+                this.wadWaiters = this.wadWaiters.filter((w) => w !== done);
+                reject(new Error('the gateway did not answer the WAD request'));
+            }, 10_000);
+            const done = (access: WadAccess) => {
+                window.clearTimeout(timer);
+                resolve(access);
+            };
+            this.wadWaiters.push(done);
+            this.fireEvent(SAVE_EVENTS.WADS, {});
+        });
     }
 
     /** Ask the gateway for a relay admission ticket; resolves with the token. */
@@ -103,9 +151,24 @@ export class DoomStoreDelegate extends ComponentStoreDelegate {
                     }));
                 this.owner = String((eventObject && eventObject.owner) || '');
                 this.authenticated = !!(eventObject && eventObject.authenticated);
+                this.slotsIwad = String((eventObject && eventObject.iwad) || '');
                 this.loaded = true;
                 this.lastError = '';
                 this.notify();
+                const waiters = this.slotWaiters;
+                this.slotWaiters = [];
+                waiters.forEach((w) => w());
+                break;
+            }
+            case SAVE_EVENTS.WADS_OK: {
+                const raw = Array.isArray(eventObject && eventObject.wads) ? eventObject.wads as unknown[] : [];
+                const access: WadAccess = {
+                    ticket: String((eventObject && eventObject.ticket) || ''),
+                    wads: raw.filter((w): w is string => typeof w === 'string')
+                };
+                const waiters = this.wadWaiters;
+                this.wadWaiters = [];
+                waiters.forEach((w) => w(access));
                 break;
             }
             case SAVE_EVENTS.TICKET_OK: {

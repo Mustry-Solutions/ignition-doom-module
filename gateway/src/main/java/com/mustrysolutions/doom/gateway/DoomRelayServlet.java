@@ -133,6 +133,9 @@ public class DoomRelayServlet extends JettyWebSocketServlet {
             }
             String token = req.getHttpServletRequest().getParameter("ticket");
             DoomRelayTickets.Ticket ticket = DoomRelayTickets.redeem(token);
+            if (ticket != null && DoomRelayTickets.WAD_SCOPE.equals(ticket.arena)) {
+                ticket = null; // a download ticket is not an arena admission
+            }
             if (ticket == null) {
                 log.warnf("arena %s: refused a connection without a valid ticket from %s (ticket=%s, registry %s)", arena,
                     req.getHttpServletRequest().getRemoteAddr(), token == null ? "none" : token.substring(0, Math.min(8, token.length())) + "...",

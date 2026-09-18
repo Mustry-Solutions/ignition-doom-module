@@ -82,7 +82,8 @@ unmount the component calls the engine's `I_Quit` so the main loop stops.
 |---|---|---|
 | `config` | `autoStart` | Start on mount. Off (default) shows a "Click to play" splash, and that click also unlocks audio. |
 | | `sound`, `music` | Sound effects (on) and OPL music (off, for the sake of your coworkers). |
-| | `skill`, `warp`, `episode`, `map` | Difficulty 1–5 and where to start. The shareware IWAD only has episode 1. |
+| | `iwad`, `pwads` | Play a WAD the gateway operator supplied instead of the shareware episode (see "Bring your own WAD"). Empty = shareware. |
+| | `skill`, `warp`, `episode`, `map` | Difficulty 1–5 and where to start. The shareware IWAD only has episode 1; Ultimate Doom has 4; Doom II-style IWADs have no episodes and take `map` 1–32. |
 | | `keyboard` | Physical keyboard drives the game while the canvas is focused (click it). Keys never leak to the rest of the view. |
 | | `mouse` | Mouse turn while focused. |
 | | `pixelated`, `showHud`, `playLabel`, `extraArgs` | Crisp pixels, the status strip, the splash label, and raw engine arguments such as `-nomonsters`. |
@@ -93,6 +94,7 @@ unmount the component calls the engine's `I_Quit` so the main loop stops.
 | `config.persistSaves` | | Keep Doom's six save slots on the gateway per Perspective user (default on). |
 | `config.multiplayer`, `arena`, `players`, `deathmatch`, `relayUrl` | | Host or join a deathmatch through the gateway relay (see below). |
 | `output.savedSlots`, `output.saveOwner`, `output.lastSaveSlot`, `output.lastSaveDescription` | | How many slots the gateway holds for this user, who that user is, and the most recent save made in this session. |
+| `output.iwad`, `output.wadError`, `output.availableWads` | | The IWAD the engine actually runs, why `config.iwad`/`config.pwads` could not be honoured in full (empty when they could), and what the gateway's wads folder holds. |
 | `output.state` | | `idle`, `loading`, `running`, `paused`, `exited`, `error`, `busy` (another Doom already owns the page). |
 | `output.message` | | The last line the engine printed. |
 | event `onGameEvent` | `{ code, message }` | Engine lifecycle messages; `10` is "game started". |
@@ -112,6 +114,45 @@ would share. Before the engine starts, the component asks for the
 user's slots and writes them back into the in-memory filesystem, so Doom's own
 Load Game menu lists them. Slots are capped at 512 KB; a session can only ever
 read or write its own user's folder. Turn it off with `config.persistSaves`.
+
+### Bring your own WAD
+
+The module ships the shareware episode only and never will ship more (see
+Licensing). It will, however, play what the gateway operator owns: drop
+IWADs and PWADs into `data/modules/com.mustrysolutions.doom/wads/` on the
+gateway (the hook creates the folder at startup and logs its path) and name
+them in `config.iwad` (one) and `config.pwads` (a list, loaded in order).
+Names are case-insensitive and `.wad` is optional: `doom2` finds `DOOM2.WAD`.
+No upload UI, no listing page: the operator copies files, the component asks
+its own gateway delegate what is there.
+
+Two engine facts shape this. Chocolate Doom identifies an IWAD by its **file
+name** (`d_iwad.c`), so the operator's file must carry a canonical one:
+`doom.wad`, `doom2.wad`, `plutonia.wad`, `tnt.wad`, `chex.wad`, `hacx.wad`,
+`freedoom1.wad`, `freedoom2.wad`, `freedm.wad`; anything else is refused
+before the download with `output.wadError`. And the engine refuses `-file`
+with shareware data ("Register!"), so PWADs are skipped, and named in
+`output.wadError`, whenever the IWAD in play is shareware. The component
+reads the IWAD's lump directory to tell Doom II-style games (`MAP01`) from
+episodic ones and passes `-warp` accordingly; `config.episode` is ignored
+for Doom II.
+
+Nothing here ever leaves the operator with a black canvas: an IWAD the
+folder does not have falls back to shareware, a missing PWAD is skipped, and
+`output.wadError` says which and why. A bound `config.iwad` that lands after
+the engine started restarts it on the right game, the way a late netgame
+binding does.
+
+Downloads are not public. The page fetches
+`/data/mustry-doom/wads/<name>` with a ticket its gateway delegate issued
+(`X-Doom-Ticket`, the same registry as the relay's, revoked with the
+delegate), so a registered IWAD dropped on the gateway is reachable by
+Perspective sessions running the component and by nobody else who happens
+to know the URL. Save games of a custom IWAD live in their own
+`saves/<user>/game-<iwad>/` folder: a Doom II save loaded into shareware is
+a crash, so slots never mix. Verified on the dev gateway with the shareware
+data under the name `doom.wad` (`ops/lib.sh` seeds it for the e2e suite);
+a registered IWAD with PWADs has not been exercised by the test suite.
 
 ### Deathmatch over the gateway
 

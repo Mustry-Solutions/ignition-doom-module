@@ -23,6 +23,17 @@
           "default": false,
           "description": "Music (OPL emulation). Off by default: it is CPU-hungry and E1M1 on loop tests the patience of coworkers."
         },
+        "iwad": {
+          "type": "string",
+          "default": "",
+          "description": "Which game to play. Empty = the bundled shareware doom1.wad. Otherwise the name of an IWAD the gateway operator placed in data/modules/com.mustrysolutions.doom/wads/ (e.g. 'doom2' for DOOM2.WAD; case-insensitive, '.wad' optional). Unknown = shareware plus output.wadError. The module never ships registered WADs."
+        },
+        "pwads": {
+          "type": "array",
+          "default": [],
+          "items": { "type": "string" },
+          "description": "PWADs (mods, map packs) from the same gateway folder, loaded in order after the IWAD (Chocolate Doom -file). A missing one is skipped and named in output.wadError."
+        },
         "skill": {
           "type": "integer",
           "minimum": 1,
@@ -38,16 +49,16 @@
         "episode": {
           "type": "integer",
           "minimum": 1,
-          "maximum": 1,
+          "maximum": 4,
           "default": 1,
-          "description": "Episode to warp to. The shareware IWAD only has episode 1 (Knee-Deep in the Dead)."
+          "description": "Episode to warp to. The shareware IWAD only has episode 1 (Knee-Deep in the Dead); Ultimate Doom has 4. Ignored for Doom II-style IWADs (MAP01..MAP32), which have no episodes."
         },
         "map": {
           "type": "integer",
           "minimum": 1,
-          "maximum": 9,
+          "maximum": 32,
           "default": 1,
-          "description": "Map to warp to (1-9)."
+          "description": "Map to warp to: 1-9 within the episode for Doom-style IWADs, 1-32 for Doom II-style ones."
         },
         "keyboard": {
           "type": "boolean",
@@ -341,6 +352,22 @@
           "type": "string",
           "default": "",
           "description": "Name the player typed for the most recent save in this session."
+        },
+        "iwad": {
+          "type": "string",
+          "default": "",
+          "description": "The IWAD the running engine was started with ('doom1' for the bundled shareware episode)."
+        },
+        "wadError": {
+          "type": "string",
+          "default": "",
+          "description": "Why config.iwad / config.pwads could not be honoured in full (file not on the gateway, no gateway channel). Empty when everything loaded. The game still starts: an unknown IWAD falls back to shareware, a missing PWAD is skipped."
+        },
+        "availableWads": {
+          "type": "array",
+          "default": [],
+          "items": { "type": "string" },
+          "description": "The WAD files the gateway has in data/modules/com.mustrysolutions.doom/wads/, as reported when the engine last started with a custom IWAD or PWAD."
         },
         "player": {
           "type": "string",
