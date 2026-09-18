@@ -8,6 +8,12 @@
       "additionalProperties": false,
       "description": "Engine start-up options. Changing these after the game has started has no effect until it is restarted.",
       "properties": {
+        "game": {
+          "type": "string",
+          "enum": ["doom", "heretic"],
+          "default": "doom",
+          "description": "Which game: 'doom' (the 1993 shareware episode, Knee-Deep in the Dead) or 'heretic' (Raven's 1994 shareware episode, City of the Damned). Both engines come from the same Chocolate Doom source and ship with the module; config.iwad / config.pwads then name that game's WADs."
+        },
         "autoStart": {
           "type": "boolean",
           "default": false,
@@ -26,7 +32,7 @@
         "iwad": {
           "type": "string",
           "default": "",
-          "description": "Which game to play. Empty = the bundled shareware doom1.wad. Otherwise the name of an IWAD the gateway operator placed in data/modules/com.mustrysolutions.doom/wads/ (e.g. 'doom2' for DOOM2.WAD; case-insensitive, '.wad' optional). Unknown = shareware plus output.wadError. The module never ships registered WADs."
+          "description": "Which IWAD to play. Empty = the bundled shareware one for config.game (doom1.wad or heretic1.wad). Otherwise the name of an IWAD the gateway operator placed in data/modules/com.mustrysolutions.doom/wads/ (e.g. 'doom2' for DOOM2.WAD, 'heretic' for HERETIC.WAD; case-insensitive, '.wad' optional). Unknown = shareware plus output.wadError. The module never ships registered WADs."
         },
         "pwads": {
           "type": "array",
@@ -142,7 +148,7 @@
             "altdeath"
           ],
           "default": "deathmatch",
-          "description": "Netgame rules: cooperative, deathmatch (weapons stay), or altdeath (weapons respawn, no suicide penalty)."
+          "description": "Netgame rules: cooperative, deathmatch (weapons stay), or altdeath (weapons respawn, no suicide penalty). Heretic has no altdeath; it plays deathmatch."
         },
         "relayUrl": {
           "type": "string",

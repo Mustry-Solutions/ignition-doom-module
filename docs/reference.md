@@ -8,7 +8,7 @@ prop, the tag model, building, the dev gateway and the tests.
 ```mermaid
 flowchart TB
     subgraph GW[Ignition gateway]
-        RES["Module resources at /res/mustry-doom/<br/>MustryDoom.js · websockets-doom.wasm · doom1.wad · default.cfg"]
+        RES["Module resources at /res/mustry-doom/<br/>MustryDoom.js · doom/ (websockets-doom.wasm · doom1.wad · default.cfg) · heretic/ (websockets-heretic.wasm · heretic1.wad · heretic.cfg)"]
     end
 
     subgraph BR[Browser · one Perspective session]
@@ -80,7 +80,8 @@ unmount the component calls the engine's `I_Quit` so the main loop stops.
 
 | Group | Prop | What |
 |---|---|---|
-| `config` | `autoStart` | Start on mount. Off (default) shows a "Click to play" splash, and that click also unlocks audio. |
+| `config` | `game` | `doom` (default) or `heretic`: which engine and shareware episode. Everything else in this table applies to both; the per-game facts (engine folder, bundled IWAD, config file, save file name, `-altdeath`, the shareware `-file` rule, episode range) live in `GAMES` in `doomLogic.ts`. |
+| | `autoStart` | Start on mount. Off (default) shows a "Click to play" splash, and that click also unlocks audio. |
 | | `sound`, `music` | Sound effects (on) and OPL music (off, for the sake of your coworkers). |
 | | `iwad`, `pwads` | Play a WAD the gateway operator supplied instead of the shareware episode (see "Bring your own WAD"). Empty = shareware. |
 | | `skill`, `warp`, `episode`, `map` | Difficulty 1–5 and where to start. The shareware IWAD only has episode 1; Ultimate Doom has 4; Doom II-style IWADs have no episodes and take `map` 1–32. |
@@ -114,6 +115,24 @@ would share. Before the engine starts, the component asks for the
 user's slots and writes them back into the in-memory filesystem, so Doom's own
 Load Game menu lists them. Slots are capped at 512 KB; a session can only ever
 read or write its own user's folder. Turn it off with `config.persistSaves`.
+
+### Heretic
+
+`config.game = heretic` runs Chocolate Heretic, built from the same upstream
+as the Doom engine (`engine/README.md`), with Raven's shareware episode City
+of the Damned. Everything the component does for Doom it does for Heretic:
+the same key table (`heretic.cfg` carries the scancodes of `default.cfg`),
+tag-bound controls, telemetry through the same stat ids (Heretic's ammo is
+the ready weapon's, `-1` for the staff and gauntlets), save games
+(`hticsav<N>.hsg`, kept on the gateway under `saves/<user>/game-heretic1/`
+so they never mix with Doom's), operator IWADs (`heretic.wad` in the wads
+folder; Heretic does not refuse PWADs on shareware data) and deathmatch
+through the same relay (Heretic has no `-altdeath`; that setting hosts a
+plain deathmatch). The `[Doom]Players/<player>/Game` tag says which game a
+player is in. The verify project has `/game/heretic` and the arena route
+takes a fourth segment: `/arena/host/Corvus1/htic/heretic`.
+
+Hexen (#6) and Strife (#7) are the remaining family members.
 
 ### Bring your own WAD
 
@@ -303,11 +322,14 @@ re-evaluates on the tag's value change, before the alarm has transitioned.)
 
 ## Licensing
 
-GPL-2.0-only for the module, because the engine is GPL-2.0. The shareware WAD
-is id Software's and may only be redistributed complete and free of charge,
-which is why this module can never be a paid product. Registered Doom, Doom II
-and other IWADs are not included and must not be added for redistribution. See
+GPL-2.0-only for the module, because the engines are GPL-2.0. The Doom
+shareware WAD is id Software's and may only be redistributed complete and free
+of charge; the Heretic shareware WAD is Raven's under id's Limited Use licence
+(electronic distribution in compressed form, no commercial use), which is why
+this module can never be a paid product. Registered Doom, Doom II, Heretic and
+other IWADs are not included and must not be added for redistribution. See
 [THIRD-PARTY-NOTICES.md](../THIRD-PARTY-NOTICES.md).
 
-DOOM is a trademark of id Software LLC. This project is not affiliated with id
-Software, Bethesda, Cloudflare or Inductive Automation.
+DOOM is a trademark of id Software LLC; Heretic of Raven Software / id
+Software. This project is not affiliated with id Software, Raven Software,
+Bethesda, Cloudflare or Inductive Automation.

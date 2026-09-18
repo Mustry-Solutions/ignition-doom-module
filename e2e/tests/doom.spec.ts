@@ -269,3 +269,44 @@ test('wads: a PWAD on shareware data is refused before the engine can die on it'
     await expect(page.getByText(/PWADs need a registered IWAD/)).toBeVisible();
     await expect(page.getByText(/output\.inLevel: true/)).toBeVisible({ timeout: 30_000 });
 });
+
+// Heretic: the second Chocolate Doom family member, its own engine build and
+// shareware IWAD served from mounted/heretic/. The DoomWad view binds
+// config.game to the /game/:game route.
+test('heretic: config.game = heretic runs the Heretic engine and its shareware episode', async ({ page }) => {
+    const root = await openRoute(page, '/game/heretic', '.mustry-doom');
+    await root.locator('.mustry-doom__splash').click();
+    await expect(root).toHaveClass(/mustry-doom--running/, { timeout: 60_000 });
+    await expect(page.getByText(/output\.iwad: heretic1/)).toBeVisible();
+    await expect(page.getByText(/output\.wadError:\s*output\.availableWads/)).toBeVisible();
+    await expect(page.getByText(/output\.inLevel: true/)).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText(/episode: 1\s+·\s+map: 1/)).toBeVisible();
+    // The engine came from the Heretic bundle, not Doom's.
+    const heretic = await page.evaluate(() =>
+        Array.from(document.scripts).some((s) => s.src.includes('/res/mustry-doom/heretic/websockets-heretic.js')));
+    expect(heretic).toBe(true);
+});
+
+test('heretic: deathmatch through the same relay, both marines reach E1M1', async ({ browser, page: hostPage }) => {
+    const joinCtx = await browser.newContext();
+    const joinPage = await joinCtx.newPage();
+    try {
+        const hostRoot = await openRoute(hostPage, '/arena/host/Corvus1/htic/heretic', '.mustry-doom');
+        await hostRoot.locator('.mustry-doom__splash').click();
+        await expect(hostRoot).toHaveClass(/mustry-doom--running/, { timeout: 60_000 });
+        await expect(hostPage.getByText(/output\.inLobby: true/)).toBeVisible({ timeout: 30_000 });
+
+        const joinRoot = await openRoute(joinPage, '/arena/join/Corvus2/htic/heretic', '.mustry-doom');
+        await joinRoot.locator('.mustry-doom__splash').click();
+        await expect(joinRoot).toHaveClass(/mustry-doom--running/, { timeout: 60_000 });
+
+        await expect(hostPage.getByText(/output\.inLevel: true/)).toBeVisible({ timeout: 60_000 });
+        await expect(joinPage.getByText(/output\.inLevel: true/)).toBeVisible({ timeout: 60_000 });
+        await expect(hostPage.getByText(/netPlayers: 2/)).toBeVisible({ timeout: 30_000 });
+        const heretic = await joinPage.evaluate(() =>
+            Array.from(document.scripts).some((s) => s.src.includes('websockets-heretic.js')));
+        expect(heretic).toBe(true);
+    } finally {
+        await joinCtx.close();
+    }
+});

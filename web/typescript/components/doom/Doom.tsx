@@ -10,14 +10,14 @@ import {
     Size2d
 } from '@inductiveautomation/perspective-client';
 import {
-    base64ToBytes, buildArgs, BUNDLED_GAME, BUNDLED_IWAD, bytesToBase64, clampInt, CODE_ERROR, CODE_GAME_STARTED, DEFAULT_PLAY_LABEL, diffControls,
-    DoomControls, DoomStats, engineSize, GameFiles, GameMode, heldKeys, isBundledIwad, isFatalLine, isValidSlot, MAX_SAVE_BYTES, parseEngineLine, PAUSE_KEY,
-    arenaKey, Phase, PixelSize, planWads, readStats, relayUrl, SAVE_DIR, saveDescription, saveSlotPath, statWrites, wadFileName, wadGameMode,
-    wadKey, ZERO_STATS
+    base64ToBytes, buildArgs, bundledFiles, bytesToBase64, clampInt, CODE_ERROR, CODE_GAME_STARTED, DEFAULT_PLAY_LABEL, diffControls,
+    DoomControls, DoomStats, engineSize, GameDef, GameFiles, GameMode, GAMES, heldKeys, isBundledIwad, isFatalLine, isValidSlot, MAX_SAVE_BYTES,
+    normGame, parseEngineLine, PAUSE_KEY, arenaKey, Phase, PixelSize, planWads, readStats, relayUrl, SAVE_DIR, saveDescription, saveSlotPath,
+    statWrites, wadFileName, wadGameMode, wadKey, ZERO_STATS
 } from './doomLogic';
 import { DoomSavesState, DoomStoreDelegate, WadAccess } from './doomSaves';
 import {
-    CANVAS_ID, claimEngine, dispatchKey, DoomModule, ENGINE_PATH, fetchWad, KEYBOARD_ELEMENT, loadEngine, pressKey, releaseEngine
+    CANVAS_ID, claimEngine, dispatchKey, DoomModule, fetchWad, KEYBOARD_ELEMENT, loadEngine, pressKey, releaseEngine
 } from './doomEngine';
 import { DoomProps, mapDoomProps } from './doomProps';
 
@@ -31,17 +31,20 @@ interface PreparedWads {
     error: string;
 }
 
-const BUNDLED_WADS: PreparedWads = { game: BUNDLED_GAME, files: [], available: [], error: '' };
+function bundledWads(game: GameDef): PreparedWads {
+    return { game: bundledFiles(game), files: [], available: [], error: '' };
+}
 
 /** What a netgame is keyed on; a change after start means the engine is in the wrong game. */
 function netIdentity(cfg: { multiplayer: string; arena: string; player: string }): string {
     return `${cfg.multiplayer}|${arenaKey(cfg.arena)}|${cfg.player}`;
 }
 
-/** Which WADs the engine runs; the same reused-store race applies (a bound iwad landing after start). */
-function wadIdentity(cfg: { iwad: string; pwads: string[] }): string {
+/** Which game and WADs the engine runs; the same reused-store race applies (a bound game/iwad landing after start). */
+function wadIdentity(cfg: { game: string; iwad: string; pwads: string[] }): string {
+    const game = GAMES[normGame(cfg.game)];
     const pwads = (Array.isArray(cfg.pwads) ? cfg.pwads : []).map((p) => wadKey(p)).filter((k) => k !== null);
-    return `${isBundledIwad(cfg.iwad) ? BUNDLED_IWAD : wadKey(cfg.iwad)}|${pwads.join(',')}`;
+    return `${game.id}|${isBundledIwad(cfg.iwad, game) ? game.bundledIwad : wadKey(cfg.iwad)}|${pwads.join(',')}`;
 }
 
 // Must match Doom.COMPONENT_ID on the Java side.
@@ -81,8 +84,9 @@ export class Doom extends Component<ComponentProps<DoomProps, DoomSavesState>, D
     /** The netgame identity the running engine was started with. */
     private startedNet: string | null = null;
     private startedWads: string | null = null;
-    /** The WADs the running engine was started with (saves are keyed by its IWAD). */
-    private game: GameFiles = BUNDLED_GAME;
+    /** The game and WADs the running engine was started with (saves are keyed by its IWAD). */
+    private gameDef: GameDef = GAMES.doom;
+    private game: GameFiles = bundledFiles(GAMES.doom);
 
     constructor(props: ComponentProps<DoomProps, DoomSavesState>) {
         super(props);
@@ -101,7 +105,7 @@ export class Doom extends Component<ComponentProps<DoomProps, DoomSavesState>, D
             }
         }, 1500);
         if (this.props.props.config.persistSaves) {
-            this.saves()?.requestSlots(this.saveGame(this.props.props.config.iwad));
+            this.saves()?.requestSlots(this.saveGame(this.props.props.config.iwad, GAMES[normGame(this.props.props.config.game)]));
         }
         if (this.props.props.config.autoStart) {
             this.start();
@@ -137,7 +141,7 @@ export class Doom extends Component<ComponentProps<DoomProps, DoomSavesState>, D
         if (this.started && this.startedWads !== null && p !== prev.props) {
             const now = wadIdentity(p.config);
             if (now !== this.startedWads) {
-                this.quit('Restarting with ' + now.split('|')[0]);
+                this.quit('Restarting with ' + now.split('|').slice(0, 2).join(' '));
                 this.startRequested = true;
                 this.start();
             }
@@ -227,7 +231,7 @@ export class Doom extends Component<ComponentProps<DoomProps, DoomSavesState>, D
             for (const [path, value] of writes) {
                 changed[path.replace(/^output\./, '')] = value;
             }
-            this.saves()?.publishTelemetry(this.props.props.config.player, this.module !== null, changed);
+            this.saves()?.publishTelemetry(this.props.props.config.player, this.module !== null, changed, this.gameDef.id);
         }
     }
 
@@ -329,6 +333,7 @@ export class Doom extends Component<ComponentProps<DoomProps, DoomSavesState>, D
         const size = this.syncCanvasSize();
         this.pageTitle = document.title;
         const cfg0 = this.props.props.config;
+        const gameDef = GAMES[normGame(cfg0.game)];
         // A netgame needs a relay ticket from the gateway (admission control);
         // fetch it alongside the engine so main() can start with the URL.
         const ticket: Promise<string | undefined> = cfg0.multiplayer === 'off'
@@ -337,28 +342,29 @@ export class Doom extends Component<ComponentProps<DoomProps, DoomSavesState>, D
                 ?? Promise.reject(new Error('no gateway delegate: cannot join a netgame')));
         // Operator-supplied WADs are fetched alongside the engine; the plan
         // decides what actually runs (shareware when the IWAD is not there).
-        const wads: Promise<PreparedWads> = this.prepareWads(cfg0);
-        Promise.all([loadEngine(), ticket, wads])
+        const wads: Promise<PreparedWads> = this.prepareWads(cfg0, gameDef);
+        Promise.all([loadEngine(gameDef), ticket, wads])
             .then(([factory, relayTicket, prepared]) => factory({
                 canvas,
                 noInitialRun: true,
-                locateFile: (path) => ENGINE_PATH + path,
+                locateFile: (path) => gameDef.enginePath + path,
                 print: this.onStdout,
                 printErr: this.onStderr,
                 preRun: [(m) => {
                     // Keyboard only while the canvas is focused — never the whole page.
                     m.ENV.SDL_EMSCRIPTEN_KEYBOARD_ELEMENT = KEYBOARD_ELEMENT;
-                    if (prepared.game.iwad === BUNDLED_IWAD) {
-                        m.FS.createPreloadedFile('', wadFileName(BUNDLED_IWAD), ENGINE_PATH + wadFileName(BUNDLED_IWAD), true, true);
+                    if (prepared.game.iwad === gameDef.bundledIwad) {
+                        const iwad = wadFileName(gameDef.bundledIwad);
+                        m.FS.createPreloadedFile('', iwad, gameDef.enginePath + iwad, true, true);
                     }
                     for (const [name, bytes] of prepared.files) {
                         m.FS.writeFile('/' + name, bytes);
                     }
-                    m.FS.createPreloadedFile('', 'default.cfg', ENGINE_PATH + 'default.cfg', true, true);
+                    m.FS.createPreloadedFile('', gameDef.configFile, gameDef.enginePath + gameDef.configFile, true, true);
                     // Save games: restore the user's slots from the gateway into the
-                    // -savedir directory so Doom's Load Game menu lists them.
+                    // -savedir directory so the game's Load Game menu lists them.
                     m.FS.mkdir(SAVE_DIR);
-                    this.restoreSlots(m, this.saveGame(prepared.game.iwad));
+                    this.restoreSlots(m, this.saveGame(prepared.game.iwad, gameDef), gameDef);
                 }],
                 onDoomSaveGame: (slot: number) => this.onSaveGame(slot),
                 onExit: () => this.onExit(),
@@ -366,6 +372,7 @@ export class Doom extends Component<ComponentProps<DoomProps, DoomSavesState>, D
             }).then((m) => [m, relayTicket, prepared] as const))
             .then(([m, relayTicket, prepared]) => {
                 this.module = m;
+                this.gameDef = gameDef;
                 this.game = prepared.game;
                 this.watchTitle();
                 // Same snapshot the ticket was issued for: a binding-driven arena
@@ -389,9 +396,14 @@ export class Doom extends Component<ComponentProps<DoomProps, DoomSavesState>, D
 
     // --- operator-supplied WADs ---------------------------------------------------
 
-    /** The save-game key for an IWAD: "" for the bundled one, else its WAD key. */
-    private saveGame(iwad: string): string {
-        return isBundledIwad(iwad) ? '' : (wadKey(iwad) as string);
+    /**
+     * The save-game key for an IWAD: "" for Doom's bundled shareware (the
+     * gateway's original layout), else the WAD key, so Heretic's shareware
+     * saves live in their own game-heretic1 folder like any other IWAD.
+     */
+    private saveGame(iwad: string, game: GameDef): string {
+        const key = isBundledIwad(iwad, game) ? game.bundledIwad : (wadKey(iwad) as string);
+        return key === GAMES.doom.bundledIwad ? '' : key;
     }
 
     /**
@@ -400,17 +412,18 @@ export class Doom extends Component<ComponentProps<DoomProps, DoomSavesState>, D
      * game mode for -warp, and list the right save slots. Never rejects: the
      * bundled game with output.wadError set is the worst case.
      */
-    private prepareWads(cfg: { iwad: string; pwads: string[]; persistSaves: boolean }): Promise<PreparedWads> {
-        const wanted = !isBundledIwad(cfg.iwad) || cfg.pwads.some((p) => typeof p === 'string' && p.trim() !== '');
+    private prepareWads(cfg: { iwad: string; pwads: string[]; persistSaves: boolean }, game: GameDef): Promise<PreparedWads> {
+        const wanted = !isBundledIwad(cfg.iwad, game) || cfg.pwads.some((p) => typeof p === 'string' && p.trim() !== '');
         if (!wanted) {
-            this.writeWadOutputs(BUNDLED_WADS);
-            return Promise.resolve(BUNDLED_WADS);
+            const bundled = bundledWads(game);
+            this.writeWadOutputs(bundled);
+            return Promise.resolve(bundled);
         }
         const saves = this.saves();
         const access: Promise<WadAccess | null> = saves ? saves.requestWads().catch(() => null) : Promise.resolve(null);
         return access
             .then((a) => {
-                const plan = planWads(cfg, a ? a.wads : null);
+                const plan = planWads(cfg, a ? a.wads : null, game);
                 const problems = plan.error ? [plan.error] : [];
                 const fetched = plan.fetch.map((k) => fetchWad(k, a ? a.ticket : '')
                     .then((bytes) => [k, bytes] as const)
@@ -426,8 +439,8 @@ export class Doom extends Component<ComponentProps<DoomProps, DoomSavesState>, D
                     for (const [k, bytes] of got) {
                         if (!bytes) {
                             if (k === plan.iwad) {
-                                problems.push(`${wadFileName(k)} is no longer on the gateway; playing ${BUNDLED_IWAD}`);
-                                iwad = BUNDLED_IWAD;
+                                problems.push(`${wadFileName(k)} is no longer on the gateway; playing ${game.bundledIwad}`);
+                                iwad = game.bundledIwad;
                             } else if (!problems.some((p) => p.startsWith(wadFileName(k)))) {
                                 problems.push(`${wadFileName(k)} is no longer on the gateway; skipped`);
                             }
@@ -441,10 +454,10 @@ export class Doom extends Component<ComponentProps<DoomProps, DoomSavesState>, D
                             files.push([wadFileName(k), bytes]);
                         }
                     }
-                    if (iwad === BUNDLED_IWAD) {
+                    if (iwad === game.bundledIwad) {
                         mode = 'shareware';
                     }
-                    if (mode === 'shareware' && pwads.length > 0) {
+                    if (mode === 'shareware' && game.sharewareRefusesPwads && pwads.length > 0) {
                         // D_DoomMain: "You cannot -file with the shareware version. Register!"
                         problems.push(`PWADs need a registered IWAD (the engine refuses -file with shareware data); ${pwads.map(wadFileName).join(', ')} skipped`);
                         pwads = [];
@@ -458,9 +471,9 @@ export class Doom extends Component<ComponentProps<DoomProps, DoomSavesState>, D
                     this.writeWadOutputs(prepared);
                     // The slots listed at mount were for the configured game; a
                     // fallback (or a binding that changed since) needs the right ones.
-                    const game = this.saveGame(iwad);
-                    if (cfg.persistSaves && saves && saves.mapStateToProps().slotsIwad !== game) {
-                        return saves.loadSlots(game).then(() => prepared);
+                    const saveKey = this.saveGame(iwad, game);
+                    if (cfg.persistSaves && saves && saves.mapStateToProps().slotsIwad !== saveKey) {
+                        return saves.loadSlots(saveKey).then(() => prepared);
                     }
                     return prepared;
                 });
@@ -587,7 +600,7 @@ export class Doom extends Component<ComponentProps<DoomProps, DoomSavesState>, D
         return d instanceof DoomStoreDelegate ? d : null;
     }
 
-    private restoreSlots(m: DoomModule, game: string): void {
+    private restoreSlots(m: DoomModule, game: string, def: GameDef): void {
         if (!this.props.props.config.persistSaves) {
             return;
         }
@@ -602,7 +615,7 @@ export class Doom extends Component<ComponentProps<DoomProps, DoomSavesState>, D
                 continue;
             }
             try {
-                m.FS.writeFile(saveSlotPath(s.slot), base64ToBytes(s.data));
+                m.FS.writeFile(saveSlotPath(s.slot, def), base64ToBytes(s.data));
             } catch (e) {
                 this.setMessage(`Could not restore save slot ${s.slot + 1}: ${String(e)}`);
             }
@@ -617,7 +630,7 @@ export class Doom extends Component<ComponentProps<DoomProps, DoomSavesState>, D
         }
         let bytes: Uint8Array;
         try {
-            bytes = m.FS.readFile(saveSlotPath(slot));
+            bytes = m.FS.readFile(saveSlotPath(slot, this.gameDef));
         } catch (e) {
             this.setMessage(`Save slot ${slot + 1} written but unreadable: ${String(e)}`);
             return;
@@ -632,7 +645,7 @@ export class Doom extends Component<ComponentProps<DoomProps, DoomSavesState>, D
         const saves = this.props.props.config.persistSaves ? this.saves() : null;
         const authenticated = !!(this.props.delegate && this.props.delegate.authenticated);
         if (saves && authenticated) {
-            saves.putSlot(slot, description, bytesToBase64(bytes), this.saveGame(this.game.iwad));
+            saves.putSlot(slot, description, bytesToBase64(bytes), this.saveGame(this.game.iwad, this.gameDef));
             this.setMessage(`Saved slot ${slot + 1} "${description}" to the gateway`);
         } else if (saves) {
             this.setMessage(`Saved slot ${slot + 1} "${description}" (this tab only: log in to keep saves on the gateway)`);

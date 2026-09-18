@@ -4,7 +4,8 @@
     "role": "host",
     "arena": "default",
     "players": 2,
-    "player": "Player1"
+    "player": "Player1",
+    "game": "doom"
   },
   "props": {
     "defaultSize": {
@@ -174,7 +175,8 @@
             "arena": "default",
             "players": 2,
             "deathmatch": "deathmatch",
-            "player": ""
+            "player": "",
+            "game": "doom"
           },
           "data": {
             "controls": {
@@ -228,6 +230,14 @@
               "type": "property",
               "config": {
                 "path": "view.params.player"
+              }
+            }
+          },
+          "props.config.game": {
+            "binding": {
+              "type": "property",
+              "config": {
+                "path": "view.params.game"
               }
             }
           }
@@ -314,6 +324,10 @@
       "persistent": true
     },
     "params.players": {
+      "paramDirection": "input",
+      "persistent": true
+    },
+    "params.game": {
       "paramDirection": "input",
       "persistent": true
     }

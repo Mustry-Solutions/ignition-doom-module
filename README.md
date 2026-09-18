@@ -14,7 +14,8 @@ It is of no industrial value whatsoever. That is the point.
 *Line 3 stopped. The alarm is unacknowledged. The marine waits.*
 
 - Ignition **8.3.6+**, Perspective
-- One component: `Doom`, under the `Mustry Solutions` palette category
+- One component: `Doom`, under the `Mustry Solutions` palette category. It
+  also plays Heretic.
 - Free, no trial, no activation. GPL-2.0.
 
 ---
@@ -47,6 +48,10 @@ keep their saves in the tab, so nobody shares a folder by accident.
 sessions. Host in one browser, join from another. The host's game launches
 when everyone is in the lobby. Only sessions running the component get into
 an arena: the gateway hands each one a ticket.
+
+**Also Heretic.** Set `config.game` to `heretic` and the same component runs
+Raven's 1994 shareware episode from the same engine family: same controls,
+same tags, same saves, same deathmatch relay. Elven wand instead of pistol.
 
 ---
 
@@ -138,7 +143,7 @@ Label it "Marine down". Watch the alarm table light up.
 **Deathmatch.** Set `config.multiplayer` to `host` on one component and
 `join` on another, same `config.arena`. Open both sessions. Fight.
 
-**Bring your own WAD.** Copy the `DOOM2.WAD` you own into
+**Bring your own WAD.** Copy the `DOOM2.WAD` (or `HERETIC.WAD`) you own into
 `data/modules/com.mustrysolutions.doom/wads/` on the gateway and set
 `config.iwad` to `doom2`. Mods go next to it and into `config.pwads`. Only
 sessions running the component can fetch them; everyone else gets a 403.
@@ -164,15 +169,17 @@ ever reach its own.
 
 ## Licensing
 
-The engine is [Chocolate Doom](https://www.chocolate-doom.org/), GPL-2.0, so
-the module is GPL-2.0. The shareware episode is id Software's and may only be
-redistributed complete and free of charge, which is why this module is free
-and always will be. Registered Doom, Doom II and other IWADs are not included
-and must not be added; the module plays the ones you own from the gateway's
-wads folder. See [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+The engines are [Chocolate Doom](https://www.chocolate-doom.org/) and
+Chocolate Heretic, GPL-2.0, so the module is GPL-2.0. The shareware episodes
+are id Software's and Raven's and may only be redistributed complete, free of
+charge and without commercial use, which is why this module is free and
+always will be. Registered Doom, Doom II, Heretic and other IWADs are not
+included and must not be added; the module plays the ones you own from the
+gateway's wads folder. See [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
 
-DOOM is a trademark of id Software LLC. Mustry Solutions is not affiliated with
-id Software, Bethesda, Cloudflare or Inductive Automation.
+DOOM is a trademark of id Software LLC; Heretic of Raven Software / id
+Software. Mustry Solutions is not affiliated with id Software, Raven
+Software, Bethesda, Cloudflare or Inductive Automation.
 
 ---
 

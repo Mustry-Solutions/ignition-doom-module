@@ -1,10 +1,10 @@
 import {
-    arenaKey, base64ToBytes, buildArgs, BUNDLED_IWAD, bytesToBase64, diffControls, EMPTY_CONTROLS, engineSize, heldKeys, isFatalLine, isValidSlot, parseEngineLine, planWads, readStats, relayUrl, saveDescription, saveSlotPath, splitArgs, STAT_IDS, statWrites, wadGameMode, wadIsCommercial, wadKey, wadUrl, weaponKey, ZERO_STATS
+    arenaKey, base64ToBytes, buildArgs, BUNDLED_IWAD, bytesToBase64, GAMES, normGame, diffControls, EMPTY_CONTROLS, engineSize, heldKeys, isFatalLine, isValidSlot, parseEngineLine, planWads, readStats, relayUrl, saveDescription, saveSlotPath, splitArgs, STAT_IDS, statWrites, wadGameMode, wadIsCommercial, wadKey, wadUrl, weaponKey, ZERO_STATS
 } from '../components/doom/doomLogic';
 import { mapDoomProps, PropReader } from '../components/doom/doomProps';
 
 const baseConfig = {
-    autoStart: false, statsIntervalMs: 250, persistSaves: true, player: '', publishTelemetry: true, multiplayer: 'off' as const, arena: 'default', players: 2, deathmatch: 'deathmatch' as const, relayUrl: '', sound: true, music: false, iwad: '', pwads: [] as string[], skill: 3, warp: true, episode: 1, map: 1,
+    game: 'doom' as const, autoStart: false, statsIntervalMs: 250, persistSaves: true, player: '', publishTelemetry: true, multiplayer: 'off' as const, arena: 'default', players: 2, deathmatch: 'deathmatch' as const, relayUrl: '', sound: true, music: false, iwad: '', pwads: [] as string[], skill: 3, warp: true, episode: 1, map: 1,
     keyboard: true, mouse: false, pixelated: true, showHud: true, playLabel: '', extraArgs: ''
 };
 
@@ -41,6 +41,38 @@ describe('buildArgs', () => {
     it('allows four episodes for an episodic operator IWAD', () => {
         const args = buildArgs({ ...baseConfig, episode: 4, map: 7 }, undefined, undefined, { iwad: 'doomu', pwads: [], commercial: false });
         expect(args.slice(args.indexOf('-warp'), args.indexOf('-warp') + 3)).toEqual(['-warp', '4', '7']);
+    });
+});
+
+describe('Heretic', () => {
+    const heretic = { ...baseConfig, game: 'heretic' as const };
+    it('runs its own engine, IWAD and config, and warps up to episode 5', () => {
+        const args = buildArgs({ ...heretic, episode: 9, map: 3 });
+        expect(args.slice(0, 4)).toEqual(['-iwad', 'heretic1.wad', '-config', 'heretic.cfg']);
+        expect(args.slice(args.indexOf('-warp'), args.indexOf('-warp') + 3)).toEqual(['-warp', '5', '3']);
+        expect(GAMES.heretic.enginePath + GAMES.heretic.script).toBe('/res/mustry-doom/heretic/websockets-heretic.js');
+    });
+    it('has no altdeath: altdeath hosts a plain deathmatch', () => {
+        const args = buildArgs({ ...heretic, multiplayer: 'host', deathmatch: 'altdeath' }, undefined, 'ws://gw/system/doom-relay/a');
+        expect(args).toContain('-deathmatch');
+        expect(args).not.toContain('-altdeath');
+        expect(buildArgs({ ...baseConfig, multiplayer: 'host', deathmatch: 'altdeath' }, undefined, 'ws://gw/x')).toContain('-altdeath');
+    });
+    it('saves to hticsav<N>.hsg and treats heretic1 as its bundled IWAD', () => {
+        expect(saveSlotPath(2, GAMES.heretic)).toBe('/saves/hticsav2.hsg');
+        expect(saveSlotPath(2)).toBe('/saves/doomsav2.dsg');
+        expect(planWads({ iwad: '', pwads: [] }, null, GAMES.heretic)).toEqual({ iwad: 'heretic1', pwads: [], fetch: [], error: '' });
+        expect(planWads({ iwad: 'HERETIC1.WAD', pwads: [] }, null, GAMES.heretic).error).toBe('');
+        const plan = planWads({ iwad: 'doom2', pwads: [] }, ['doom2'], GAMES.heretic);
+        expect(plan.iwad).toBe('heretic1');
+        expect(plan.error).toMatch(/Heretic engine only recognises/);
+        expect(planWads({ iwad: 'heretic', pwads: ['mymod'] }, ['heretic', 'mymod'], GAMES.heretic))
+            .toEqual({ iwad: 'heretic', pwads: ['mymod'], fetch: ['heretic', 'mymod'], error: '' });
+    });
+    it('normalises the game id', () => {
+        expect(normGame('heretic')).toBe('heretic');
+        expect(normGame('hexen')).toBe('doom');
+        expect(normGame(undefined)).toBe('doom');
     });
 });
 
@@ -184,8 +216,9 @@ describe('mapDoomProps', () => {
         expect(p.running).toBe(false);
     });
     it('reads bound values', () => {
-        const p = mapDoomProps(tree({ 'config.skill': 5, 'config.iwad': 'doom2', 'config.pwads': ['av', 7, 'x'], 'data.controls.fire': true, 'data.controls.weapon': 2, 'state.paused': true, 'state.running': true }));
+        const p = mapDoomProps(tree({ 'config.skill': 5, 'config.game': 'heretic', 'config.iwad': 'doom2', 'config.pwads': ['av', 7, 'x'], 'data.controls.fire': true, 'data.controls.weapon': 2, 'state.paused': true, 'state.running': true }));
         expect(p.config.skill).toBe(5);
+        expect(p.config.game).toBe('heretic');
         expect(p.config.iwad).toBe('doom2');
         expect(p.config.pwads).toEqual(['av', 'x']);
         expect(p.controls.fire).toBe(true);

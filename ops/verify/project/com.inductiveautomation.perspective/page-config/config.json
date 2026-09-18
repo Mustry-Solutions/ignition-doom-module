@@ -10,7 +10,8 @@
     "role": "host",
     "player": "Player1",
     "arena": "default",
-    "players": 2
+    "players": 2,
+    "game": "doom"
    }
   },
   "/arena/:role/:player/:arena": {
@@ -19,7 +20,8 @@
     "role": "host",
     "player": "Player1",
     "arena": "default",
-    "players": 2
+    "players": 2,
+    "game": "doom"
    }
   },
   "/wad/:iwad": {
@@ -27,7 +29,8 @@
    "viewParams": {
     "iwad": "doom1",
     "pwad": "",
-    "player": "WadTester"
+    "player": "WadTester",
+    "game": "doom"
    }
   },
   "/wad/:iwad/:pwad": {
@@ -35,7 +38,27 @@
    "viewParams": {
     "iwad": "doom1",
     "pwad": "",
+    "player": "WadTester",
+    "game": "doom"
+   }
+  },
+  "/game/:game": {
+   "viewPath": "DoomWad",
+   "viewParams": {
+    "game": "doom",
+    "iwad": "",
+    "pwad": "",
     "player": "WadTester"
+   }
+  },
+  "/arena/:role/:player/:arena/:game": {
+   "viewPath": "DoomArena",
+   "viewParams": {
+    "role": "host",
+    "player": "Player1",
+    "arena": "default",
+    "players": 2,
+    "game": "doom"
    }
   }
  }

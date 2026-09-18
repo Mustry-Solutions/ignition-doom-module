@@ -119,7 +119,9 @@ public class DoomModelDelegate extends ComponentModelDelegate {
                 boolean running = payload != null && payload.has("running") && payload.get("running").getAsBoolean();
                 JsonObject stats = payload != null && payload.has("stats") && payload.get("stats").isJsonObject()
                     ? payload.getAsJsonObject("stats") : null;
-                tags.update(resolved, component.getSession().getSessionId().toString(), running, stats);
+                String game = payload != null && payload.has("game") && payload.get("game").isJsonPrimitive()
+                    ? payload.get("game").getAsString() : "";
+                tags.update(resolved, component.getSession().getSessionId().toString(), running, game, stats);
             } else if (EVT_TICKET.equals(name)) {
                 JsonObject payload = message.getEvent();
                 String arena = DoomTagProvider.playerKey(

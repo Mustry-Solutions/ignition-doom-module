@@ -1,5 +1,5 @@
 diff --git a/configure.ac b/configure.ac
-index ae1320b..f671b04 100644
+index ae1320b3..f671b04a 100644
 --- a/configure.ac
 +++ b/configure.ac
 @@ -115,7 +115,7 @@ AS_IF([test "x$with_libpng" != xno], [
@@ -21,7 +21,7 @@ index ae1320b..f671b04 100644
  
  AC_SUBST(ac_aux_dir)
 diff --git a/opl/Makefile.am b/opl/Makefile.am
-index 430953e..4198d54 100644
+index 430953e3..4198d547 100644
 --- a/opl/Makefile.am
 +++ b/opl/Makefile.am
 @@ -3,7 +3,7 @@ AM_CFLAGS=@SDLMIXER_CFLAGS@
@@ -34,7 +34,7 @@ index 430953e..4198d54 100644
  noinst_LIBRARIES=libopl.a
  
 diff --git a/scripts/build.sh b/scripts/build.sh
-index 6cd2c35..965a64e 100755
+index 6cd2c354..965a64e3 100755
 --- a/scripts/build.sh
 +++ b/scripts/build.sh
 @@ -4,6 +4,6 @@ cd "`dirname \"$0\"`/.."
@@ -46,7 +46,7 @@ index 6cd2c35..965a64e 100755
  
  emmake make
 diff --git a/src/doom/Makefile.am b/src/doom/Makefile.am
-index 89ca2b4..94378c8 100644
+index 89ca2b42..94378c84 100644
 --- a/src/doom/Makefile.am
 +++ b/src/doom/Makefile.am
 @@ -35,6 +35,7 @@ hu_stuff.c         hu_stuff.h   \
@@ -58,7 +58,7 @@ index 89ca2b4..94378c8 100644
  p_doors.c                       \
  p_enemy.c                       \
 diff --git a/src/doom/g_game.c b/src/doom/g_game.c
-index f23586b..dbc3d8e 100644
+index f23586b1..dbc3d8e3 100644
 --- a/src/doom/g_game.c
 +++ b/src/doom/g_game.c
 @@ -92,6 +92,9 @@ void G_DoSaveGame(void);
@@ -83,7 +83,7 @@ index f23586b..dbc3d8e 100644
  
 diff --git a/src/doom/mustry_stats.c b/src/doom/mustry_stats.c
 new file mode 100644
-index 0000000..8cd452e
+index 00000000..8cd452e4
 --- /dev/null
 +++ b/src/doom/mustry_stats.c
 @@ -0,0 +1,112 @@
@@ -200,31 +200,46 @@ index 0000000..8cd452e
 +    }
 +});
 diff --git a/src/doomtype.h b/src/doomtype.h
-index 9947a07..2f6f20f 100644
+index 9947a070..0fe99d09 100644
 --- a/src/doomtype.h
 +++ b/src/doomtype.h
-@@ -100,9 +100,17 @@
+@@ -100,19 +100,26 @@
  
  #include <inttypes.h>
  
 -#if defined(__cplusplus) || defined(__bool_true_false_are_defined)
-+#if defined(__cplusplus)
- 
+-
 -// Use builtin bool type with C++.
-+typedef bool boolean;
-+
-+#elif defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L
-+
-+// C23 makes true/false keywords of type bool. Doom relies on boolean being
-+// int-sized and memset()-able to -1 (see R_InstallSpriteLump), so keep an int.
-+typedef int boolean;
-+
-+#elif defined(__bool_true_false_are_defined)
++#if defined(__cplusplus)
  
  typedef bool boolean;
  
+ #else
+ 
+-typedef enum 
+-{
+-    false, 
+-    true
+-} boolean;
++// Mustry: ONE boolean ABI for every C translation unit. Upstream picks a
++// 1-byte bool when <stdbool.h> was seen and a 4-byte enum otherwise; under
++// Emscripten <emscripten.h> pulls stdbool.h in (em_js.h), so files that
++// include it first disagreed with the rest about sizeof(boolean), and shared
++// globals such as playeringame[], netgame and paused read as garbage from
++// the other side ("Player 4 left the game" in single player). Doom also
++// relies on boolean being int-sized and memset()-able to -1
++// (R_InstallSpriteLump), and C23 makes true/false keywords: int it is.
++typedef int boolean;
++
++#if !defined(__bool_true_false_are_defined) && !(defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L)
++#define false 0
++#define true 1
++#endif
+ 
+ #endif
+ 
 diff --git a/textscreen/Makefile.am b/textscreen/Makefile.am
-index f55236f..dd0a8b4 100644
+index f55236f6..dd0a8b4f 100644
 --- a/textscreen/Makefile.am
 +++ b/textscreen/Makefile.am
 @@ -5,7 +5,7 @@ CTAGS_ARGS=-I TXT_UNCAST_ARG+

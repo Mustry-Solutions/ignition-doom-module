@@ -1,7 +1,8 @@
 # CLAUDE.md
 
 Ignition 8.3 Perspective module with ONE component: Doom (Chocolate Doom →
-WebAssembly). Structure and conventions mirror mustry-perspective-component-module
+WebAssembly), which also runs Heretic (`config.game`; Chocolate Heretic from
+the same upstream). Structure and conventions mirror mustry-perspective-component-module
 (Gradle + io.ia.sdk.modl, React 16 class component + TypeScript strict on the web
 side, Java scopes for registration). README.md is the product page; the
 engineering detail (architecture, props, tag model, build, dev gateway, tests)
@@ -11,16 +12,23 @@ is docs/reference.md. Keep new technical detail there, not in the README.
 
 - The module is **GPL-2.0-only** (the engine is GPL). Never copy code from the
   Apache-2.0 component module wholesale; re-derive patterns.
-- Never add a non-shareware IWAD (doom.wad, doom2.wad, ...) to the repo or the
-  module. The shareware `doom1.wad` ships complete and free of charge only.
+- Never add a non-shareware IWAD (doom.wad, doom2.wad, heretic.wad, ...) to
+  the repo or the module. The shareware `doom1.wad` and `heretic1.wad` ship
+  complete and free of charge only (Heretic's licence also says no
+  commercial use and electronic distribution in compressed form).
 - `freeModule` stays true. This can never be a paid module.
 
 ## Layout
 
-- `engine/` — how the committed engine build is produced (pinned upstream +
-  patches + `build.sh`). The outputs live in
-  `gateway/src/main/resources/mounted/doom/` next to `doom1.wad` and `default.cfg`
-  and are served at `/res/mustry-doom/doom/`.
+- `engine/` — how the committed engine builds are produced (pinned doom-wasm
+  + `src/heretic/` from the Chocolate Doom commit it forked from + patches +
+  `build.sh`, Docker only: a `--local` build under a C23 clang hid the
+  `boolean` ABI bug 0001 now fixes, and produced the irreproducible binary
+  the repo carried until Heretic). Outputs live in
+  `gateway/src/main/resources/mounted/<game>/` next to the shareware IWAD and
+  the cfg, served at `/res/mustry-doom/<game>/`. Everything per-game on the
+  browser side is the `GAMES` table in `doomLogic.ts`; add a game there, not
+  in `Doom.tsx`.
 - `web/typescript/components/doom/` — `doomLogic.ts` (pure, node-tested: args,
   stdout protocol, key defs, control diffing), `doomProps.ts` (PropertyTree →
   props), `doomEngine.ts` (DOM: script loading, one-instance guard, synthetic
@@ -115,11 +123,11 @@ defaults: wrong role/arena/player. Two guards, both needed:
 Symptom that led here: full e2e suite failed the deathmatch test 5/5 while
 the test alone passed; host ticket issued for arena `default`.
 
-## Key bindings must agree in three places
+## Key bindings must agree in four places
 
-`gateway/.../default.cfg` (DOS scancodes the engine reads),
-`doomLogic.CONTROL_KEYS` (the browser keys the tag controls synthesise) and
-`engine/README.md` (the table). Change one, change all three.
+`gateway/.../doom/default.cfg` and `heretic/heretic.cfg` (DOS scancodes the
+engines read), `doomLogic.CONTROL_KEYS` (the browser keys the tag controls
+synthesise) and `engine/README.md` (the table). Change one, change all four.
 
 ## Dev gateway config seeding
 
