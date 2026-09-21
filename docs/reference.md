@@ -132,7 +132,41 @@ plain deathmatch). The `[Doom]Players/<player>/Game` tag says which game a
 player is in. The verify project has `/game/heretic` and the arena route
 takes a fourth segment: `/arena/host/Corvus1/htic/heretic`.
 
-Hexen (#6) and Strife (#7) are the remaining family members.
+### Hexen
+
+`config.game = hexen` runs Chocolate Hexen from the same upstream, with one
+difference from the other two: **the module ships no Hexen IWAD.** The
+4-level demo's archive carries no redistribution grant (its README only says
+"Hexen is NOT a shareware product"), so it stays out of the module and the
+repo. Put `hexen.wad` (the demo's or the retail one) in the gateway's wads
+folder and the component fetches it like any operator WAD (#2); without it
+the component reports `Hexen cannot start without it` in `output.wadError`
+and does not start. `config.playerClass` picks fighter, cleric or mage
+(`-class`); `output.playerClass` and the `PlayerClass` tag report it.
+Hexen's "ammo" is the ready weapon's mana, its "armor" is the status bar's
+figure (class save plus the four pieces), and it has no kill/item/secret
+totals.
+
+Saves are the second difference: a Hexen slot is a folder, `hex<N>.hxs`
+plus one `hex<N><map>.hxs` per visited map of the hub. The save protocol
+carries a set of files (`files: [{name, data}]`) and the gateway keeps them
+under `saves/<user>/game-hexen/slot<N>/`. Doom and Heretic still use one
+file per slot; a slot is one or the other, never both.
+
+Two engine facts the build patches (`engine/patches/0003`): Chocolate's
+netgame handshake validates (mission, mode) against a table that only knows
+Hexen as `commercial`, so the demo (`shareware`) could not host or join; the
+demo is multiplayer capable, and the table gets a row for it (maps 1–4). And
+the 640×480 graphical startup screen opens and destroys an SDL window of its
+own, which on a canvas leaves the software renderer without a 2D context in
+headless Chromium; it is off in this build.
+
+Dev gateway: `ops/fetch-hexen-demo.sh` downloads the demo into
+`engine/build/` (gitignored) and `ops/fresh.sh` seeds it into the wads
+folder; CI does the same best-effort, and the Hexen e2e tests skip when it
+is missing.
+
+Strife (#7) is the remaining family member.
 
 ### Bring your own WAD
 
@@ -254,7 +288,7 @@ One engine per browser page: a second Doom component on the same page reports
 | `/doom`, `/heretic` | `DoomHub`, `HereticHub` | A game's overview: its pages with descriptions and routes, and the engine/IWAD/tag facts. |
 | `/doom/control-room` | `DoomDemo` | The control room: tiles from the `[Doom]` provider, the line alarm, tag-bound controls, the historian trend. |
 | `/arena/:role/:player[/:arena[/:game]]` | `DoomArena` | Deathmatch host or joiner. |
-| `/wad/:iwad[/:pwad]`, `/game/:game` | `DoomWad` | Bring-your-own-WAD lab, or a game with its bundled IWAD. |
+| `/wad/:iwad[/:pwad]`, `/game/:game` | `DoomWad` | Bring-your-own-WAD lab, or a game with its default IWAD (Hexen: the operator's `hexen.wad`). |
 
 The launcher and the hubs are generated: `ops/verify/tools/build_launcher.py`
 holds the `GAMES` table (name, colour, tagline, sections with routes); add a

@@ -15,7 +15,7 @@ It is of no industrial value whatsoever. That is the point.
 
 - Ignition **8.3.6+**, Perspective
 - One component: `Doom`, under the `Mustry Solutions` palette category. It
-  also plays Heretic.
+  also plays Heretic, and Hexen with your own WAD.
 - Free, no trial, no activation. GPL-2.0.
 
 ---
@@ -49,9 +49,13 @@ sessions. Host in one browser, join from another. The host's game launches
 when everyone is in the lobby. Only sessions running the component get into
 an arena: the gateway hands each one a ticket.
 
-**Also Heretic.** Set `config.game` to `heretic` and the same component runs
-Raven's 1994 shareware episode from the same engine family: same controls,
-same tags, same saves, same deathmatch relay. Elven wand instead of pistol.
+**Also Heretic. And Hexen.** Set `config.game` to `heretic` and the same
+component runs Raven's 1994 shareware episode from the same engine family:
+same controls, same tags, same saves, same deathmatch relay. Elven wand
+instead of pistol. `hexen` runs Hexen too, with your own `hexen.wad` in the
+gateway's wads folder (the demo's archive grants no redistribution, so the
+module ships the engine and not the data) and `config.playerClass` for
+fighter, cleric or mage.
 
 ---
 

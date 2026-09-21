@@ -16,6 +16,8 @@ so building the module never needs Emscripten:
 | `heretic/websockets-heretic.wasm` | the Heretic engine | built by `engine/build.sh` |
 | `heretic/heretic1.wad` | Heretic shareware 1.2 IWAD (sha1 `b4c50ca9bea07f7c35250a1a11906091971c05ae`), from `htic_v12.zip` on the idgames archive | Raven Software / id Software; freely distributable by electronic means, no commercial use |
 | `heretic/heretic.cfg` | the same key bindings for Heretic | this repo |
+| `hexen/websockets-hexen.{js,wasm}` | the Hexen engine (no IWAD ships; see `0003` below) | built by `engine/build.sh` |
+| `hexen/hexen.cfg` | the same key bindings for Hexen | this repo |
 
 `build.sh` clones the pinned doom-wasm commit, restores `src/heretic/` from
 the Chocolate Doom commit doom-wasm was cut from (doom-wasm dropped the other
@@ -34,6 +36,13 @@ the corresponding source the GPL asks us to make available:
   the game". A `--local` build under a C23-default clang never showed it,
   which is why the binary committed before this fix was not reproducible
   from the Docker build.
+- `0003` does the same for Hexen (`src/hexen/` from the same commit), adds a
+  `{hexen, shareware}` row to `d_mode.c`'s netgame table so the 4-level demo
+  can host and join, and defaults `graphical_startup` off (its separate SDL
+  window breaks the canvas renderer in headless Chromium). Hexen ships no
+  IWAD: the demo's archive carries no redistribution grant, so
+  `mounted/hexen/` holds the engine and `hexen.cfg` only and the operator
+  supplies `hexen.wad`.
 - `0002` wires Heretic into the build (`src/Makefile.am`, `configure.ac`),
   restores two mouse bindings doom-wasm dropped that Heretic's `g_game.c`
   needs (`mouseb_speed`, `mouseb_useartifact`, in `m_controls` and the
@@ -42,7 +51,7 @@ the corresponding source the GPL asks us to make available:
   the `doom: 10, game started` line and the save hook, plus
   `src/heretic/mustry_stats.c` with the same stat ids.
 
-## Key bindings (`default.cfg`, `heretic.cfg`)
+## Key bindings (`default.cfg`, `heretic.cfg`, `hexen.cfg`)
 
 Values are DOS scancodes, as Chocolate Doom stores them. Both games use the
 same table.

@@ -292,6 +292,15 @@ seed_verify_wads() {
   "${COMPOSE[@]}" run --rm -u root --entrypoint sh gateway \
       -c "mkdir -p '${dst}' && chown -R ignition:ignition '${dst}'"
   docker cp "${src}" "${CONTAINER_NAME}:${dst}/doom.wad"
+  # Hexen ships no IWAD (its demo carries no redistribution grant); the dev
+  # gateway gets the 4-level demo when ops/fetch-hexen-demo.sh has run.
+  local hexen="${PROJECT_ROOT}/engine/build/hexen-demo/hexen.wad"
+  if [[ -f "${hexen}" ]]; then
+    docker cp "${hexen}" "${CONTAINER_NAME}:${dst}/hexen.wad"
+    ok "Hexen demo WAD seeded (dev gateway only)."
+  else
+    warn "No engine/build/hexen-demo/hexen.wad: run ops/fetch-hexen-demo.sh for the Hexen pages; the e2e Hexen test will skip."
+  fi
   "${COMPOSE[@]}" run --rm -u root --entrypoint sh gateway \
       -c "chown -R ignition:ignition '${dst}'"
   ok "Verify WAD fixture in place."

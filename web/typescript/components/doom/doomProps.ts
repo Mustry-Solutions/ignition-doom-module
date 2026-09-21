@@ -39,6 +39,7 @@ export function mapDoomProps(tree: PropReader): DoomProps {
             music: tree.readBoolean('config.music', false),
             iwad: tree.readString('config.iwad', ''),
             pwads: (tree.readArray('config.pwads', []) || []).filter((p): p is string => typeof p === 'string'),
+            playerClass: tree.readString('config.playerClass', 'fighter'),
             skill: tree.readNumber('config.skill', 3),
             warp: tree.readBoolean('config.warp', true),
             episode: tree.readNumber('config.episode', 1),

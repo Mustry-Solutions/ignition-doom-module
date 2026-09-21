@@ -6,6 +6,17 @@ are semver. Ignition's module version is numeric only, so releases are plain
 
 ## [Unreleased]
 
+### Added
+
+- Hexen. `config.game = hexen` runs Chocolate Hexen (same upstream,
+  `engine/patches/0003`) from the operator's `hexen.wad` in the gateway's
+  wads folder: the module ships the engine but no Hexen IWAD (the demo's
+  archive grants no redistribution). `config.playerClass` (fighter, cleric,
+  mage), `output.playerClass` and a `PlayerClass` tag. Save slots can be a
+  set of files (Hexen's hub archives), stored under `slot<N>/`. The demo
+  can host and join netgames (Chocolate's mode table refused it). (#6)
+- Engine stdout goes to the browser console at `debug` level (`[doom] ...`).
+
 ### Changed
 
 - Demo project: a launcher at `/` with a card per game (Doom, Heretic;

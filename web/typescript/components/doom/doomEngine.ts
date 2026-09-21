@@ -28,6 +28,7 @@ export interface DoomModule {
         mkdir(path: string): void;
         writeFile(path: string, data: Uint8Array): void;
         readFile(path: string): Uint8Array;
+        readdir(path: string): string[];
     };
     ENV: Record<string, string>;
 }

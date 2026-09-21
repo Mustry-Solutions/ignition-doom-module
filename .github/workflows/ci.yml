@@ -82,6 +82,12 @@ jobs:
       - name: Stage Embr Charts
         run: ops/stage-embr.sh
 
+      # The Hexen 4-level demo is fetched for the dev gateway only (never
+      # committed: its archive carries no redistribution grant). Best effort:
+      # without it the Hexen e2e tests skip.
+      - name: Fetch the Hexen demo WAD (dev fixture)
+        run: ops/fetch-hexen-demo.sh || echo "no Hexen demo; its e2e tests will skip"
+
       - name: Bring up gateway and run the suite
         run: ops/e2e.sh --fresh
 

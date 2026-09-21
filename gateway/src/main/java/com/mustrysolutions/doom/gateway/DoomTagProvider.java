@@ -33,7 +33,8 @@ public final class DoomTagProvider {
         Map.entry("items", DataType.Int4), Map.entry("secrets", DataType.Int4), Map.entry("totalKills", DataType.Int4),
         Map.entry("totalItems", DataType.Int4), Map.entry("totalSecrets", DataType.Int4), Map.entry("episode", DataType.Int4),
         Map.entry("map", DataType.Int4), Map.entry("levelSeconds", DataType.Int4), Map.entry("dead", DataType.Boolean),
-        Map.entry("netgame", DataType.Boolean), Map.entry("inLobby", DataType.Boolean), Map.entry("netPlayers", DataType.Int4));
+        Map.entry("netgame", DataType.Boolean), Map.entry("inLobby", DataType.Boolean), Map.entry("netPlayers", DataType.Int4),
+        Map.entry("playerClass", DataType.Int4));
 
     private final ManagedTagProvider provider;
     private final Set<String> knownPlayers = ConcurrentHashMap.newKeySet();
