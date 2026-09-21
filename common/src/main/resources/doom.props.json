@@ -10,9 +10,9 @@
       "properties": {
         "game": {
           "type": "string",
-          "enum": ["doom", "heretic"],
+          "enum": ["doom", "heretic", "hexen"],
           "default": "doom",
-          "description": "Which game: 'doom' (the 1993 shareware episode, Knee-Deep in the Dead) or 'heretic' (Raven's 1994 shareware episode, City of the Damned). Both engines come from the same Chocolate Doom source and ship with the module; config.iwad / config.pwads then name that game's WADs."
+          "description": "Which game: 'doom' (the 1993 shareware episode, Knee-Deep in the Dead), 'heretic' (Raven's 1994 shareware episode, City of the Damned) or 'hexen' (Beyond Heretic; the module ships its engine but no IWAD, so the operator's hexen.wad must be in the gateway's wads folder). All engines come from the same Chocolate Doom source; config.iwad / config.pwads then name that game's WADs."
         },
         "autoStart": {
           "type": "boolean",
@@ -33,6 +33,12 @@
           "type": "string",
           "default": "",
           "description": "Which IWAD to play. Empty = the bundled shareware one for config.game (doom1.wad or heretic1.wad). Otherwise the name of an IWAD the gateway operator placed in data/modules/com.mustrysolutions.doom/wads/ (e.g. 'doom2' for DOOM2.WAD, 'heretic' for HERETIC.WAD; case-insensitive, '.wad' optional). Unknown = shareware plus output.wadError. The module never ships registered WADs."
+        },
+        "playerClass": {
+          "type": "string",
+          "enum": ["fighter", "cleric", "mage"],
+          "default": "fighter",
+          "description": "Hexen only: the character class (-class). Ignored by Doom and Heretic."
         },
         "pwads": {
           "type": "array",
@@ -389,6 +395,11 @@
           "type": "boolean",
           "default": false,
           "description": "True while the netgame lobby waits for players (host: until config.players have joined)."
+        },
+        "playerClass": {
+          "type": "integer",
+          "default": 0,
+          "description": "Hexen: the class in play, 0 fighter, 1 cleric, 2 mage (3 while porked). 0 for the other games."
         },
         "netPlayers": {
           "type": "integer",

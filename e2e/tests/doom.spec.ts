@@ -318,8 +318,8 @@ test('launcher: every game has a card, the hubs list their sections, and the lin
     for (const game of ['DOOM', 'HERETIC', 'HEXEN', 'STRIFE']) {
         await expect(page.getByText(game, { exact: true })).toBeVisible();
     }
-    await expect(page.getByText('SHIPS', { exact: true })).toHaveCount(2);
-    await expect(page.getByText('PLANNED', { exact: true })).toHaveCount(2);
+    await expect(page.getByText('SHIPS', { exact: true })).toHaveCount(3);
+    await expect(page.getByText('PLANNED', { exact: true })).toHaveCount(1);
 
     // Card link -> the control room, whose DOOM title leads back to the launcher.
     await page.getByText('Control room', { exact: true }).click();
@@ -340,4 +340,51 @@ test('launcher: every game has a card, the hubs list their sections, and the lin
     await page.getByText('Play', { exact: true }).click();
     await expect(page).toHaveURL(/\/game\/heretic$/);
     await expect(page.locator('.mustry-doom')).toBeVisible({ timeout: 30_000 });
+});
+
+// Hexen ships its engine but no IWAD (the demo carries no licence to ship it).
+// The dev gateway has the 4-level demo when ops/fetch-hexen-demo.sh ran before
+// fresh.sh; otherwise these tests skip rather than fail. The probe reads the
+// gateway's wads listing through the DoomWad view's output.availableWads.
+async function skipWithoutHexen(page: Page) {
+    const root = await openRoute(page, '/game/hexen', '.mustry-doom');
+    await root.locator('.mustry-doom__splash').click();
+    const listing = page.getByText(/output\.availableWads: \S/).first();
+    await expect(listing).toBeVisible({ timeout: 60_000 });
+    const text = (await listing.textContent()) || '';
+    const wads = (/output\.availableWads: ([^\n]*)/.exec(text) || ['', ''])[1];
+    test.skip(!/\bhexen\b/.test(wads), `no hexen.wad in the gateway wads folder (have: ${wads || 'nothing'}); run ops/fetch-hexen-demo.sh before ops/fresh.sh`);
+    return root;
+}
+
+test('hexen: config.game = hexen runs the Hexen engine from the operator IWAD, with a class', async ({ page }) => {
+    const root = await skipWithoutHexen(page);
+    await expect(root).toHaveClass(/mustry-doom--running/, { timeout: 60_000 });
+    await expect(page.getByText(/output\.iwad: hexen\s/)).toBeVisible();
+    await expect(page.getByText(/output\.inLevel: true/)).toBeVisible({ timeout: 30_000 });
+    const hexen = await page.evaluate(() =>
+        Array.from(document.scripts).some((s) => s.src.includes('/res/mustry-doom/hexen/websockets-hexen.js')));
+    expect(hexen).toBe(true);
+});
+
+test('hexen: deathmatch through the same relay, both reach the Winnowing Hall', async ({ browser, page: hostPage }) => {
+    await skipWithoutHexen(hostPage);
+    const joinCtx = await browser.newContext();
+    const joinPage = await joinCtx.newPage();
+    try {
+        const hostRoot = await openRoute(hostPage, '/arena/host/Baratus/hub/hexen', '.mustry-doom');
+        await hostRoot.locator('.mustry-doom__splash').click();
+        await expect(hostRoot).toHaveClass(/mustry-doom--running/, { timeout: 60_000 });
+        await expect(hostPage.getByText(/output\.inLobby: true/)).toBeVisible({ timeout: 30_000 });
+
+        const joinRoot = await openRoute(joinPage, '/arena/join/Parias/hub/hexen', '.mustry-doom');
+        await joinRoot.locator('.mustry-doom__splash').click();
+        await expect(joinRoot).toHaveClass(/mustry-doom--running/, { timeout: 60_000 });
+
+        await expect(hostPage.getByText(/output\.inLevel: true/)).toBeVisible({ timeout: 60_000 });
+        await expect(joinPage.getByText(/output\.inLevel: true/)).toBeVisible({ timeout: 60_000 });
+        await expect(hostPage.getByText(/netPlayers: 2/)).toBeVisible({ timeout: 30_000 });
+    } finally {
+        await joinCtx.close();
+    }
 });

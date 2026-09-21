@@ -100,6 +100,11 @@ export class DoomStoreDelegate extends ComponentStoreDelegate {
         this.fireEvent(SAVE_EVENTS.PUT, { slot, description, data, iwad });
     }
 
+    /** A multi-file slot (Hexen's hub archives): the engine's own file names. */
+    putSlotFiles(slot: number, description: string, files: Array<{ name: string; data: string }>, iwad = ''): void {
+        this.fireEvent(SAVE_EVENTS.PUT, { slot, description, files, iwad });
+    }
+
     /** Ask the gateway for a WAD download ticket and its list of operator WADs. */
     requestWads(): Promise<WadAccess> {
         return new Promise<WadAccess>((resolve, reject) => {
@@ -147,7 +152,11 @@ export class DoomStoreDelegate extends ComponentStoreDelegate {
                         slot: s.slot as number,
                         description: String(s.description || ''),
                         savedAt: String(s.savedAt || ''),
-                        data: typeof s.data === 'string' ? s.data : undefined
+                        data: typeof s.data === 'string' ? s.data : undefined,
+                        files: Array.isArray(s.files)
+                            ? (s.files as JsObject[]).filter((f) => typeof f.name === 'string' && typeof f.data === 'string')
+                                .map((f) => ({ name: f.name as string, data: f.data as string }))
+                            : undefined
                     }));
                 this.owner = String((eventObject && eventObject.owner) || '');
                 this.authenticated = !!(eventObject && eventObject.authenticated);

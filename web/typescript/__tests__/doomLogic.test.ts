@@ -1,10 +1,10 @@
 import {
-    arenaKey, base64ToBytes, buildArgs, BUNDLED_IWAD, bytesToBase64, GAMES, normGame, diffControls, EMPTY_CONTROLS, engineSize, heldKeys, isFatalLine, isValidSlot, parseEngineLine, planWads, readStats, relayUrl, saveDescription, saveSlotPath, splitArgs, STAT_IDS, statWrites, wadGameMode, wadIsCommercial, wadKey, wadUrl, weaponKey, ZERO_STATS
+    arenaKey, base64ToBytes, buildArgs, BUNDLED_IWAD, bytesToBase64, GAMES, normGame, playerClassIndex, requestedIwad, slotFileNames, diffControls, EMPTY_CONTROLS, engineSize, heldKeys, isFatalLine, isValidSlot, parseEngineLine, planWads, readStats, relayUrl, saveDescription, saveSlotPath, splitArgs, STAT_IDS, statWrites, wadGameMode, wadIsCommercial, wadKey, wadUrl, weaponKey, ZERO_STATS
 } from '../components/doom/doomLogic';
 import { mapDoomProps, PropReader } from '../components/doom/doomProps';
 
 const baseConfig = {
-    game: 'doom' as const, autoStart: false, statsIntervalMs: 250, persistSaves: true, player: '', publishTelemetry: true, multiplayer: 'off' as const, arena: 'default', players: 2, deathmatch: 'deathmatch' as const, relayUrl: '', sound: true, music: false, iwad: '', pwads: [] as string[], skill: 3, warp: true, episode: 1, map: 1,
+    game: 'doom' as const, autoStart: false, statsIntervalMs: 250, persistSaves: true, player: '', publishTelemetry: true, multiplayer: 'off' as const, arena: 'default', players: 2, deathmatch: 'deathmatch' as const, relayUrl: '', sound: true, music: false, iwad: '', playerClass: 'fighter', pwads: [] as string[], skill: 3, warp: true, episode: 1, map: 1,
     keyboard: true, mouse: false, pixelated: true, showHud: true, playLabel: '', extraArgs: ''
 };
 
@@ -71,8 +71,38 @@ describe('Heretic', () => {
     });
     it('normalises the game id', () => {
         expect(normGame('heretic')).toBe('heretic');
-        expect(normGame('hexen')).toBe('doom');
+        expect(normGame('hexen')).toBe('hexen');
+        expect(normGame('strife')).toBe('doom');
         expect(normGame(undefined)).toBe('doom');
+    });
+});
+
+describe('Hexen', () => {
+    const hexen = { ...baseConfig, game: 'hexen' as const };
+    it('ships no IWAD: an empty config.iwad asks the gateway for hexen.wad and cannot fall back', () => {
+        expect(requestedIwad('', GAMES.hexen)).toBe('hexen');
+        expect(requestedIwad('HEXEN.WAD', GAMES.hexen)).toBe('hexen');
+        const missing = planWads({ iwad: '', pwads: [] }, ['doom'], GAMES.hexen);
+        expect(missing.iwad).toBe('');
+        expect(missing.error).toMatch(/hexen\.wad.*Hexen cannot start without it/);
+        const found = planWads({ iwad: '', pwads: ['hexdd'] }, ['hexen', 'hexdd'], GAMES.hexen);
+        expect(found).toEqual({ iwad: 'hexen', pwads: ['hexdd'], fetch: ['hexen', 'hexdd'], error: '' });
+        expect(planWads({ iwad: '', pwads: [] }, null, GAMES.hexen).iwad).toBe('');
+    });
+    it('passes -class and warps by map (MAP01-style IWAD)', () => {
+        const args = buildArgs({ ...hexen, playerClass: 'Mage', map: 3 }, undefined, undefined, { iwad: 'hexen', pwads: [], commercial: true });
+        expect(args.slice(0, 4)).toEqual(['-iwad', 'hexen.wad', '-config', 'hexen.cfg']);
+        expect(args.slice(args.indexOf('-class'), args.indexOf('-class') + 2)).toEqual(['-class', '2']);
+        expect(args.slice(args.indexOf('-warp'), args.indexOf('-warp') + 2)).toEqual(['-warp', '3']);
+        expect(playerClassIndex(GAMES.hexen, 'nonsense')).toBe(0);
+        expect(playerClassIndex(GAMES.doom, 'mage')).toBe(-1);
+        expect(buildArgs(baseConfig)).not.toContain('-class');
+    });
+    it('a slot is the main file plus one archive per visited map', () => {
+        const listing = ['hex2.hxs', 'hex201.hxs', 'hex205.hxs', 'hex3.hxs', 'hex301.hxs', 'hex6.hxs', 'hex601.hxs', 'readme.txt'];
+        expect(slotFileNames(GAMES.hexen, 2, listing)).toEqual(['hex2.hxs', 'hex201.hxs', 'hex205.hxs']);
+        expect(slotFileNames(GAMES.hexen, 0, listing)).toEqual([]);
+        expect(slotFileNames(GAMES.doom, 2, listing)).toEqual(['doomsav2.dsg']);
     });
 });
 

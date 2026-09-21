@@ -152,15 +152,26 @@ public class DoomModelDelegate extends ComponentModelDelegate {
                     sendSlots(game); // reports owner "" so the page keeps the save in the tab
                     return;
                 }
-                if (payload == null || !payload.has("slot") || !payload.has("data")) {
-                    error("save payload needs slot and data");
+                if (payload == null || !payload.has("slot") || !(payload.has("data") || payload.has("files"))) {
+                    error("save payload needs slot and data or files");
                     return;
                 }
                 int slot = payload.get("slot").getAsInt();
                 String description = payload.has("description") ? payload.get("description").getAsString() : "";
-                byte[] bytes = Base64.getDecoder().decode(payload.get("data").getAsString());
-                store.put(owner, game, slot, description, bytes);
-                log.debugf("Stored Doom save slot %d for %s/%s (%d bytes)", slot, owner, game.isEmpty() ? "doom1" : game, bytes.length);
+                if (payload.has("files") && payload.get("files").isJsonArray()) {
+                    // Multi-file slot (Hexen): the engine's own file names.
+                    java.util.Map<String, byte[]> files = new java.util.LinkedHashMap<>();
+                    for (com.inductiveautomation.ignition.common.gson.JsonElement el : payload.getAsJsonArray("files")) {
+                        JsonObject f = el.getAsJsonObject();
+                        files.put(f.get("name").getAsString(), Base64.getDecoder().decode(f.get("data").getAsString()));
+                    }
+                    store.put(owner, game, slot, description, files);
+                    log.debugf("Stored save slot %d for %s/%s (%d files)", slot, owner, game.isEmpty() ? "doom1" : game, files.size());
+                } else {
+                    byte[] bytes = Base64.getDecoder().decode(payload.get("data").getAsString());
+                    store.put(owner, game, slot, description, bytes);
+                    log.debugf("Stored save slot %d for %s/%s (%d bytes)", slot, owner, game.isEmpty() ? "doom1" : game, bytes.length);
+                }
                 sendSlots(game);
             }
         } catch (IllegalArgumentException e) {

@@ -20,6 +20,8 @@ export interface DoomConfig {
     iwad: string;
     /** Operator-supplied PWAD keys, loaded in order after the IWAD. */
     pwads: string[];
+    /** Hexen: fighter, cleric or mage. */
+    playerClass: string;
     skill: number;
     warp: boolean;
     episode: number;
@@ -36,7 +38,7 @@ export interface DoomConfig {
 // Everything that differs between the Chocolate Doom family members lives in
 // this table; the component never spells out a game's file names elsewhere.
 
-export type GameId = 'doom' | 'heretic';
+export type GameId = 'doom' | 'heretic' | 'hexen';
 
 export interface GameDef {
     id: GameId;
@@ -44,7 +46,12 @@ export interface GameDef {
     /** Where the gateway serves this game's engine, IWAD and config. */
     enginePath: string;
     script: string;
-    /** The freely redistributable shareware IWAD that ships in the module (a WAD key). */
+    /**
+     * The freely redistributable shareware IWAD that ships in the module (a WAD
+     * key), or "" when the module ships none and the operator must supply
+     * knownIwads[0] in the gateway's wads folder (Hexen: its demo carries no
+     * redistribution grant).
+     */
     bundledIwad: string;
     /** The vanilla config file the engine reads (-config). */
     configFile: string;
@@ -53,8 +60,15 @@ export interface GameDef {
      * an IWAD by NAME and refuses anything else as "Unknown or invalid IWAD file".
      */
     knownIwads: readonly string[];
-    /** The slot file the engine writes into -savedir. */
+    /** The slot file the engine writes into -savedir (the main one for multi-file games). */
     saveFile(slot: number): string;
+    /**
+     * Every file of a slot, when the engine keeps one per visited map next to
+     * the main file (Hexen: hex<N>.hxs + hex<N><map>.hxs). Absent = one file.
+     */
+    slotFiles?: RegExp | ((slot: number) => RegExp);
+    /** The engine takes -class 0/1/2 (Hexen). */
+    playerClasses?: readonly string[];
     /** The engine has -altdeath (Doom II rules); Heretic only has -deathmatch. */
     altdeath: boolean;
     /** The engine refuses -file with the shareware IWAD ("Register!"). Doom does, Heretic does not. */
@@ -89,11 +103,44 @@ export const GAMES: Record<GameId, GameDef> = {
         altdeath: false,
         sharewareRefusesPwads: false,
         maxEpisode: 5
+    },
+    hexen: {
+        id: 'hexen',
+        title: 'Hexen',
+        enginePath: '/res/mustry-doom/hexen/',
+        script: 'websockets-hexen.js',
+        bundledIwad: '',
+        configFile: 'hexen.cfg',
+        knownIwads: ['hexen'],
+        saveFile: (slot) => `hex${slot}.hxs`,
+        slotFiles: (slot) => new RegExp(`^hex${slot}(\\d\\d)?\\.hxs$`),
+        playerClasses: ['fighter', 'cleric', 'mage'],
+        altdeath: false,
+        sharewareRefusesPwads: false,
+        maxEpisode: 1
     }
 };
 
+/** The files that make up one save slot, given a listing of the -savedir directory. */
+export function slotFileNames(game: GameDef, slot: number, listing: string[]): string[] {
+    if (!game.slotFiles) {
+        return [game.saveFile(slot)];
+    }
+    const re = typeof game.slotFiles === 'function' ? game.slotFiles(slot) : game.slotFiles;
+    return listing.filter((n) => re.test(n)).sort();
+}
+
+/** -class for the engines that take one; -1 when not applicable or unknown. */
+export function playerClassIndex(game: GameDef, name: string): number {
+    if (!game.playerClasses) {
+        return -1;
+    }
+    const i = game.playerClasses.indexOf((name || '').trim().toLowerCase());
+    return i < 0 ? 0 : i;
+}
+
 export function normGame(s: unknown): GameId {
-    return s === 'heretic' ? 'heretic' : 'doom';
+    return s === 'heretic' || s === 'hexen' ? s : 'doom';
 }
 
 export type Multiplayer = 'off' | 'host' | 'join';
@@ -257,8 +304,20 @@ export function wadKey(raw: unknown): string | null {
 
 /** True when the config asks for the game's bundled IWAD (empty, "doom1", "doom1.wad" or junk). */
 export function isBundledIwad(iwad: string, game: GameDef = GAMES.doom): boolean {
+    if (game.bundledIwad === '') {
+        return false;
+    }
     const k = wadKey(iwad);
     return k === null || k === game.bundledIwad;
+}
+
+/** The IWAD key a config asks for: the game's bundled one when empty, else the operator's; knownIwads[0] for games without a bundle. */
+export function requestedIwad(iwad: string, game: GameDef): string {
+    const k = wadKey(iwad);
+    if (k !== null) {
+        return k;
+    }
+    return game.bundledIwad || game.knownIwads[0];
 }
 
 /** The engine filesystem name for a WAD key. */
@@ -291,20 +350,25 @@ export function planWads(cfg: { iwad: string; pwads: string[] }, available: stri
     const have = new Set((available || []).map((a) => wadKey(a)).filter((k): k is string => k !== null));
     const problems: string[] = [];
     const bundled = game.bundledIwad;
+    // A game without a bundled IWAD has nothing to fall back on: iwad "" then
+    // means "cannot start", and the caller reports the error instead of a black canvas.
+    const fallback = bundled === '' ? `${game.title} cannot start without it` : `playing ${bundled}`;
     let iwad = bundled;
     if (!isBundledIwad(cfg.iwad, game)) {
-        const k = wadKey(cfg.iwad) as string;
+        const k = requestedIwad(cfg.iwad, game);
+        const shown = wadKey(cfg.iwad) === null ? wadFileName(k) : cfg.iwad;
         if (!game.knownIwads.includes(k)) {
-            problems.push(`IWAD "${cfg.iwad}": the ${game.title} engine only recognises IWADs by their canonical file name (${game.knownIwads.join(', ')}); playing ${bundled}`);
+            problems.push(`IWAD "${shown}": the ${game.title} engine only recognises IWADs by their canonical file name (${game.knownIwads.join(', ')}); ${fallback}`);
         } else if (available === null) {
-            problems.push(`IWAD "${cfg.iwad}" needs the gateway channel; playing ${bundled}`);
+            problems.push(`IWAD "${shown}" needs the gateway channel; ${fallback}`);
         } else if (have.has(k)) {
             iwad = k;
         } else {
-            problems.push(`IWAD "${cfg.iwad}" is not in the gateway's wads folder; playing ${bundled}`);
+            const hint = bundled === '' ? ` (${game.title} ships no IWAD: put ${wadFileName(game.knownIwads[0])} there)` : '';
+            problems.push(`IWAD "${shown}" is not in the gateway's wads folder${hint}; ${fallback}`);
         }
     } else if (typeof cfg.iwad === 'string' && cfg.iwad.trim() !== '' && wadKey(cfg.iwad) === null) {
-        problems.push(`IWAD "${cfg.iwad}" is not a valid name; playing ${bundled}`);
+        problems.push(`IWAD "${cfg.iwad}" is not a valid name; ${fallback}`);
     }
     const pwads: string[] = [];
     for (const raw of Array.isArray(cfg.pwads) ? cfg.pwads : []) {
@@ -323,7 +387,7 @@ export function planWads(cfg: { iwad: string; pwads: string[] }, available: stri
             pwads.push(k);
         }
     }
-    const fetch = iwad === bundled ? [...pwads] : [iwad, ...pwads];
+    const fetch = iwad === bundled || iwad === '' ? [...pwads] : [iwad, ...pwads];
     return { iwad, pwads, fetch, error: problems.join('; ') };
 }
 
@@ -416,6 +480,9 @@ export function buildArgs(cfg: DoomConfig, size: PixelSize = { width: RENDER_WID
     }
     const skill = clampInt(cfg.skill, 1, 5, 3);
     args.push('-skill', String(skill));
+    if (game.playerClasses) {
+        args.push('-class', String(playerClassIndex(game, cfg.playerClass)));
+    }
     if (cfg.warp) {
         // Doom II has no episodes: -warp takes the map alone.
         if (wads.commercial) {
@@ -491,7 +558,7 @@ export const DEFAULT_PLAY_LABEL = 'Click to play';
 export const STAT_IDS = {
     inLevel: 0, health: 1, armor: 2, ammo: 3, weapon: 4, kills: 5, items: 6, secrets: 7,
     totalKills: 8, totalItems: 9, totalSecrets: 10, episode: 11, map: 12, levelSeconds: 13, dead: 14,
-    netgame: 16, inLobby: 17, netPlayers: 18
+    netgame: 16, inLobby: 17, netPlayers: 18, playerClass: 19
 } as const;
 export type StatKey = keyof typeof STAT_IDS;
 export const STAT_KEYS = Object.keys(STAT_IDS) as StatKey[];
@@ -534,7 +601,7 @@ export const SAVE_DIR = '/saves';
 export const SAVE_SLOTS = 6;
 export const SAVE_STRING_SIZE = 24;
 /** Upper bound accepted for one slot; vanilla saves are tens of KB. */
-export const MAX_SAVE_BYTES = 512 * 1024;
+export const MAX_SAVE_BYTES = 2 * 1024 * 1024;
 
 export function saveSlotPath(slot: number, game: GameDef = GAMES.doom): string {
     return `${SAVE_DIR}/${game.saveFile(slot)}`;
@@ -582,4 +649,6 @@ export interface SavedSlot {
     savedAt: string;
     /** Base64 file contents; absent in listings that only carry metadata. */
     data?: string;
+    /** A multi-file slot (Hexen): the engine's own file names with base64 contents. */
+    files?: Array<{ name: string; data: string }>;
 }

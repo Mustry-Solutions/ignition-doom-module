@@ -72,6 +72,10 @@
   "/doom/control-room": {
    "viewPath": "DoomDemo",
    "viewParams": {}
+  },
+  "/hexen": {
+   "viewPath": "HexenHub",
+   "viewParams": {}
   }
  }
 }

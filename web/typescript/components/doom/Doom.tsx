@@ -11,9 +11,9 @@ import {
 } from '@inductiveautomation/perspective-client';
 import {
     base64ToBytes, buildArgs, bundledFiles, bytesToBase64, clampInt, CODE_ERROR, CODE_GAME_STARTED, DEFAULT_PLAY_LABEL, diffControls,
-    DoomControls, DoomStats, engineSize, GameDef, GameFiles, GameMode, GAMES, heldKeys, isBundledIwad, isFatalLine, isValidSlot, MAX_SAVE_BYTES,
+    DoomControls, DoomStats, engineSize, GameDef, GameFiles, GameMode, GAMES, heldKeys, isBundledIwad, isFatalLine, isValidSlot, MAX_SAVE_BYTES, requestedIwad,
     normGame, parseEngineLine, PAUSE_KEY, arenaKey, Phase, PixelSize, planWads, readStats, relayUrl, SAVE_DIR, saveDescription, saveSlotPath,
-    statWrites, wadFileName, wadGameMode, wadKey, ZERO_STATS
+    slotFileNames, statWrites, wadFileName, wadGameMode, wadKey, ZERO_STATS
 } from './doomLogic';
 import { DoomSavesState, DoomStoreDelegate, WadAccess } from './doomSaves';
 import {
@@ -371,6 +371,9 @@ export class Doom extends Component<ComponentProps<DoomProps, DoomSavesState>, D
                 onAbort: (what) => this.onFatal(`Engine aborted: ${String(what)}`)
             }).then((m) => [m, relayTicket, prepared] as const))
             .then(([m, relayTicket, prepared]) => {
+                if (prepared.game.iwad === '') {
+                    throw new Error(prepared.error || `${gameDef.title} has no IWAD to run`);
+                }
                 this.module = m;
                 this.gameDef = gameDef;
                 this.game = prepared.game;
@@ -402,7 +405,7 @@ export class Doom extends Component<ComponentProps<DoomProps, DoomSavesState>, D
      * saves live in their own game-heretic1 folder like any other IWAD.
      */
     private saveGame(iwad: string, game: GameDef): string {
-        const key = isBundledIwad(iwad, game) ? game.bundledIwad : (wadKey(iwad) as string);
+        const key = isBundledIwad(iwad, game) ? game.bundledIwad : requestedIwad(iwad, game);
         return key === GAMES.doom.bundledIwad ? '' : key;
     }
 
@@ -545,6 +548,7 @@ export class Doom extends Component<ComponentProps<DoomProps, DoomSavesState>, D
     }
 
     private onStdout = (text: string): void => {
+        console.debug(`[doom] ${text}`); // engine stdout, for the browser console at verbose level
         const msg = parseEngineLine(text);
         if (msg.code !== 0) {
             this.fire(msg.code, msg.message);
@@ -611,11 +615,21 @@ export class Doom extends Component<ComponentProps<DoomProps, DoomSavesState>, D
         const state = saves ? saves.mapStateToProps() : null;
         const slots = state && state.slotsIwad === game ? state.slots : [];
         for (const s of slots) {
-            if (!s.data || !isValidSlot(s.slot)) {
+            if (!isValidSlot(s.slot)) {
                 continue;
             }
             try {
-                m.FS.writeFile(saveSlotPath(s.slot, def), base64ToBytes(s.data));
+                if (s.files) {
+                    // Hexen: every file of the slot, under the engine's own names.
+                    const re = def.slotFiles ? (typeof def.slotFiles === 'function' ? def.slotFiles(s.slot) : def.slotFiles) : null;
+                    for (const f of s.files) {
+                        if (re && re.test(f.name)) {
+                            m.FS.writeFile(`${SAVE_DIR}/${f.name}`, base64ToBytes(f.data));
+                        }
+                    }
+                } else if (s.data) {
+                    m.FS.writeFile(saveSlotPath(s.slot, def), base64ToBytes(s.data));
+                }
             } catch (e) {
                 this.setMessage(`Could not restore save slot ${s.slot + 1}: ${String(e)}`);
             }
@@ -628,9 +642,22 @@ export class Doom extends Component<ComponentProps<DoomProps, DoomSavesState>, D
         if (!m || !isValidSlot(slot)) {
             return;
         }
+        // One file for Doom and Heretic; Hexen writes the slot's main file plus
+        // one archive per visited hub map, all persisted together.
         let bytes: Uint8Array;
+        const files: Array<{ name: string; data: string }> = [];
         try {
             bytes = m.FS.readFile(saveSlotPath(slot, this.gameDef));
+            if (this.gameDef.slotFiles) {
+                for (const name of slotFileNames(this.gameDef, slot, m.FS.readdir(SAVE_DIR))) {
+                    const data = m.FS.readFile(`${SAVE_DIR}/${name}`);
+                    if (data.length > MAX_SAVE_BYTES) {
+                        this.setMessage(`Save slot ${slot + 1}: ${name} is ${data.length} bytes, too large to persist`);
+                        return;
+                    }
+                    files.push({ name, data: bytesToBase64(data) });
+                }
+            }
         } catch (e) {
             this.setMessage(`Save slot ${slot + 1} written but unreadable: ${String(e)}`);
             return;
@@ -645,7 +672,12 @@ export class Doom extends Component<ComponentProps<DoomProps, DoomSavesState>, D
         const saves = this.props.props.config.persistSaves ? this.saves() : null;
         const authenticated = !!(this.props.delegate && this.props.delegate.authenticated);
         if (saves && authenticated) {
-            saves.putSlot(slot, description, bytesToBase64(bytes), this.saveGame(this.game.iwad, this.gameDef));
+            const key = this.saveGame(this.game.iwad, this.gameDef);
+            if (files.length > 0) {
+                saves.putSlotFiles(slot, description, files, key);
+            } else {
+                saves.putSlot(slot, description, bytesToBase64(bytes), key);
+            }
             this.setMessage(`Saved slot ${slot + 1} "${description}" to the gateway`);
         } else if (saves) {
             this.setMessage(`Saved slot ${slot + 1} "${description}" (this tab only: log in to keep saves on the gateway)`);

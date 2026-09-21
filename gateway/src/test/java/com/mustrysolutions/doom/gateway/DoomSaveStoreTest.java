@@ -87,4 +87,37 @@ class DoomSaveStoreTest {
             DoomSaveStore.gameDir(dataDir.resolve("modules").resolve("com.mustrysolutions.doom").resolve("saves"), "alice", "Doom2"));
         assertEquals(store.list("alice").size(), store.list("alice", "../x").size(), "an invalid game key means the default game");
     }
+
+    @Test
+    void aMultiFileSlotRoundTripsAndReplacesASingleFileOne() throws IOException {
+        DoomSaveStore store = new DoomSaveStore(dataDir);
+        store.put("alice", "hexen", 2, "single", new byte[] {9});
+        java.util.Map<String, byte[]> hub = new java.util.LinkedHashMap<>();
+        hub.put("hex2.hxs", new byte[] {1, 2});
+        hub.put("hex201.hxs", new byte[] {3});
+        hub.put("HEX202.HXS", new byte[] {4, 4, 4});
+        store.put("alice", "hexen", 2, "seven portals", hub);
+
+        JsonArray slots = store.list("alice", "hexen");
+        assertEquals(1, slots.size());
+        JsonObject slot = slots.get(0).getAsJsonObject();
+        assertEquals(2, slot.get("slot").getAsInt());
+        assertEquals("seven portals", slot.get("description").getAsString());
+        assertEquals(6, slot.get("size").getAsLong());
+        assertTrue(!slot.has("data"), "a multi-file slot carries files, not data");
+        JsonArray files = slot.getAsJsonArray("files");
+        assertEquals(3, files.size());
+        assertEquals("hex2.hxs", files.get(0).getAsJsonObject().get("name").getAsString());
+        assertEquals("hex202.hxs", files.get(2).getAsJsonObject().get("name").getAsString(), "names are lower-cased");
+        assertEquals("AQI=", files.get(0).getAsJsonObject().get("data").getAsString());
+
+        // Back to a single file: the folder goes away.
+        store.put("alice", "hexen", 2, "single again", new byte[] {7});
+        JsonObject again = store.list("alice", "hexen").get(0).getAsJsonObject();
+        assertTrue(again.has("data"));
+        assertTrue(!again.has("files"));
+
+        assertThrows(IllegalArgumentException.class, () -> store.put("alice", "hexen", 3, "", java.util.Map.of("../x.hxs", new byte[] {1})));
+        assertThrows(IllegalArgumentException.class, () -> store.put("alice", "hexen", 3, "", java.util.Map.of()));
+    }
 }
