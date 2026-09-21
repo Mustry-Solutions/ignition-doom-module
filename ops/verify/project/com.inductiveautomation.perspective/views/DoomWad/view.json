@@ -102,7 +102,7 @@
             "binding": {
               "type": "expr",
               "config": {
-                "expression": "upper({view.params.game}) + \" \u00b7 IWAD \" + if({view.params.iwad} = \"\", \"bundled shareware\", {view.params.iwad}) + if({view.params.pwad} != \"\", \" + PWAD \" + {view.params.pwad}, \"\") + \" \u00b7 from the gateway's wads folder\""
+                "expression": "upper({view.params.game}) + \" \u00b7 \" + if(coalesce({../doom.props.output.iwad}, \"\") != \"\", \"IWAD \" + {../doom.props.output.iwad} + \".wad\", if({view.params.iwad} = \"\", \"the game's default IWAD\", \"IWAD \" + {view.params.iwad})) + if({view.params.pwad} != \"\", \" + PWAD \" + {view.params.pwad}, \"\") + \" \u00b7 via the gateway's wads folder\""
               }
             }
           }
@@ -112,7 +112,7 @@
         "type": "ia.display.label",
         "version": 0,
         "props": {
-          "text": "Files the operator drops into data/modules/com.mustrysolutions.doom/wads/ on the gateway. The module ships shareware only.",
+          "text": "Doom and Heretic ship their shareware episodes; Hexen and Strife need your WAD. Files go in data/modules/com.mustrysolutions.doom/wads/ on the gateway.",
           "style": {
             "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
             "color": "#8b95a5",

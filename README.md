@@ -2,8 +2,9 @@
 
 **Can it run Doom? Your Ignition gateway can.**
 
-A free Perspective component that runs the 1993 shareware episode of Doom
-inside your SCADA. Tags fire the shotgun. Alarms pause the game. The marine's
+A free Perspective component that runs Doom inside your SCADA. And Heretic.
+And, with your own data, Hexen and Strife: the whole Chocolate Doom family
+in one component. Tags fire the shotgun. Alarms pause the game. The marine's
 health lands in your historian next to the pump pressures. Two operators can
 deathmatch each other through the gateway.
 
@@ -14,8 +15,10 @@ It is of no industrial value whatsoever. That is the point.
 *Line 3 stopped. The alarm is unacknowledged. The marine waits.*
 
 - Ignition **8.3.6+**, Perspective
-- One component: `Doom`, under the `Mustry Solutions` palette category. It
-  also plays Heretic, and Hexen and Strife with your own WADs.
+- One component: `Doom`, under the `Mustry Solutions` palette category.
+  `config.game` picks Doom, Heretic, Hexen or Strife.
+- Doom and Heretic ship with their shareware episodes; Hexen and Strife ship
+  as engines for the `hexen.wad` / `strife1.wad` you own ([how](#playing-hexen-and-strife-bring-your-own-wad)).
 - Free, no trial, no activation. GPL-2.0.
 
 ---
@@ -25,7 +28,8 @@ It is of no industrial value whatsoever. That is the point.
 **Plays Doom.** Drag the component into a view, save, click. The engine is
 Chocolate Doom compiled to WebAssembly, served by the gateway, running in the
 browser. Keyboard and mouse work when the game has focus and never leak into
-the rest of your view.
+the rest of your view. The other three games are the same engine family
+built the same way, behind `config.game`.
 
 **Takes orders from tags.** Every control is a boolean prop: `forward`,
 `turnLeft`, `fire`, `use`, and the rest. Bind them to tags and a PLC input
@@ -49,14 +53,15 @@ sessions. Host in one browser, join from another. The host's game launches
 when everyone is in the lobby. Only sessions running the component get into
 an arena: the gateway hands each one a ticket.
 
-**Also Heretic. And Hexen.** Set `config.game` to `heretic` and the same
-component runs Raven's 1994 shareware episode from the same engine family:
-same controls, same tags, same saves, same deathmatch relay. Elven wand
-instead of pistol. `hexen` and `strife` run Hexen and Strife too, with
-your own `hexen.wad` or `strife1.wad` (plus `voices.wad`) in the gateway's
-wads folder: the module ships those engines and not the data (Hexen's demo
-grants no redistribution; Strife has no free data). `config.playerClass`
-picks fighter, cleric or mage; Strife reports gold and quest flags.
+**Four games, one component.** `config.game = heretic` runs Raven's 1994
+shareware episode: same controls, same tags, same saves, same deathmatch
+relay, elven wand instead of pistol. `hexen` and `strife` run Hexen and
+Strife from the `hexen.wad` or `strife1.wad` (plus `voices.wad`) you own,
+placed in the gateway's wads folder: the module ships those engines and not
+their data (Hexen's demo grants no redistribution; Strife has no free data).
+`config.playerClass` picks fighter, cleric or mage; Strife reports gold and
+quest flags. Their pages in the demo project say **NEEDS YOUR WAD** until
+the file is there, and show how to get it.
 
 ---
 
@@ -85,6 +90,23 @@ and the marine stopped mid-corridor. Acknowledge the alarm and he carries on.*
 *Two Perspective sessions, one arena, relayed by the gateway. Note the status
 bar: FRAG where ARMS used to be, and two player markers.*
 
+![The demo project's launcher: one card per game. Doom and Heretic ship; Hexen and Strife need your WAD.](docs/images/launcher.png)
+
+*The demo project's front door. Every card is the same component with a
+different `config.game`; the two on the right wait for a WAD you own.*
+
+| Heretic | Hexen | Strife |
+|---|---|---|
+| ![Heretic's City of the Damned in the component.](docs/images/heretic.png) | ![Hexen's Winnowing Hall in the component, from the operator's hexen.wad.](docs/images/hexen.png) | ![Strife's Sanctuary in the component, from the operator's strife1.wad.](docs/images/strife.png) |
+
+*The rest of the family. Heretic's shareware episode ships in the module;
+Hexen and Strife run from the operator's own data.*
+
+![The Strife page of the demo project: a NEEDS YOUR STRIFE1.WAD pill and a three-step how-to above the play cards.](docs/images/hub-strife.png)
+
+*What a data-less game looks like before you add its WAD: the page explains
+where the file comes from and where it goes.*
+
 ---
 
 ## Install
@@ -96,10 +118,11 @@ bar: FRAG where ARMS used to be, and two player markers.*
 
 That is the whole setup. Nothing else to configure.
 
-**What the module gives you:** the Doom component, the engine and the
-shareware episode served by the gateway, the `[Doom]` tag provider that fills
-itself with each player's telemetry, save games per user, and the deathmatch
-relay. All of it works from a bare component with default settings.
+**What the module gives you:** the component, four engines, the Doom and
+Heretic shareware episodes served by the gateway, the `[Doom]` tag provider
+that fills itself with each player's telemetry, save games per user, and the
+deathmatch relay. All of it works from a bare component with default
+settings; Hexen and Strife additionally want their WAD on the gateway.
 
 **What it does not give you:** the control-room screen in the pictures
 above. That is a demo project, and it is one download away.
@@ -111,9 +134,10 @@ File, Import, pick the zip, import everything. You get project `DoomDemo`
 with a launcher at `/` that lists every game and its pages: the Doom
 control room at `/doom/control-room`, the deathmatch arena at
 `/arena/host/<player>` and `/arena/join/<player>`, `/wad/<iwad>` for a WAD
-of your own, `/game/heretic` for Heretic, and an overview per game at
-`/doom` and `/heretic`. The tags it uses are created the first time a view
-opens.
+of your own, `/game/<game>` for each game, and an overview per game at
+`/doom`, `/heretic`, `/hexen` and `/strife` (the last two with the
+bring-your-own-WAD how-to). The tags it uses are created the first time a
+view opens.
 
 **The full experience needs three things.** Two of them are optional, and
 the view tells you which ones it found: three pills in the header, green when
@@ -192,9 +216,9 @@ gets a 403).
 | Data | Where |
 |---|---|
 | Live telemetry | `[Doom]Players/<player>/*`, the module's own tag provider |
-| Save games | `data/modules/com.mustrysolutions.doom/saves/<user>/` on the gateway |
+| Save games | `data/modules/com.mustrysolutions.doom/saves/<user>/` on the gateway; other games and custom IWADs in `game-<iwad>/` under it |
 | Deathmatch traffic | Relayed by the gateway at `/system/doom-relay/<arena>`, never stored |
-| The game itself | Runs in the browser tab. The gateway serves the engine and the shareware WAD. |
+| The game itself | Runs in the browser tab. The gateway serves the engines and the two shareware WADs. |
 | Your own WADs | `data/modules/com.mustrysolutions.doom/wads/` on the gateway, served to component sessions only |
 
 The player name defaults to the session's authenticated user, or to a

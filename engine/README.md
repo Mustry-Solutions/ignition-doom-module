@@ -1,7 +1,8 @@
 # Engine
 
-The game engines are [Chocolate Doom](https://www.chocolate-doom.org/) and
-Chocolate Heretic compiled to WebAssembly with Emscripten, via Cloudflare's
+The game engines are [Chocolate Doom](https://www.chocolate-doom.org/),
+Chocolate Heretic, Chocolate Hexen and Chocolate Strife compiled to
+WebAssembly with Emscripten, via Cloudflare's
 [doom-wasm](https://github.com/cloudflare/doom-wasm) port (GPL-2.0). The
 compiled output is committed under `gateway/src/main/resources/mounted/<game>/`
 so building the module never needs Emscripten:

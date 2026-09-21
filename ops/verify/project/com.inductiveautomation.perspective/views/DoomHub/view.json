@@ -1000,7 +1000,7 @@
         "type": "ia.display.label",
         "version": 0,
         "props": {
-          "text": "Mustry Doom \u00b7 a free Perspective module \u00b7 GPL-2.0 \u00b7 DOOM is a trademark of id Software LLC; Heretic of Raven Software / id Software.",
+          "text": "Mustry Doom \u00b7 a free Perspective module \u00b7 GPL-2.0 \u00b7 DOOM is a trademark of id Software LLC; Heretic and Hexen of Raven Software / id Software; Strife of Rogue Entertainment / Night Dive Studios. No Hexen or Strife game data is included.",
           "style": {
             "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
             "fontSize": "11px",
