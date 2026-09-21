@@ -344,7 +344,13 @@ export class Doom extends Component<ComponentProps<DoomProps, DoomSavesState>, D
         // decides what actually runs (shareware when the IWAD is not there).
         const wads: Promise<PreparedWads> = this.prepareWads(cfg0, gameDef);
         Promise.all([loadEngine(gameDef), ticket, wads])
-            .then(([factory, relayTicket, prepared]) => factory({
+            .then(([factory, relayTicket, prepared]) => {
+                // A game without a bundled IWAD and none on the gateway has nothing
+                // to preload: stop before the module exists, not after a 404.
+                if (prepared.game.iwad === '') {
+                    throw new Error(prepared.error || `${gameDef.title} has no IWAD to run`);
+                }
+                return factory({
                 canvas,
                 noInitialRun: true,
                 locateFile: (path) => gameDef.enginePath + path,
@@ -374,11 +380,9 @@ export class Doom extends Component<ComponentProps<DoomProps, DoomSavesState>, D
                 onDoomSaveGame: (slot: number) => this.onSaveGame(slot),
                 onExit: () => this.onExit(),
                 onAbort: (what) => this.onFatal(`Engine aborted: ${String(what)}`)
-            }).then((m) => [m, relayTicket, prepared] as const))
+            }).then((m) => [m, relayTicket, prepared] as const);
+            })
             .then(([m, relayTicket, prepared]) => {
-                if (prepared.game.iwad === '') {
-                    throw new Error(prepared.error || `${gameDef.title} has no IWAD to run`);
-                }
                 this.module = m;
                 this.gameDef = gameDef;
                 this.game = prepared.game;
