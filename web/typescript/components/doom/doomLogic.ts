@@ -38,7 +38,7 @@ export interface DoomConfig {
 // Everything that differs between the Chocolate Doom family members lives in
 // this table; the component never spells out a game's file names elsewhere.
 
-export type GameId = 'doom' | 'heretic' | 'hexen';
+export type GameId = 'doom' | 'heretic' | 'hexen' | 'strife';
 
 export interface GameDef {
     id: GameId;
@@ -67,6 +67,12 @@ export interface GameDef {
      * the main file (Hexen: hex<N>.hxs + hex<N><map>.hxs). Absent = one file.
      */
     slotFiles?: RegExp | ((slot: number) => RegExp);
+    /** The slot is a whole folder under -savedir (Strife: strfsav<N>.ssg/ with name, mis_obj, one file per map). */
+    slotDir?(slot: number): string;
+    /** Companion WADs fetched from the wads folder when present, not passed with -file (Strife: voices.wad). */
+    companions?: readonly string[];
+    /** The engine argument when a companion is missing. */
+    companionMissingArg?: string;
     /** The engine takes -class 0/1/2 (Hexen). */
     playerClasses?: readonly string[];
     /** The engine has -altdeath (Doom II rules); Heretic only has -deathmatch. */
@@ -118,16 +124,52 @@ export const GAMES: Record<GameId, GameDef> = {
         altdeath: false,
         sharewareRefusesPwads: false,
         maxEpisode: 1
+    },
+    strife: {
+        id: 'strife',
+        title: 'Strife',
+        enginePath: '/res/mustry-doom/strife/',
+        script: 'websockets-strife.js',
+        bundledIwad: '',
+        configFile: 'strife.cfg',
+        knownIwads: ['strife1'],
+        saveFile: (slot) => `strfsav${slot}.ssg/name`,
+        slotDir: (slot) => `strfsav${slot}.ssg`,
+        companions: ['voices'],
+        companionMissingArg: '-novoice',
+        altdeath: true,
+        sharewareRefusesPwads: false,
+        maxEpisode: 1
     }
 };
 
-/** The files that make up one save slot, given a listing of the -savedir directory. */
-export function slotFileNames(game: GameDef, slot: number, listing: string[]): string[] {
+/**
+ * The files that make up one save slot, relative to -savedir, given a way to
+ * list a directory. One file, a name pattern in -savedir (Hexen) or a whole
+ * folder (Strife); a folder's files come back as "<dir>/<name>".
+ */
+export function slotFileNames(game: GameDef, slot: number, readdir: (path: string) => string[]): string[] {
+    if (game.slotDir) {
+        const dir = game.slotDir(slot);
+        return readdir(`${SAVE_DIR}/${dir}`).filter((n) => n !== '.' && n !== '..').sort().map((n) => `${dir}/${n}`);
+    }
     if (!game.slotFiles) {
         return [game.saveFile(slot)];
     }
     const re = typeof game.slotFiles === 'function' ? game.slotFiles(slot) : game.slotFiles;
-    return listing.filter((n) => re.test(n)).sort();
+    return readdir(SAVE_DIR).filter((n) => re.test(n)).sort();
+}
+
+/** Does a persisted file name belong to this slot? Guards a restore against a mislabelled listing. */
+export function belongsToSlot(game: GameDef, slot: number, name: string): boolean {
+    if (game.slotDir) {
+        return name.startsWith(game.slotDir(slot) + '/') && !name.slice(game.slotDir(slot).length + 1).includes('/');
+    }
+    if (!game.slotFiles) {
+        return name === game.saveFile(slot);
+    }
+    const re = typeof game.slotFiles === 'function' ? game.slotFiles(slot) : game.slotFiles;
+    return re.test(name);
 }
 
 /** -class for the engines that take one; -1 when not applicable or unknown. */
@@ -140,7 +182,7 @@ export function playerClassIndex(game: GameDef, name: string): number {
 }
 
 export function normGame(s: unknown): GameId {
-    return s === 'heretic' || s === 'hexen' ? s : 'doom';
+    return s === 'heretic' || s === 'hexen' || s === 'strife' ? s : 'doom';
 }
 
 export type Multiplayer = 'off' | 'host' | 'join';
@@ -335,6 +377,8 @@ export interface WadPlan {
     iwad: string;
     /** PWAD keys to fetch and pass with -file, in order. */
     pwads: string[];
+    /** Companion keys (Strife's voices) to fetch and write next to the IWAD, never passed with -file. */
+    companions: string[];
     /** Keys that must be fetched from the gateway (the bundled IWAD is preloaded). */
     fetch: string[];
     /** Why the config could not be honoured in full; "" when it could. */
@@ -387,8 +431,10 @@ export function planWads(cfg: { iwad: string; pwads: string[] }, available: stri
             pwads.push(k);
         }
     }
+    const companions = (game.companions || []).filter((c) => have.has(c) && c !== iwad);
     const fetch = iwad === bundled || iwad === '' ? [...pwads] : [iwad, ...pwads];
-    return { iwad, pwads, fetch, error: problems.join('; ') };
+    fetch.push(...companions);
+    return { iwad, pwads, companions, fetch, error: problems.join('; ') };
 }
 
 /** Chocolate Doom's gamemode, as far as -warp and -file care. */
@@ -445,6 +491,8 @@ export interface GameFiles {
     iwad: string;
     pwads: string[];
     commercial: boolean;
+    /** Companion WADs that are on the engine's filesystem (Strife's voices.wad). */
+    companions?: string[];
 }
 
 /** The game's shareware episode and nothing else. */
@@ -468,6 +516,9 @@ export function buildArgs(cfg: DoomConfig, size: PixelSize = { width: RENDER_WID
     ];
     if (wads.pwads.length > 0) {
         args.push('-file', ...wads.pwads.map(wadFileName));
+    }
+    if (game.companions && game.companionMissingArg && game.companions.some((c) => !(wads.companions || []).includes(c))) {
+        args.push(game.companionMissingArg);
     }
     if (!cfg.sound) {
         args.push('-nosfx');
@@ -558,7 +609,7 @@ export const DEFAULT_PLAY_LABEL = 'Click to play';
 export const STAT_IDS = {
     inLevel: 0, health: 1, armor: 2, ammo: 3, weapon: 4, kills: 5, items: 6, secrets: 7,
     totalKills: 8, totalItems: 9, totalSecrets: 10, episode: 11, map: 12, levelSeconds: 13, dead: 14,
-    netgame: 16, inLobby: 17, netPlayers: 18, playerClass: 19
+    netgame: 16, inLobby: 17, netPlayers: 18, playerClass: 19, gold: 20, questFlags: 21
 } as const;
 export type StatKey = keyof typeof STAT_IDS;
 export const STAT_KEYS = Object.keys(STAT_IDS) as StatKey[];

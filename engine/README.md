@@ -18,6 +18,8 @@ so building the module never needs Emscripten:
 | `heretic/heretic.cfg` | the same key bindings for Heretic | this repo |
 | `hexen/websockets-hexen.{js,wasm}` | the Hexen engine (no IWAD ships; see `0003` below) | built by `engine/build.sh` |
 | `hexen/hexen.cfg` | the same key bindings for Hexen | this repo |
+| `strife/websockets-strife.{js,wasm}` | the Strife engine (no IWAD ships; see `0004` below) | built by `engine/build.sh` |
+| `strife/strife.cfg` | the same key bindings for Strife | this repo |
 
 `build.sh` clones the pinned doom-wasm commit, restores `src/heretic/` from
 the Chocolate Doom commit doom-wasm was cut from (doom-wasm dropped the other
@@ -43,6 +45,11 @@ the corresponding source the GPL asks us to make available:
   IWAD: the demo's archive carries no redistribution grant, so
   `mounted/hexen/` holds the engine and `hexen.cfg` only and the operator
   supplies `hexen.wad`.
+- `0004` does it for Strife: `graphical_startup` defaulted off (the intro
+  drives its own early video init), the save hook fires once the slot
+  folder is complete, telemetry adds gold (stat 20) and quest flags (21).
+  No Strife data ships and none is free: Chocolate Strife does not support
+  the 1996 demo.
 - `0002` wires Heretic into the build (`src/Makefile.am`, `configure.ac`),
   restores two mouse bindings doom-wasm dropped that Heretic's `g_game.c`
   needs (`mouseb_speed`, `mouseb_useartifact`, in `m_controls` and the
@@ -51,7 +58,7 @@ the corresponding source the GPL asks us to make available:
   the `doom: 10, game started` line and the save hook, plus
   `src/heretic/mustry_stats.c` with the same stat ids.
 
-## Key bindings (`default.cfg`, `heretic.cfg`, `hexen.cfg`)
+## Key bindings (`default.cfg`, `heretic.cfg`, `hexen.cfg`, `strife.cfg`)
 
 Values are DOS scancodes, as Chocolate Doom stores them. Both games use the
 same table.

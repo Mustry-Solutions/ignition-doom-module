@@ -1,0 +1,302 @@
+diff --git a/configure.ac b/configure.ac
+index d49fe98f..764a6f3d 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -211,6 +211,7 @@ src/Makefile
+ src/doom/Makefile
+ src/heretic/Makefile
+ src/hexen/Makefile
++src/strife/Makefile
+ src/resource.rc
+ src/setup-res.rc
+ textscreen/Makefile
+diff --git a/src/Makefile.am b/src/Makefile.am
+index 94e45094..2452a82f 100644
+--- a/src/Makefile.am
++++ b/src/Makefile.am
+@@ -1,9 +1,9 @@
+ 
+-SUBDIRS = doom heretic hexen
++SUBDIRS = doom heretic hexen strife
+ 
+ execgamesdir = ${bindir}
+ 
+-execgames_PROGRAMS = @PROGRAM_PREFIX@doom @PROGRAM_PREFIX@heretic @PROGRAM_PREFIX@hexen
++execgames_PROGRAMS = @PROGRAM_PREFIX@doom @PROGRAM_PREFIX@heretic @PROGRAM_PREFIX@hexen @PROGRAM_PREFIX@strife
+ 
+ AM_CFLAGS = -I$(top_srcdir)/textscreen            \
+             -I$(top_srcdir)/opl                   \
+@@ -121,6 +121,10 @@ endif
+ @PROGRAM_PREFIX@hexen_SOURCES=$(SOURCE_FILES)
+ @PROGRAM_PREFIX@hexen_LDADD = hexen/libhexen.a $(EXTRA_LIBS)
+ 
++# Mustry: the Strife binary.
++@PROGRAM_PREFIX@strife_SOURCES=$(SOURCE_FILES_WITH_DEH)
++@PROGRAM_PREFIX@strife_LDADD = strife/libstrife.a $(EXTRA_LIBS)
++
+ # Make "make" aware of convenience libraries in subdirectories
+ 
+ doom/libdoom.a:
+diff --git a/src/strife/Makefile.am b/src/strife/Makefile.am
+index 6648b525..c5697994 100644
+--- a/src/strife/Makefile.am
++++ b/src/strife/Makefile.am
+@@ -37,6 +37,7 @@ info.c             info.h       \
+ m_menu.c           m_menu.h     \
+ m_random.c         m_random.h   \
+ m_saves.c          m_saves.h    \
++mustry_stats.c                  \
+ p_ceilng.c                      \
+ p_dialog.c         p_dialog.h   \
+ p_doors.c                       \
+diff --git a/src/strife/d_main.c b/src/strife/d_main.c
+index 3315ec4a..b8c1a44b 100644
+--- a/src/strife/d_main.c
++++ b/src/strife/d_main.c
+@@ -23,6 +23,8 @@
+ #include <ctype.h>
+ #include <stdio.h>
+ #include <stdlib.h>
++
++#include <emscripten.h>
+ #include <string.h>
+ 
+ #include "config.h"
+@@ -90,6 +92,7 @@
+ //  calls I_GetTime, I_StartFrame, and I_StartTic
+ //
+ void D_DoomLoop (void);
++static void D_RunFrame(void);
+ 
+ static boolean D_AddFile(char *filename);
+ 
+@@ -146,7 +149,7 @@ char		mapdir[1024];           // directory of development maps
+ 
+ int             show_endoom = 1;
+ int             show_diskicon = 1;
+-int             graphical_startup = 1;
++int             graphical_startup = 0;  // Mustry: no intro sequence on a canvas
+ static boolean  using_text_startup;
+ 
+ // If true, startup has completed and the main game loop has started.
+@@ -524,6 +527,10 @@ void D_DoomLoop (void)
+ 
+     main_loop_started = true;
+ 
++    // Mustry: install the browser main loop before video init, as doom-wasm
++    // does for Doom (SDL needs a main loop to exist to set its timing mode).
++    emscripten_set_main_loop(D_RunFrame, 0, 0);
++
+     TryRunTics();
+ 
+     if (!showintro)
+@@ -547,20 +554,24 @@ void D_DoomLoop (void)
+         wipegamestate = gamestate;
+     }
+ 
+-    while (1)
+-    {
+-        // frame syncronous IO operations
+-        I_StartFrame ();
++    // Mustry: the browser drives frames from here (see D_RunFrame).
++    D_RunFrame();
++}
+ 
+-        // process one or more tics
+-        TryRunTics (); // will run at least one tic
++// Mustry: one iteration of the vanilla while(1) body, driven by the browser.
++static void D_RunFrame(void)
++{
++    // frame syncronous IO operations
++    I_StartFrame ();
+ 
+-        S_UpdateSounds (players[consoleplayer].mo);// move positional sounds
++    // process one or more tics
++    TryRunTics (); // will run at least one tic
+ 
+-        // Update display, next frame, with current state.
+-        if (screenvisible)
+-            D_Display ();
+-    }
++    S_UpdateSounds (players[consoleplayer].mo);// move positional sounds
++
++    // Update display, next frame, with current state.
++    if (screenvisible)
++        D_Display ();
+ }
+ 
+ 
+diff --git a/src/strife/d_net.c b/src/strife/d_net.c
+index 5b05e304..84238b99 100644
+--- a/src/strife/d_net.c
++++ b/src/strife/d_net.c
+@@ -261,6 +261,9 @@ void D_CheckNetGame(void)
+         deathmatch = 1;
+     }
+ 
++    // Mustry: same lifecycle line doom-wasm prints for Doom (code 10).
++    printf("doom: 10, game started\n");
++
+     DEH_printf("startmap: %i, skill: %i, enemies: %i, random: %i\n",
+                startmap, startskill, !nomonsters, randomparm);
+ 
+diff --git a/src/strife/g_game.c b/src/strife/g_game.c
+index 4fb861c2..aaeadc79 100644
+--- a/src/strife/g_game.c
++++ b/src/strife/g_game.c
+@@ -84,6 +84,9 @@ void	G_DoCompleted (void);
+ void	G_DoVictory (void); 
+ void	G_DoWorldDone (void); 
+ void	G_DoSaveGame (char *path); 
++
++// Mustry host hook (mustry_stats.c).
++void Mustry_SaveGameWritten(int slot);
+  
+ // Gamestate the last time G_Ticker was called.
+ 
+@@ -1876,6 +1879,10 @@ void G_DoSaveGame (char *path)
+     {
+         M_snprintf(savename, sizeof(savename), "%s saved.", character_name);
+         players[consoleplayer].message = savename;
++
++        // Mustry: the slot folder (strfsav<N>.ssg: name, mis_obj, one file
++        // per visited map) is complete now; let the host page persist it.
++        Mustry_SaveGameWritten(savegameslot);
+     }
+ 
+     // draw the pattern into the back screen
+diff --git a/src/strife/mustry_stats.c b/src/strife/mustry_stats.c
+new file mode 100644
+index 00000000..951a25b7
+--- /dev/null
++++ b/src/strife/mustry_stats.c
+@@ -0,0 +1,129 @@
++//
++// Mustry Doom: read-only player telemetry for the host page (Strife).
++//
++// Same ids and semantics as src/doom/mustry_stats.c so the component reads
++// every game through one table, plus two of Strife's own: gold and the
++// quest flags. Strife keeps a kill count but no item/secret counters and no
++// intermission totals. Everything here is a plain read of engine globals.
++//
++
++#include <emscripten.h>
++
++#include "doomstat.h"
++#include "d_player.h"
++#include "d_items.h"
++#include "p_local.h"
++#include "../d_loop.h"
++#include "../i_timer.h"
++#include "../net_client.h"
++
++enum
++{
++    MSTAT_IN_LEVEL = 0,
++    MSTAT_HEALTH = 1,
++    MSTAT_ARMOR = 2,
++    MSTAT_AMMO = 3,       // ammo for the ready weapon, -1 when it needs none
++    MSTAT_WEAPON = 4,
++    MSTAT_KILLS = 5,
++    MSTAT_ITEMS = 6,
++    MSTAT_SECRETS = 7,
++    MSTAT_TOTAL_KILLS = 8,
++    MSTAT_TOTAL_ITEMS = 9,
++    MSTAT_TOTAL_SECRETS = 10,
++    MSTAT_EPISODE = 11,
++    MSTAT_MAP = 12,
++    MSTAT_LEVEL_SECONDS = 13,
++    MSTAT_DEAD = 14,
++    MSTAT_PAUSED = 15,
++    MSTAT_NETGAME = 16,
++    MSTAT_IN_LOBBY = 17,
++    MSTAT_NET_PLAYERS = 18,
++    MSTAT_CLASS = 19,         // Hexen only
++    MSTAT_GOLD = 20,          // Strife: gold carried (the COIN inventory item)
++    MSTAT_QUEST_FLAGS = 21    // Strife: player_t.questflags
++};
++
++static int Gold(player_t *p)
++{
++    int i;
++    for (i = 0; i < NUMINVENTORY; i++)
++    {
++        if (p->inventory[i].sprite == SPR_COIN)
++            return p->inventory[i].amount;
++    }
++    return 0;
++}
++
++int Mustry_Stat(int id)
++{
++    player_t *p;
++    int in_level;
++
++    in_level = (gamestate == GS_LEVEL && gametic > 0 && !net_waiting_for_launch) ? 1 : 0;
++    p = &players[consoleplayer];
++
++    switch (id)
++    {
++        case MSTAT_IN_LEVEL:
++            return in_level;
++        case MSTAT_HEALTH:
++            return in_level ? p->health : 0;
++        case MSTAT_ARMOR:
++            return in_level ? (int) p->armorpoints : 0;
++        case MSTAT_AMMO:
++            if (!in_level)
++                return 0;
++            if (weaponinfo[p->readyweapon].ammo == am_noammo)
++                return -1;
++            return p->ammo[weaponinfo[p->readyweapon].ammo];
++        case MSTAT_WEAPON:
++            return in_level ? (int) p->readyweapon : 0;
++        case MSTAT_KILLS:
++            return in_level ? (int) p->killcount : 0;
++        case MSTAT_ITEMS:
++        case MSTAT_SECRETS:
++        case MSTAT_TOTAL_ITEMS:
++        case MSTAT_TOTAL_SECRETS:
++            return 0;
++        case MSTAT_TOTAL_KILLS:
++            return in_level ? totalkills : 0;
++        case MSTAT_EPISODE:
++            return 1; // Strife has no episodes
++        case MSTAT_MAP:
++            return gamemap;
++        case MSTAT_LEVEL_SECONDS:
++            return in_level ? leveltime / TICRATE : 0;
++        case MSTAT_DEAD:
++            return (in_level && p->playerstate == PST_DEAD) ? 1 : 0;
++        case MSTAT_PAUSED:
++            return paused ? 1 : 0;
++        case MSTAT_NETGAME:
++            return netgame ? 1 : 0;
++        case MSTAT_IN_LOBBY:
++            return net_waiting_for_launch ? 1 : 0;
++        case MSTAT_NET_PLAYERS:
++        {
++            int n = 0, i;
++            if (!netgame) return 0;
++            for (i = 0; i < MAXPLAYERS; i++) if (playeringame[i]) n++;
++            return n;
++        }
++        case MSTAT_GOLD:
++            return in_level ? Gold(p) : 0;
++        case MSTAT_QUEST_FLAGS:
++            return in_level ? p->questflags : 0;
++        default:
++            return 0;
++    }
++}
++
++//
++// Save-game hook: G_DoSaveGame calls this once the slot's folder
++// (strfsav<N>.ssg in -savedir) is complete. The host page reads every file
++// in it from the in-memory filesystem and persists them on the gateway.
++//
++EM_JS(void, Mustry_SaveGameWritten, (int slot), {
++    if (typeof Module.onDoomSaveGame === 'function') {
++        Module.onDoomSaveGame(slot);
++    }
++});

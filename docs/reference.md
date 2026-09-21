@@ -166,7 +166,30 @@ Dev gateway: `ops/fetch-hexen-demo.sh` downloads the demo into
 folder; CI does the same best-effort, and the Hexen e2e tests skip when it
 is missing.
 
-Strife (#7) is the remaining family member.
+### Strife
+
+`config.game = strife` runs Chocolate Strife, the last of the family, and
+the one with no free data at all: Chocolate Strife does not support the
+1996 demo (`strife0.wad` is disabled upstream with a `STRIFE-FIXME`), so
+the module ships the engine only and the operator supplies `strife1.wad`
+(the retail IWAD, also what Strife: Veteran Edition installs) in the wads
+folder. `voices.wad` next to it gives the dialogue its speech; the
+component fetches it as a *companion* (never passed with `-file`) and runs
+with `-novoice` and text dialogue when it is missing. Netgames are always
+deathmatch, as in vanilla. Telemetry adds `output.gold` and
+`output.questFlags` (tags `Gold`, `QuestFlags`); Strife counts kills but has
+no item/secret counters.
+
+Saves are a folder per slot, `strfsav<N>.ssg/` with `name`, `mis_obj` and
+one file per visited map, extension-less: the save protocol's file names may
+carry one folder (`strfsav1.ssg/name`) and the component creates the seven
+slot folders the engine expects before `main()`. The graphical intro is off
+in this build (`engine/patches/0004`), for the same canvas reason as Hexen's
+startup screen.
+
+Dev gateway: copy your `strife1.wad` and `voices.wad` into
+`engine/build/strife/` (gitignored); `ops/fresh.sh` seeds them and the two
+Strife e2e tests run; without them they skip, as in CI.
 
 ### Bring your own WAD
 
@@ -288,7 +311,7 @@ One engine per browser page: a second Doom component on the same page reports
 | `/doom`, `/heretic` | `DoomHub`, `HereticHub` | A game's overview: its pages with descriptions and routes, and the engine/IWAD/tag facts. |
 | `/doom/control-room` | `DoomDemo` | The control room: tiles from the `[Doom]` provider, the line alarm, tag-bound controls, the historian trend. |
 | `/arena/:role/:player[/:arena[/:game]]` | `DoomArena` | Deathmatch host or joiner. |
-| `/wad/:iwad[/:pwad]`, `/game/:game` | `DoomWad` | Bring-your-own-WAD lab, or a game with its default IWAD (Hexen: the operator's `hexen.wad`). |
+| `/wad/:iwad[/:pwad]`, `/game/:game` | `DoomWad` | Bring-your-own-WAD lab, or a game with its default IWAD (Hexen and Strife: the operator's `hexen.wad` / `strife1.wad`). |
 
 The launcher and the hubs are generated: `ops/verify/tools/build_launcher.py`
 holds the `GAMES` table (name, colour, tagline, sections with routes); add a

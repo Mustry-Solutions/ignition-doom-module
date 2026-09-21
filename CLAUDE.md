@@ -1,8 +1,9 @@
 # CLAUDE.md
 
 Ignition 8.3 Perspective module with ONE component: Doom (Chocolate Doom →
-WebAssembly), which also runs Heretic (`config.game`; Chocolate Heretic and
-Hexen from the same upstream; Hexen ships no IWAD, see docs/reference.md). Structure and conventions mirror mustry-perspective-component-module
+WebAssembly), which also runs Heretic (`config.game`; Chocolate Heretic, Hexen
+and Strife from the same upstream; Hexen and Strife ship no IWAD, see
+docs/reference.md). Structure and conventions mirror mustry-perspective-component-module
 (Gradle + io.ia.sdk.modl, React 16 class component + TypeScript strict on the web
 side, Java scopes for registration). README.md is the product page; the
 engineering detail (architecture, props, tag model, build, dev gateway, tests)
@@ -125,7 +126,7 @@ the test alone passed; host ticket issued for arena `default`.
 
 ## Key bindings must agree in four places
 
-`gateway/.../doom/default.cfg`, `heretic/heretic.cfg` and `hexen/hexen.cfg`
+`gateway/.../doom/default.cfg`, `heretic/heretic.cfg`, `hexen/hexen.cfg` and `strife/strife.cfg`
 (DOS scancodes the engines read), `doomLogic.CONTROL_KEYS` (the browser keys
 the tag controls synthesise) and `engine/README.md` (the table). Change one,
 change all of them. Those cfg files are the VANILLA config: Chocolate "extra"

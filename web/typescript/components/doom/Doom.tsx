@@ -13,7 +13,7 @@ import {
     base64ToBytes, buildArgs, bundledFiles, bytesToBase64, clampInt, CODE_ERROR, CODE_GAME_STARTED, DEFAULT_PLAY_LABEL, diffControls,
     DoomControls, DoomStats, engineSize, GameDef, GameFiles, GameMode, GAMES, heldKeys, isBundledIwad, isFatalLine, isValidSlot, MAX_SAVE_BYTES, requestedIwad,
     normGame, parseEngineLine, PAUSE_KEY, arenaKey, Phase, PixelSize, planWads, readStats, relayUrl, SAVE_DIR, saveDescription, saveSlotPath,
-    slotFileNames, statWrites, wadFileName, wadGameMode, wadKey, ZERO_STATS
+    belongsToSlot, slotFileNames, statWrites, wadFileName, wadGameMode, wadKey, ZERO_STATS
 } from './doomLogic';
 import { DoomSavesState, DoomStoreDelegate, WadAccess } from './doomSaves';
 import {
@@ -364,6 +364,11 @@ export class Doom extends Component<ComponentProps<DoomProps, DoomSavesState>, D
                     // Save games: restore the user's slots from the gateway into the
                     // -savedir directory so the game's Load Game menu lists them.
                     m.FS.mkdir(SAVE_DIR);
+                    if (gameDef.slotDir) {
+                        for (let i = 0; i < 7; i++) {
+                            try { m.FS.mkdir(`${SAVE_DIR}/${gameDef.slotDir(i)}`); } catch { /* exists */ }
+                        }
+                    }
                     this.restoreSlots(m, this.saveGame(prepared.game.iwad, gameDef), gameDef);
                 }],
                 onDoomSaveGame: (slot: number) => this.onSaveGame(slot),
@@ -438,6 +443,7 @@ export class Doom extends Component<ComponentProps<DoomProps, DoomSavesState>, D
                     let iwad = plan.iwad;
                     let mode: GameMode = 'shareware';
                     let pwads: string[] = [];
+                    const companions: string[] = [];
                     const files: Array<[string, Uint8Array]> = [];
                     for (const [k, bytes] of got) {
                         if (!bytes) {
@@ -452,10 +458,16 @@ export class Doom extends Component<ComponentProps<DoomProps, DoomSavesState>, D
                         if (k === plan.iwad) {
                             mode = wadGameMode(bytes);
                             files.push([wadFileName(k), bytes]);
+                        } else if (plan.companions.includes(k)) {
+                            companions.push(k);
+                            files.push([wadFileName(k), bytes]);
                         } else {
                             pwads.push(k);
                             files.push([wadFileName(k), bytes]);
                         }
+                    }
+                    if (game.companions && game.companions.some((c) => !companions.includes(c))) {
+                        problems.push(`${game.companions.filter((c) => !companions.includes(c)).map(wadFileName).join(', ')} not in the gateway's wads folder; ${game.title} runs without it (${game.companionMissingArg || ''})`.trim());
                     }
                     if (iwad === game.bundledIwad) {
                         mode = 'shareware';
@@ -466,8 +478,9 @@ export class Doom extends Component<ComponentProps<DoomProps, DoomSavesState>, D
                         pwads = [];
                     }
                     const prepared: PreparedWads = {
-                        game: { iwad, pwads, commercial: mode === 'commercial' },
-                        files: files.filter(([name]) => name === wadFileName(iwad) || pwads.some((k) => wadFileName(k) === name)),
+                        game: { iwad, pwads, commercial: mode === 'commercial', companions },
+                        files: files.filter(([name]) => name === wadFileName(iwad) || pwads.some((k) => wadFileName(k) === name)
+                            || companions.some((k) => wadFileName(k) === name)),
                         available: a ? a.wads : [],
                         error: problems.join('; ')
                     };
@@ -620,10 +633,14 @@ export class Doom extends Component<ComponentProps<DoomProps, DoomSavesState>, D
             }
             try {
                 if (s.files) {
-                    // Hexen: every file of the slot, under the engine's own names.
-                    const re = def.slotFiles ? (typeof def.slotFiles === 'function' ? def.slotFiles(s.slot) : def.slotFiles) : null;
+                    // Hexen/Strife: every file of the slot, under the engine's own
+                    // names; a folder slot's files carry their folder (Strife).
                     for (const f of s.files) {
-                        if (re && re.test(f.name)) {
+                        if (belongsToSlot(def, s.slot, f.name)) {
+                            const dir = f.name.includes('/') ? f.name.slice(0, f.name.indexOf('/')) : '';
+                            if (dir) {
+                                try { m.FS.mkdir(`${SAVE_DIR}/${dir}`); } catch { /* exists */ }
+                            }
                             m.FS.writeFile(`${SAVE_DIR}/${f.name}`, base64ToBytes(f.data));
                         }
                     }
@@ -648,8 +665,8 @@ export class Doom extends Component<ComponentProps<DoomProps, DoomSavesState>, D
         const files: Array<{ name: string; data: string }> = [];
         try {
             bytes = m.FS.readFile(saveSlotPath(slot, this.gameDef));
-            if (this.gameDef.slotFiles) {
-                for (const name of slotFileNames(this.gameDef, slot, m.FS.readdir(SAVE_DIR))) {
+            if (this.gameDef.slotFiles || this.gameDef.slotDir) {
+                for (const name of slotFileNames(this.gameDef, slot, (p) => m.FS.readdir(p))) {
                     const data = m.FS.readFile(`${SAVE_DIR}/${name}`);
                     if (data.length > MAX_SAVE_BYTES) {
                         this.setMessage(`Save slot ${slot + 1}: ${name} is ${data.length} bytes, too large to persist`);
