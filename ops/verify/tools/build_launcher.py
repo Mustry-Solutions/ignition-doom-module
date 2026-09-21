@@ -187,7 +187,8 @@ def header(title, title_color, subtitle, back=None, needs_wad=None):
 
 def footer():
     return label("footer", "Mustry Doom · a free Perspective module · GPL-2.0 · "
-                 "DOOM is a trademark of id Software LLC; Heretic of Raven Software / id Software.",
+                 "DOOM is a trademark of id Software LLC; Heretic and Hexen of Raven Software / id Software; "
+                 "Strife of Rogue Entertainment / Night Dive Studios. No Hexen or Strife game data is included.",
                  {"fontSize": "11px", "color": "#5b6573", "padding": "24px 40px 32px 40px"})
 
 

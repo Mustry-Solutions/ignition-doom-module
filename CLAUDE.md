@@ -1,9 +1,10 @@
 # CLAUDE.md
 
 Ignition 8.3 Perspective module with ONE component: Doom (Chocolate Doom →
-WebAssembly), which also runs Heretic (`config.game`; Chocolate Heretic, Hexen
-and Strife from the same upstream; Hexen and Strife ship no IWAD, see
-docs/reference.md). Structure and conventions mirror mustry-perspective-component-module
+WebAssembly). `config.game` also runs Heretic, Hexen and Strife, built from
+the same upstream. Doom and Heretic ship their shareware IWADs; Hexen and
+Strife ship engines only and the operator supplies the IWAD (demo project:
+NEEDS YOUR WAD + how-to; see docs/reference.md). Sam decided to keep them. Structure and conventions mirror mustry-perspective-component-module
 (Gradle + io.ia.sdk.modl, React 16 class component + TypeScript strict on the web
 side, Java scopes for registration). README.md is the product page; the
 engineering detail (architecture, props, tag model, build, dev gateway, tests)

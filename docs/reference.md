@@ -1,14 +1,15 @@
 # Mustry Doom — reference
 
 The engineering detail behind the [README](../README.md): architecture, every
-prop, the tag model, building, the dev gateway and the tests.
+prop, the four games, the tag model, building, the dev gateway and the tests.
 
 ## How it works
 
 ```mermaid
 flowchart TB
     subgraph GW[Ignition gateway]
-        RES["Module resources at /res/mustry-doom/<br/>MustryDoom.js · doom/ (websockets-doom.wasm · doom1.wad · default.cfg) · heretic/ (websockets-heretic.wasm · heretic1.wad · heretic.cfg)"]
+        RES["Module resources at /res/mustry-doom/<br/>MustryDoom.js · one folder per game: doom/ (websockets-doom.wasm · doom1.wad · default.cfg), heretic/ (+ heretic1.wad), hexen/ and strife/ (engine + cfg, no IWAD)"]
+        WADS["Operator WADs at /data/mustry-doom/wads/<br/>data/modules/com.mustrysolutions.doom/wads/, ticketed"]
     end
 
     subgraph BR[Browser · one Perspective session]
@@ -17,7 +18,7 @@ flowchart TB
         KEYS["Keyboard<br/>only while the canvas is focused"]
         COMP["Doom component<br/>React class component"]
         OUT["Outputs<br/>output.state · output.message · onGameEvent"]
-        ENG["Chocolate Doom<br/>wasm + SDL2, WAD in memory"]
+        ENG["Chocolate Doom / Heretic / Hexen / Strife<br/>wasm + SDL2, WAD in memory"]
         CANVAS["Canvas id=canvas<br/>SDL draws frames"]
     end
 
@@ -27,6 +28,7 @@ flowchart TB
     end
 
     RES -->|bundle + engine over HTTP| COMP
+    WADS -->|"IWAD/PWADs the operator owns (ticket)"| COMP
     TAGS -->|prop changes| COMP
     COMP -->|"callMain(args)"| ENG
     COMP -->|synthetic KeyboardEvent| CANVAS
@@ -40,16 +42,21 @@ flowchart TB
     TAGSOUT -->|tag history| TSDB
 ```
 
-The gateway does almost nothing: the gateway hook mounts a static folder and
-Perspective registers the component. Everything else happens in the browser
-page.
+The gateway does little: the gateway hook mounts a static folder, serves
+the operator's own WADs behind a ticket, relays deathmatch packets, keeps
+save games and writes telemetry into a tag provider. The game itself runs
+in the browser page.
 
-1. **Start.** On click (or `config.autoStart`) the component injects the
-   engine's script tag, calls the returned factory with its canvas, a file
-   locator pointing back at the mount path, and a pre-run hook that fetches
-   `doom1.wad` and `default.cfg` into the engine's in-memory filesystem. Then
-   it calls `main` with a command line built from `config.*` (skill, warp
-   target, sound, window size).
+1. **Start.** On click (or `config.autoStart`) the component looks up
+   `config.game` in the `GAMES` table (`doomLogic.ts`: engine folder,
+   bundled IWAD, config file, save layout, known IWAD names, netgame
+   rules), injects that engine's script tag, calls the returned factory with
+   its canvas and a file locator pointing back at the game's mount path, and
+   a pre-run hook that fetches the bundled IWAD and cfg into the engine's
+   in-memory filesystem, or the operator's WADs from the gateway when
+   `config.iwad` (or the game) asks for them. Then it calls `main` with a
+   command line built from `config.*` (skill, warp target, sound, window
+   size, class, netgame).
 2. **SDL is the seam.** Chocolate Doom believes it draws to a window. SDL's
    Emscripten backend maps that window onto the canvas with id `canvas`, sizes
    the backing store from the canvas's CSS box times `devicePixelRatio`, and
@@ -193,8 +200,9 @@ Strife e2e tests run; without them they skip, as in CI.
 
 ### Bring your own WAD
 
-The module ships the shareware episode only and never will ship more (see
-Licensing). It will, however, play what the gateway operator owns: drop
+The module ships the Doom and Heretic shareware episodes only and never will
+ship more (see Licensing). It will, however, play what the gateway operator
+owns, and for Hexen and Strife that is the only way to play at all: drop
 IWADs and PWADs into `data/modules/com.mustrysolutions.doom/wads/` on the
 gateway (the hook creates the folder at startup and logs its path) and name
 them in `config.iwad` (one) and `config.pwads` (a list, loaded in order).
@@ -307,16 +315,19 @@ One engine per browser page: a second Doom component on the same page reports
 
 | Route | View | What |
 |---|---|---|
-| `/` | `Launcher` | One card per game: Doom and Heretic with their pages, Hexen and Strife as planned (links to their issues). |
-| `/doom`, `/heretic` | `DoomHub`, `HereticHub` | A game's overview: its pages with descriptions and routes, and the engine/IWAD/tag facts. |
+| `/` | `Launcher` | One card per game with its pages. Doom and Heretic say SHIPS; Hexen and Strife say NEEDS YOUR WAD and link to their how-to. |
+| `/doom`, `/heretic`, `/hexen`, `/strife` | `DoomHub`, `HereticHub`, `HexenHub`, `StrifeHub` | A game's overview: its pages with descriptions and routes, the engine/IWAD/tag facts, and for the data-less games a three-step how-to (get the WAD, put it on the gateway, play). |
 | `/doom/control-room` | `DoomDemo` | The control room: tiles from the `[Doom]` provider, the line alarm, tag-bound controls, the historian trend. |
 | `/arena/:role/:player[/:arena[/:game]]` | `DoomArena` | Deathmatch host or joiner. |
 | `/wad/:iwad[/:pwad]`, `/game/:game` | `DoomWad` | Bring-your-own-WAD lab, or a game with its default IWAD (Hexen and Strife: the operator's `hexen.wad` / `strife1.wad`). |
 
 The launcher and the hubs are generated: `ops/verify/tools/build_launcher.py`
-holds the `GAMES` table (name, colour, tagline, sections with routes); add a
-game or a page there, run it, commit the JSON. Every game view's title is a
-link back to `/`.
+holds the `GAMES` table (name, colour, tagline, sections with routes, and
+for data-less games `needs_wad` and the `howto` steps); add a game or a
+page there, run it, commit the JSON. Every game view's title is a link back
+to `/`. The README's pictures come from `e2e/tests/screenshots.spec.ts`
+(`SCREENSHOTS=1 npx playwright test screenshots` against a dev gateway with
+the games seeded); rerun it after a visible change.
 
 ## Build
 
@@ -327,8 +338,8 @@ Requires Java 17. Node is downloaded by the build.
 cd web && npm test         # jest, pure-logic suites
 ```
 
-The compiled engine is committed, so the build never needs Emscripten. To
-rebuild the engine from source (new upstream commit, new patch):
+The compiled engines (all four) are committed, so the build never needs
+Emscripten. To rebuild them from source (new upstream commit, new patch):
 
 ```bash
 engine/build.sh            # Docker, emscripten/emsdk image
@@ -401,10 +412,12 @@ GPL-2.0-only for the module, because the engines are GPL-2.0. The Doom
 shareware WAD is id Software's and may only be redistributed complete and free
 of charge; the Heretic shareware WAD is Raven's under id's Limited Use licence
 (electronic distribution in compressed form, no commercial use), which is why
-this module can never be a paid product. Registered Doom, Doom II, Heretic and
-other IWADs are not included and must not be added for redistribution. See
-[THIRD-PARTY-NOTICES.md](../THIRD-PARTY-NOTICES.md).
+this module can never be a paid product. Registered Doom, Doom II, Heretic,
+Hexen, Strife and other IWADs are not included and must not be added for
+redistribution: Hexen and Strife ship as engines only, for the data the
+operator owns. See [THIRD-PARTY-NOTICES.md](../THIRD-PARTY-NOTICES.md).
 
-DOOM is a trademark of id Software LLC; Heretic of Raven Software / id
-Software. This project is not affiliated with id Software, Raven Software,
+DOOM is a trademark of id Software LLC; Heretic and Hexen of Raven Software /
+id Software; Strife of Rogue Entertainment / Night Dive Studios. This
+project is not affiliated with id Software, Raven Software, Rogue,
 Bethesda, Cloudflare or Inductive Automation.
