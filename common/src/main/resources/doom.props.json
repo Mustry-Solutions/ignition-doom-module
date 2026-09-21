@@ -10,9 +10,9 @@
       "properties": {
         "game": {
           "type": "string",
-          "enum": ["doom", "heretic", "hexen"],
+          "enum": ["doom", "heretic", "hexen", "strife"],
           "default": "doom",
-          "description": "Which game: 'doom' (the 1993 shareware episode, Knee-Deep in the Dead), 'heretic' (Raven's 1994 shareware episode, City of the Damned) or 'hexen' (Beyond Heretic; the module ships its engine but no IWAD, so the operator's hexen.wad must be in the gateway's wads folder). All engines come from the same Chocolate Doom source; config.iwad / config.pwads then name that game's WADs."
+          "description": "Which game: 'doom' (the 1993 shareware episode, Knee-Deep in the Dead), 'heretic' (Raven's 1994 shareware episode, City of the Damned), 'hexen' (Beyond Heretic) or 'strife' (Quest for the Sigil). The module ships the Hexen and Strife engines but no IWAD for them: the operator's hexen.wad, or strife1.wad plus voices.wad, must be in the gateway's wads folder. All engines come from the same Chocolate Doom source; config.iwad / config.pwads then name that game's WADs."
         },
         "autoStart": {
           "type": "boolean",
@@ -400,6 +400,16 @@
           "type": "integer",
           "default": 0,
           "description": "Hexen: the class in play, 0 fighter, 1 cleric, 2 mage (3 while porked). 0 for the other games."
+        },
+        "gold": {
+          "type": "integer",
+          "default": 0,
+          "description": "Strife: gold carried. 0 for the other games."
+        },
+        "questFlags": {
+          "type": "integer",
+          "default": 0,
+          "description": "Strife: the quest bit flags (which quests are done). 0 for the other games."
         },
         "netPlayers": {
           "type": "integer",

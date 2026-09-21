@@ -1,5 +1,5 @@
 import {
-    arenaKey, base64ToBytes, buildArgs, BUNDLED_IWAD, bytesToBase64, GAMES, normGame, playerClassIndex, requestedIwad, slotFileNames, diffControls, EMPTY_CONTROLS, engineSize, heldKeys, isFatalLine, isValidSlot, parseEngineLine, planWads, readStats, relayUrl, saveDescription, saveSlotPath, splitArgs, STAT_IDS, statWrites, wadGameMode, wadIsCommercial, wadKey, wadUrl, weaponKey, ZERO_STATS
+    arenaKey, base64ToBytes, buildArgs, belongsToSlot, BUNDLED_IWAD, bytesToBase64, GAMES, normGame, playerClassIndex, requestedIwad, slotFileNames, diffControls, EMPTY_CONTROLS, engineSize, heldKeys, isFatalLine, isValidSlot, parseEngineLine, planWads, readStats, relayUrl, saveDescription, saveSlotPath, splitArgs, STAT_IDS, statWrites, wadGameMode, wadIsCommercial, wadKey, wadUrl, weaponKey, ZERO_STATS
 } from '../components/doom/doomLogic';
 import { mapDoomProps, PropReader } from '../components/doom/doomProps';
 
@@ -61,18 +61,18 @@ describe('Heretic', () => {
     it('saves to hticsav<N>.hsg and treats heretic1 as its bundled IWAD', () => {
         expect(saveSlotPath(2, GAMES.heretic)).toBe('/saves/hticsav2.hsg');
         expect(saveSlotPath(2)).toBe('/saves/doomsav2.dsg');
-        expect(planWads({ iwad: '', pwads: [] }, null, GAMES.heretic)).toEqual({ iwad: 'heretic1', pwads: [], fetch: [], error: '' });
+        expect(planWads({ iwad: '', pwads: [] }, null, GAMES.heretic)).toEqual({ iwad: 'heretic1', pwads: [], companions: [], fetch: [], error: '' });
         expect(planWads({ iwad: 'HERETIC1.WAD', pwads: [] }, null, GAMES.heretic).error).toBe('');
         const plan = planWads({ iwad: 'doom2', pwads: [] }, ['doom2'], GAMES.heretic);
         expect(plan.iwad).toBe('heretic1');
         expect(plan.error).toMatch(/Heretic engine only recognises/);
         expect(planWads({ iwad: 'heretic', pwads: ['mymod'] }, ['heretic', 'mymod'], GAMES.heretic))
-            .toEqual({ iwad: 'heretic', pwads: ['mymod'], fetch: ['heretic', 'mymod'], error: '' });
+            .toEqual({ iwad: 'heretic', pwads: ['mymod'], companions: [], fetch: ['heretic', 'mymod'], error: '' });
     });
     it('normalises the game id', () => {
         expect(normGame('heretic')).toBe('heretic');
         expect(normGame('hexen')).toBe('hexen');
-        expect(normGame('strife')).toBe('doom');
+        expect(normGame('chex')).toBe('doom');
         expect(normGame(undefined)).toBe('doom');
     });
 });
@@ -86,7 +86,7 @@ describe('Hexen', () => {
         expect(missing.iwad).toBe('');
         expect(missing.error).toMatch(/hexen\.wad.*Hexen cannot start without it/);
         const found = planWads({ iwad: '', pwads: ['hexdd'] }, ['hexen', 'hexdd'], GAMES.hexen);
-        expect(found).toEqual({ iwad: 'hexen', pwads: ['hexdd'], fetch: ['hexen', 'hexdd'], error: '' });
+        expect(found).toEqual({ iwad: 'hexen', pwads: ['hexdd'], companions: [], fetch: ['hexen', 'hexdd'], error: '' });
         expect(planWads({ iwad: '', pwads: [] }, null, GAMES.hexen).iwad).toBe('');
     });
     it('passes -class and warps by map (MAP01-style IWAD)', () => {
@@ -99,10 +99,43 @@ describe('Hexen', () => {
         expect(buildArgs(baseConfig)).not.toContain('-class');
     });
     it('a slot is the main file plus one archive per visited map', () => {
-        const listing = ['hex2.hxs', 'hex201.hxs', 'hex205.hxs', 'hex3.hxs', 'hex301.hxs', 'hex6.hxs', 'hex601.hxs', 'readme.txt'];
-        expect(slotFileNames(GAMES.hexen, 2, listing)).toEqual(['hex2.hxs', 'hex201.hxs', 'hex205.hxs']);
-        expect(slotFileNames(GAMES.hexen, 0, listing)).toEqual([]);
-        expect(slotFileNames(GAMES.doom, 2, listing)).toEqual(['doomsav2.dsg']);
+        const fs: Record<string, string[]> = {
+            '/saves': ['hex2.hxs', 'hex201.hxs', 'hex205.hxs', 'hex3.hxs', 'hex301.hxs', 'hex6.hxs', 'hex601.hxs', 'readme.txt', 'strfsav1.ssg'],
+            '/saves/strfsav1.ssg': ['.', '..', 'name', 'mis_obj', '02']
+        };
+        const readdir = (p: string) => fs[p] || [];
+        expect(slotFileNames(GAMES.hexen, 2, readdir)).toEqual(['hex2.hxs', 'hex201.hxs', 'hex205.hxs']);
+        expect(slotFileNames(GAMES.hexen, 0, readdir)).toEqual([]);
+        expect(slotFileNames(GAMES.doom, 2, readdir)).toEqual(['doomsav2.dsg']);
+        expect(slotFileNames(GAMES.strife, 1, readdir)).toEqual(['strfsav1.ssg/02', 'strfsav1.ssg/mis_obj', 'strfsav1.ssg/name']);
+        expect(belongsToSlot(GAMES.strife, 1, 'strfsav1.ssg/name')).toBe(true);
+        expect(belongsToSlot(GAMES.strife, 1, 'strfsav2.ssg/name')).toBe(false);
+        expect(belongsToSlot(GAMES.strife, 1, 'strfsav1.ssg/x/y')).toBe(false);
+        expect(belongsToSlot(GAMES.hexen, 2, 'hex201.hxs')).toBe(true);
+        expect(belongsToSlot(GAMES.doom, 2, 'doomsav3.dsg')).toBe(false);
+    });
+});
+
+describe('Strife', () => {
+    const strife = { ...baseConfig, game: 'strife' as const };
+    it('needs strife1.wad and takes voices.wad as a companion, -novoice without it', () => {
+        expect(requestedIwad('', GAMES.strife)).toBe('strife1');
+        const both = planWads({ iwad: '', pwads: [] }, ['strife1', 'voices'], GAMES.strife);
+        expect(both).toEqual({ iwad: 'strife1', pwads: [], companions: ['voices'], fetch: ['strife1', 'voices'], error: '' });
+        const mute = planWads({ iwad: '', pwads: [] }, ['strife1'], GAMES.strife);
+        expect(mute.companions).toEqual([]);
+        expect(mute.error).toBe('');
+        const args = buildArgs({ ...strife, map: 2 }, undefined, undefined, { iwad: 'strife1', pwads: [], commercial: true, companions: [] });
+        expect(args.slice(0, 4)).toEqual(['-iwad', 'strife1.wad', '-config', 'strife.cfg']);
+        expect(args).toContain('-novoice');
+        expect(args.slice(args.indexOf('-warp'), args.indexOf('-warp') + 2)).toEqual(['-warp', '2']);
+        expect(buildArgs(strife, undefined, undefined, { iwad: 'strife1', pwads: [], commercial: true, companions: ['voices'] })).not.toContain('-novoice');
+        expect(buildArgs(baseConfig)).not.toContain('-novoice');
+        expect(planWads({ iwad: '', pwads: [] }, ['voices'], GAMES.strife).error).toMatch(/strife1\.wad.*Strife cannot start without it/);
+    });
+    it('a slot is a folder and saves are keyed per game', () => {
+        expect(GAMES.strife.saveFile(1)).toBe('strfsav1.ssg/name');
+        expect(normGame('strife')).toBe('strife');
     });
 });
 
@@ -119,12 +152,12 @@ describe('operator WADs', () => {
         expect(wadUrl('my.mod')).toBe('/data/mustry-doom/wads/my.mod.wad');
     });
     it('plans the bundled game when nothing is asked for, without touching the gateway', () => {
-        expect(planWads({ iwad: '', pwads: [] }, null)).toEqual({ iwad: BUNDLED_IWAD, pwads: [], fetch: [], error: '' });
+        expect(planWads({ iwad: '', pwads: [] }, null)).toEqual({ iwad: BUNDLED_IWAD, pwads: [], companions: [], fetch: [], error: '' });
         expect(planWads({ iwad: 'doom1.wad', pwads: [] }, null).error).toBe('');
     });
     it('uses what the gateway has and fetches the IWAD then the PWADs', () => {
         const plan = planWads({ iwad: 'DOOM2', pwads: ['av.wad', 'AV', 'doom2'] }, ['doom2', 'av']);
-        expect(plan).toEqual({ iwad: 'doom2', pwads: ['av'], fetch: ['doom2', 'av'], error: '' });
+        expect(plan).toEqual({ iwad: 'doom2', pwads: ['av'], companions: [], fetch: ['doom2', 'av'], error: '' });
     });
     it('refuses an IWAD name the engine would not recognise, without fetching it', () => {
         const plan = planWads({ iwad: 'mygame', pwads: [] }, ['mygame']);

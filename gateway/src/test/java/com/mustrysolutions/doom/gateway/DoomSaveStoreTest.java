@@ -118,6 +118,19 @@ class DoomSaveStoreTest {
         assertTrue(!again.has("files"));
 
         assertThrows(IllegalArgumentException.class, () -> store.put("alice", "hexen", 3, "", java.util.Map.of("../x.hxs", new byte[] {1})));
+        assertThrows(IllegalArgumentException.class, () -> store.put("alice", "hexen", 3, "", java.util.Map.of("a/../b", new byte[] {1})));
+        assertThrows(IllegalArgumentException.class, () -> store.put("alice", "hexen", 3, "", java.util.Map.of("a/b/c", new byte[] {1})));
+
+        // Strife: a folder per slot with extension-less names.
+        java.util.Map<String, byte[]> strife = new java.util.LinkedHashMap<>();
+        strife.put("strfsav1.ssg/name", "ROOKIE".getBytes());
+        strife.put("strfsav1.ssg/mis_obj", new byte[] {5});
+        strife.put("strfsav1.ssg/02", new byte[] {6, 6});
+        store.put("alice", "strife1", 1, "ROOKIE", strife);
+        JsonArray sf = store.list("alice", "strife1").get(0).getAsJsonObject().getAsJsonArray("files");
+        assertEquals(3, sf.size());
+        assertEquals("strfsav1.ssg/02", sf.get(0).getAsJsonObject().get("name").getAsString());
+        assertEquals("strfsav1.ssg/name", sf.get(2).getAsJsonObject().get("name").getAsString());
         assertThrows(IllegalArgumentException.class, () -> store.put("alice", "hexen", 3, "", java.util.Map.of()));
     }
 }

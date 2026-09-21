@@ -76,6 +76,10 @@
   "/hexen": {
    "viewPath": "HexenHub",
    "viewParams": {}
+  },
+  "/strife": {
+   "viewPath": "StrifeHub",
+   "viewParams": {}
   }
  }
 }

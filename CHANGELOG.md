@@ -6,6 +6,15 @@ are semver. Ignition's module version is numeric only, so releases are plain
 
 ## [Unreleased]
 
+### Added
+
+- Strife. `config.game = strife` runs Chocolate Strife (`engine/patches/0004`)
+  from the operator's `strife1.wad` in the gateway's wads folder, with
+  `voices.wad` fetched as a companion when present (else `-novoice`). No
+  free Strife data exists, so the module ships the engine only. Folder
+  save slots (`strfsav<N>.ssg/`), `output.gold`, `output.questFlags` and
+  `Gold`/`QuestFlags` tags. The whole Chocolate Doom family is in. (#7)
+
 ## [0.2.0] - 2026-09-21
 
 Three games, one component. Heretic ships with its shareware episode; Hexen

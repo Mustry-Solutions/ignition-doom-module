@@ -318,8 +318,8 @@ test('launcher: every game has a card, the hubs list their sections, and the lin
     for (const game of ['DOOM', 'HERETIC', 'HEXEN', 'STRIFE']) {
         await expect(page.getByText(game, { exact: true })).toBeVisible();
     }
-    await expect(page.getByText('SHIPS', { exact: true })).toHaveCount(3);
-    await expect(page.getByText('PLANNED', { exact: true })).toHaveCount(1);
+    await expect(page.getByText('SHIPS', { exact: true })).toHaveCount(4);
+    await expect(page.getByText('PLANNED', { exact: true })).toHaveCount(0);
 
     // Card link -> the control room, whose DOOM title leads back to the launcher.
     await page.getByText('Control room', { exact: true }).click();
@@ -378,6 +378,52 @@ test('hexen: deathmatch through the same relay, both reach the Winnowing Hall', 
         await expect(hostPage.getByText(/output\.inLobby: true/)).toBeVisible({ timeout: 30_000 });
 
         const joinRoot = await openRoute(joinPage, '/arena/join/Parias/hub/hexen', '.mustry-doom');
+        await joinRoot.locator('.mustry-doom__splash').click();
+        await expect(joinRoot).toHaveClass(/mustry-doom--running/, { timeout: 60_000 });
+
+        await expect(hostPage.getByText(/output\.inLevel: true/)).toBeVisible({ timeout: 60_000 });
+        await expect(joinPage.getByText(/output\.inLevel: true/)).toBeVisible({ timeout: 60_000 });
+        await expect(hostPage.getByText(/netPlayers: 2/)).toBeVisible({ timeout: 30_000 });
+    } finally {
+        await joinCtx.close();
+    }
+});
+
+// Strife ships its engine but no IWAD, and no free Strife data exists at all:
+// the operator's strife1.wad (+ voices.wad) in engine/build/strife/ is seeded
+// by fresh.sh; these tests skip without it. Same probe as Hexen.
+async function skipWithoutStrife(page: Page) {
+    const root = await openRoute(page, '/game/strife', '.mustry-doom');
+    await root.locator('.mustry-doom__splash').click();
+    const listing = page.getByText(/output\.availableWads: \S/).first();
+    await expect(listing).toBeVisible({ timeout: 60_000 });
+    const text = (await listing.textContent()) || '';
+    const wads = (/output\.availableWads: ([^\n]*)/.exec(text) || ['', ''])[1];
+    test.skip(!/\bstrife1\b/.test(wads), `no strife1.wad in the gateway wads folder (have: ${wads || 'nothing'}); copy your own into engine/build/strife/ before ops/fresh.sh`);
+    return root;
+}
+
+test('strife: config.game = strife runs the Strife engine from the operator IWAD with voices', async ({ page }) => {
+    const root = await skipWithoutStrife(page);
+    await expect(root).toHaveClass(/mustry-doom--running/, { timeout: 60_000 });
+    await expect(page.getByText(/output\.iwad: strife1/)).toBeVisible();
+    await expect(page.getByText(/output\.inLevel: true/)).toBeVisible({ timeout: 30_000 });
+    const strife = await page.evaluate(() =>
+        Array.from(document.scripts).some((s) => s.src.includes('/res/mustry-doom/strife/websockets-strife.js')));
+    expect(strife).toBe(true);
+});
+
+test('strife: deathmatch through the same relay, both reach the Sanctuary', async ({ browser, page: hostPage }) => {
+    await skipWithoutStrife(hostPage);
+    const joinCtx = await browser.newContext();
+    const joinPage = await joinCtx.newPage();
+    try {
+        const hostRoot = await openRoute(hostPage, '/arena/host/Rookie1/sigil/strife', '.mustry-doom');
+        await hostRoot.locator('.mustry-doom__splash').click();
+        await expect(hostRoot).toHaveClass(/mustry-doom--running/, { timeout: 60_000 });
+        await expect(hostPage.getByText(/output\.inLobby: true/)).toBeVisible({ timeout: 30_000 });
+
+        const joinRoot = await openRoute(joinPage, '/arena/join/Rookie2/sigil/strife', '.mustry-doom');
         await joinRoot.locator('.mustry-doom__splash').click();
         await expect(joinRoot).toHaveClass(/mustry-doom--running/, { timeout: 60_000 });
 

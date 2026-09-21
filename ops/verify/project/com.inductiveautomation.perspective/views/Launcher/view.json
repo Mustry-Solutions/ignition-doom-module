@@ -1196,7 +1196,7 @@
                 "padding": "22px 22px 20px 22px",
                 "border": "1px solid #1c2230",
                 "borderTop": "4px solid #8fbf6a",
-                "opacity": 0.72,
+                "opacity": 1,
                 "maxWidth": "420px"
               }
             },
@@ -1257,7 +1257,7 @@
                     "type": "ia.display.label",
                     "version": 0,
                     "props": {
-                      "text": "PLANNED",
+                      "text": "SHIPS",
                       "style": {
                         "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
                         "fontSize": "10px",
@@ -1265,8 +1265,8 @@
                         "letterSpacing": "0.1em",
                         "textAlign": "center",
                         "borderRadius": "12px",
-                        "color": "#2b2f3a",
-                        "backgroundColor": "#8b95a5",
+                        "color": "#04342c",
+                        "backgroundColor": "#2ecc71",
                         "padding": "4px 10px"
                       }
                     },
@@ -1285,7 +1285,7 @@
                 "type": "ia.display.label",
                 "version": 0,
                 "props": {
-                  "text": "Quest for the Sigil. Rogue's 1996 talk-and-shoot.",
+                  "text": "Quest for the Sigil. Rogue's 1996 talk-and-shoot. Bring your own strife1.wad (and voices.wad): no free data exists.",
                   "style": {
                     "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
                     "fontSize": "13px",
@@ -1305,46 +1305,157 @@
                 }
               },
               {
-                "type": "ia.display.label",
+                "type": "ia.container.flex",
                 "version": 0,
                 "props": {
-                  "text": "Not in the module yet. The engine comes from the same Chocolate Doom family; the open questions are the demo WAD's licence and per-slot save folders.",
+                  "direction": "column",
+                  "wrap": "nowrap",
+                  "justify": "flex-start",
+                  "alignItems": "stretch",
+                  "alignContent": "flex-start",
                   "style": {
-                    "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
-                    "fontSize": "12px",
-                    "color": "#8b95a5",
-                    "whiteSpace": "pre-wrap",
-                    "lineHeight": "1.4"
+                    "gap": "8px"
                   }
                 },
                 "meta": {
-                  "name": "soon"
+                  "name": "sections"
                 },
                 "position": {
                   "basis": "auto",
                   "grow": 0,
                   "shrink": 0
-                }
+                },
+                "custom": {},
+                "children": [
+                  {
+                    "type": "ia.display.label",
+                    "version": 0,
+                    "props": {
+                      "text": "Play",
+                      "style": {
+                        "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+                        "fontSize": "13px",
+                        "fontWeight": "600",
+                        "color": "#e6e9ef",
+                        "backgroundColor": "#1a2029",
+                        "borderRadius": "10px",
+                        "padding": "10px 14px",
+                        "cursor": "pointer",
+                        "borderLeft": "3px solid #8fbf6a"
+                      }
+                    },
+                    "meta": {
+                      "name": "s0"
+                    },
+                    "position": {
+                      "basis": "auto",
+                      "grow": 0,
+                      "shrink": 0
+                    },
+                    "events": {
+                      "dom": {
+                        "onClick": {
+                          "type": "script",
+                          "scope": "G",
+                          "config": {
+                            "script": "\tsystem.perspective.navigate(page='/game/strife')"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "type": "ia.display.label",
+                    "version": 0,
+                    "props": {
+                      "text": "Deathmatch \u00b7 host",
+                      "style": {
+                        "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+                        "fontSize": "13px",
+                        "fontWeight": "600",
+                        "color": "#e6e9ef",
+                        "backgroundColor": "#1a2029",
+                        "borderRadius": "10px",
+                        "padding": "10px 14px",
+                        "cursor": "pointer",
+                        "borderLeft": "3px solid #8fbf6a"
+                      }
+                    },
+                    "meta": {
+                      "name": "s1"
+                    },
+                    "position": {
+                      "basis": "auto",
+                      "grow": 0,
+                      "shrink": 0
+                    },
+                    "events": {
+                      "dom": {
+                        "onClick": {
+                          "type": "script",
+                          "scope": "G",
+                          "config": {
+                            "script": "\tsystem.perspective.navigate(page='/arena/host/Rookie1/sigil/strife')"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "type": "ia.display.label",
+                    "version": 0,
+                    "props": {
+                      "text": "Deathmatch \u00b7 join",
+                      "style": {
+                        "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+                        "fontSize": "13px",
+                        "fontWeight": "600",
+                        "color": "#e6e9ef",
+                        "backgroundColor": "#1a2029",
+                        "borderRadius": "10px",
+                        "padding": "10px 14px",
+                        "cursor": "pointer",
+                        "borderLeft": "3px solid #8fbf6a"
+                      }
+                    },
+                    "meta": {
+                      "name": "s2"
+                    },
+                    "position": {
+                      "basis": "auto",
+                      "grow": 0,
+                      "shrink": 0
+                    },
+                    "events": {
+                      "dom": {
+                        "onClick": {
+                          "type": "script",
+                          "scope": "G",
+                          "config": {
+                            "script": "\tsystem.perspective.navigate(page='/arena/join/Rookie2/sigil/strife')"
+                          }
+                        }
+                      }
+                    }
+                  }
+                ]
               },
               {
                 "type": "ia.display.label",
                 "version": 0,
                 "props": {
-                  "text": "Follow the issue on GitHub \u2197",
+                  "text": "Overview \u2192",
                   "style": {
                     "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
-                    "fontSize": "13px",
+                    "fontSize": "12px",
                     "fontWeight": "600",
-                    "color": "#e6e9ef",
-                    "backgroundColor": "#1a2029",
-                    "borderRadius": "10px",
-                    "padding": "10px 14px",
-                    "cursor": "pointer",
-                    "borderLeft": "3px solid #8fbf6a"
+                    "color": "#8fbf6a",
+                    "marginTop": "14px",
+                    "cursor": "pointer"
                   }
                 },
                 "meta": {
-                  "name": "issue"
+                  "name": "more"
                 },
                 "position": {
                   "basis": "auto",
@@ -1357,10 +1468,32 @@
                       "type": "script",
                       "scope": "G",
                       "config": {
-                        "script": "\tsystem.perspective.navigate(url='https://github.com/Mustry-Solutions/ignition-doom-module/issues/7', newTab=True)"
+                        "script": "\tsystem.perspective.navigate(page='/strife')"
                       }
                     }
                   }
+                }
+              },
+              {
+                "type": "ia.display.label",
+                "version": 0,
+                "props": {
+                  "text": "Chocolate Strife \u2192 WebAssembly (same upstream)",
+                  "style": {
+                    "fontFamily": "ui-monospace, Menlo, Consolas, monospace",
+                    "fontSize": "11px",
+                    "color": "#5b6573",
+                    "marginTop": "16px",
+                    "whiteSpace": "pre-wrap"
+                  }
+                },
+                "meta": {
+                  "name": "engine"
+                },
+                "position": {
+                  "basis": "auto",
+                  "grow": 0,
+                  "shrink": 0
                 }
               }
             ]

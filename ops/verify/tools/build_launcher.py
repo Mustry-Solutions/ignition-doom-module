@@ -84,9 +84,18 @@ GAMES = [
         "id": "strife",
         "name": "STRIFE",
         "color": "#8fbf6a",
-        "ships": False,
-        "tagline": "Quest for the Sigil. Rogue's 1996 talk-and-shoot.",
-        "issue": "https://github.com/Mustry-Solutions/ignition-doom-module/issues/7",
+        "ships": True,
+        "tagline": "Quest for the Sigil. Rogue's 1996 talk-and-shoot. Bring your own strife1.wad (and voices.wad): no free data exists.",
+        "engine": "Chocolate Strife → WebAssembly (same upstream)",
+        "iwad": "none bundled: strife1.wad + voices.wad from the gateway's wads folder · saves in saves/<user>/game-strife1/",
+        "sections": [
+            {"title": "Play", "route": "/game/strife",
+             "blurb": "Needs strife1.wad in the gateway's wads folder; voices.wad next to it for speech, else the dialogue is text. Gold and quest flags in the outputs."},
+            {"title": "Deathmatch · host", "route": "/arena/host/Rookie1/sigil/strife",
+             "blurb": "Strife through the same gateway relay. Always deathmatch, as vanilla."},
+            {"title": "Deathmatch · join", "route": "/arena/join/Rookie2/sigil/strife",
+             "blurb": "Join from a second browser."},
+        ],
     },
 ]
 

@@ -37,7 +37,9 @@ public final class DoomSaveStore {
     /** Per file. A Hexen hub archive can be a few hundred KB; vanilla Doom saves are tens. */
     public static final int MAX_SLOT_BYTES = 2 * 1024 * 1024;
     public static final int MAX_SLOT_FILES = 64;
-    private static final java.util.regex.Pattern FILE_NAME = java.util.regex.Pattern.compile("[a-z0-9_-]{1,24}\\.[a-z0-9]{1,8}");
+    /** One plain name, or one folder and a plain name (Strife: strfsav0.ssg/name); no dots at a segment's start. */
+    private static final java.util.regex.Pattern FILE_NAME =
+        java.util.regex.Pattern.compile("[a-z0-9_-][a-z0-9_.-]{0,31}(/[a-z0-9_-][a-z0-9_.-]{0,31})?");
     public static final String ANONYMOUS = "anonymous";
 
     private final Path root;
@@ -128,13 +130,13 @@ public final class DoomSaveStore {
                 JsonArray files = new JsonArray();
                 long size = 0;
                 List<Path> names = new ArrayList<>();
-                try (java.util.stream.Stream<Path> st = Files.list(dir)) {
+                try (java.util.stream.Stream<Path> st = Files.walk(dir, 2)) {
                     st.filter(Files::isRegularFile).sorted().forEach(names::add);
                 }
                 for (Path p : names) {
                     byte[] bytes = Files.readAllBytes(p);
                     JsonObject file = new JsonObject();
-                    file.addProperty("name", p.getFileName().toString());
+                    file.addProperty("name", dir.relativize(p).toString().replace('\\', '/'));
                     file.addProperty("data", Base64.getEncoder().encodeToString(bytes));
                     files.add(file);
                     size += bytes.length;
@@ -196,7 +198,9 @@ public final class DoomSaveStore {
         deleteTree(staging);
         Files.createDirectories(staging);
         for (java.util.Map.Entry<String, byte[]> e : files.entrySet()) {
-            Files.write(staging.resolve(fileKey(e.getKey())), e.getValue());
+            Path target = staging.resolve(fileKey(e.getKey()));
+            Files.createDirectories(target.getParent());
+            Files.write(target, e.getValue());
         }
         deleteTree(dir);
         Files.deleteIfExists(slotFile(owner, game, slot));

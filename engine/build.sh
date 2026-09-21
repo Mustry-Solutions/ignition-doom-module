@@ -1,20 +1,20 @@
 #!/usr/bin/env bash
 # Rebuild the Doom engine (Chocolate Doom → WebAssembly) from source.
 #
-# The results (websockets-{doom,heretic,hexen}.{js,wasm}) are
+# The results (websockets-{doom,heretic,hexen,strife}.{js,wasm}) are
 # COMMITTED under gateway/src/main/resources/mounted/<game>/ so the normal
 # Gradle build never needs Emscripten. Run this only when bumping the upstream
 # commit or a patch.
 #
 # Upstream: https://github.com/cloudflare/doom-wasm (GPL-2.0), pinned below.
-# doom-wasm dropped Chocolate Doom's other games, so src/heretic/ and src/hexen/ are taken from
+# doom-wasm dropped Chocolate Doom's other games, so src/{heretic,hexen,strife}/ are taken from
 # the Chocolate Doom commit doom-wasm forked from (CHOCOLATE_BASE, June 2022:
 # every shared file doom-wasm left untouched matches that tree byte for byte).
 # Patches in engine/patches/: 0001 adapts to a current Emscripten (renamed
 # flags, C23 bool), builds a MODULARIZE'd factory named createDoomModule
 # instead of a global Module, drops the debug source map, skips the textscreen
 # examples and adds the Doom telemetry/save hooks; 0002 wires Heretic into the
-# build and ports the same three game-side changes to it; 0003 does the same for Hexen.
+# build and ports the same three game-side changes to it; 0003 does the same for Hexen, 0004 for Strife.
 #
 # Usage:
 #   engine/build.sh            # Docker (emscripten/emsdk image), no local toolchain needed
@@ -44,7 +44,7 @@ if ! git -C "${WORK}" remote get-url chocolate >/dev/null 2>&1; then
   git -C "${WORK}" remote add chocolate "${CHOCOLATE_REPO}"
 fi
 git -C "${WORK}" fetch --quiet chocolate "${CHOCOLATE_BASE}"
-git -C "${WORK}" checkout --quiet "${CHOCOLATE_BASE}" -- src/heretic src/hexen
+git -C "${WORK}" checkout --quiet "${CHOCOLATE_BASE}" -- src/heretic src/hexen src/strife
 git -C "${WORK}" reset --quiet
 for p in "${HERE}"/patches/*.patch; do
   echo "applying $(basename "$p")"
@@ -58,8 +58,8 @@ else
     'apt-get update -qq >/dev/null && apt-get install -y -qq automake autoconf pkg-config >/dev/null && ./scripts/build.sh'
 fi
 
-for game in doom heretic hexen; do
+for game in doom heretic hexen strife; do
   cp "${WORK}/src/websockets-${game}.js" "${WORK}/src/websockets-${game}.wasm" "${MOUNTED}/${game}/"
   ls -la "${MOUNTED}/${game}/"
 done
-echo "Engines rebuilt from doom-wasm ${UPSTREAM_COMMIT} + chocolate-doom ${CHOCOLATE_BASE} (heretic, hexen)."
+echo "Engines rebuilt from doom-wasm ${UPSTREAM_COMMIT} + chocolate-doom ${CHOCOLATE_BASE} (heretic, hexen, strife)."

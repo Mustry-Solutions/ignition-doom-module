@@ -301,6 +301,15 @@ seed_verify_wads() {
   else
     warn "No engine/build/hexen-demo/hexen.wad: run ops/fetch-hexen-demo.sh for the Hexen pages; the e2e Hexen test will skip."
   fi
+  # Strife has no free data at all: the operator's own strife1.wad (and
+  # voices.wad) in engine/build/strife/ (gitignored) get seeded when present.
+  local strife
+  for strife in strife1 voices; do
+    if [[ -f "${PROJECT_ROOT}/engine/build/strife/${strife}.wad" ]]; then
+      docker cp "${PROJECT_ROOT}/engine/build/strife/${strife}.wad" "${CONTAINER_NAME}:${dst}/${strife}.wad"
+      ok "Strife ${strife}.wad seeded (dev gateway only)."
+    fi
+  done
   "${COMPOSE[@]}" run --rm -u root --entrypoint sh gateway \
       -c "chown -R ignition:ignition '${dst}'"
   ok "Verify WAD fixture in place."
