@@ -6,30 +6,55 @@ are semver. Ignition's module version is numeric only, so releases are plain
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-09-21
+
+Three games, one component. Heretic ships with its shareware episode; Hexen
+ships as an engine for the `hexen.wad` you own; bring your own WAD for all
+of them. The engine build is reproducible again.
+
 ### Added
 
-- Hexen. `config.game = hexen` runs Chocolate Hexen (same upstream,
-  `engine/patches/0003`) from the operator's `hexen.wad` in the gateway's
-  wads folder: the module ships the engine but no Hexen IWAD (the demo's
-  archive grants no redistribution). `config.playerClass` (fighter, cleric,
-  mage), `output.playerClass` and a `PlayerClass` tag. Save slots can be a
-  set of files (Hexen's hub archives), stored under `slot<N>/`. The demo
-  can host and join netgames (Chocolate's mode table refused it). (#6)
+- Heretic. `config.game = heretic` runs Chocolate Heretic, built from the
+  same upstream (`engine/patches/0002`), with Raven's shareware episode City
+  of the Damned. Same controls, telemetry, saves (`saves/<user>/game-heretic1/`),
+  operator WADs and deathmatch relay. `[Doom]Players/<player>/Game` names
+  the game a player is in. (#5)
+- Hexen. `config.game = hexen` runs Chocolate Hexen (`engine/patches/0003`)
+  from the operator's `hexen.wad` in the gateway's wads folder: the module
+  ships the engine but no Hexen IWAD, because the demo's archive grants no
+  redistribution. `config.playerClass` (fighter, cleric, mage),
+  `output.playerClass` and a `PlayerClass` tag. Save slots can be a set of
+  files (Hexen's hub archives), stored under `slot<N>/`. The 4-level demo can
+  host and join netgames; Chocolate's mode table used to refuse it. (#6)
+- Bring your own WAD. `config.iwad` and `config.pwads` play IWADs and PWADs
+  the gateway operator placed in `data/modules/com.mustrysolutions.doom/wads/`.
+  Downloads need a delegate-issued ticket (403 for anyone else), an unknown
+  IWAD falls back to shareware with `output.wadError` set, PWADs on shareware
+  Doom data are skipped (the engine would refuse them), Doom II-style IWADs
+  warp by map alone, and each custom IWAD keeps its own save slots.
+  `output.iwad`, `output.availableWads`. The module still ships no registered
+  WAD. (#2)
+- `GET /system/doom-relay/` answers with the relay's status: live arenas,
+  whether each has a server, how many peers. No player names.
 - Engine stdout goes to the browser console at `debug` level (`[doom] ...`).
+- Demo project: a launcher at `/` with a card per game and an overview page
+  per game (`/doom`, `/heretic`, `/hexen`), generated from one table
+  (`ops/verify/tools/build_launcher.py`). Three pills in the control-room
+  header show whether the Doom module, Embr Charts and a tag history provider
+  are present, with a tooltip saying where to get a missing one.
+- README: a "full experience" table listing the three optional pieces.
+- `ops/`: container names and ports can be overridden per checkout, so a
+  worktree can run a second dev gateway beside the main one; environment
+  variables win over `.env`. `ops/fetch-hexen-demo.sh` puts the Hexen demo
+  on the dev gateway (never in the repo).
 
 ### Changed
 
-- Demo project: a launcher at `/` with a card per game (Doom, Heretic;
-  Hexen and Strife as planned) and an overview page per game (`/doom`,
-  `/heretic`). The control room moved from `/` to `/doom/control-room`; every
-  game view's title links back to the launcher.
-
-### Added
-
-- Heretic. `config.game = heretic` runs Chocolate Heretic (built from the
-  same upstream, `engine/patches/0002`) with Raven's shareware episode; same
-  controls, telemetry, saves (`saves/<user>/game-heretic1/`), operator WADs
-  and deathmatch relay. `[Doom]Players/<player>/Game` names the game. (#5)
+- Demo project: the control room moved from `/` to `/doom/control-room`;
+  every game view's title links back to the launcher.
+- The engine build (`engine/build.sh`) now produces three engines from the
+  pinned doom-wasm commit plus `src/heretic/` and `src/hexen/` from the
+  Chocolate Doom commit doom-wasm forked from.
 
 ### Fixed
 
@@ -37,38 +62,10 @@ are semver. Ignition's module version is numeric only, so releases are plain
   a Doom that showed FRAG and "Player 4 left the game" in single player and
   ignored turn keys: `boolean` had two sizes across translation units under
   C17 (Emscripten's headers include `<stdbool.h>`). `doomtype.h` now gives C
-  one `int` boolean. Both engines are rebuilt from `engine/build.sh`.
-
-### Added
-
-- Bring your own WAD: `config.iwad` and `config.pwads` play IWADs and PWADs
-  the gateway operator placed in `data/modules/com.mustrysolutions.doom/wads/`.
-  Downloads need a delegate-issued ticket, an unknown IWAD falls back to
-  shareware with `output.wadError` set, PWADs on shareware data are skipped
-  (the engine would refuse them), Doom II-style IWADs warp by map alone, and
-  each custom IWAD keeps its own save slots. `output.iwad`,
-  `output.availableWads`. The module still ships shareware only. (#2)
-- `GET /system/doom-relay/` answers with the relay's status: live arenas,
-  whether each has a server, how many peers. No player names; the path is
-  unauthenticated.
-- Demo project: three pills in the control-room header show whether the Doom
-  module, Embr Charts and a tag history provider are present on this gateway,
-  with a tooltip saying where to get a missing one. The chart placeholder
-  names the missing piece and the chart caption names the historian in use.
-- README: a "full experience" table listing the three pieces and where each
-  comes from.
-- `ops/`: container names and ports can be overridden per checkout, so a
-  worktree can run a second dev gateway beside the main one. Environment
-  variables now win over `.env`.
-- e2e: the header pills must match what the gateway has (CI, which has no
-  historian, exercises the degraded chart card).
-
-### Fixed
-
+  one `int` boolean; all engines are rebuilt from `engine/build.sh`.
 - Demo project: history was silently never enabled on the demo tags since
   0.1.2. The historian lookup called `system.tag.getHistorianProviders`,
-  which does not exist in 8.3; the error was swallowed and the script
-  concluded the gateway had no historian. Providers are now read from
+  which does not exist in 8.3; providers are now read from
   `system.tag.browseHistoricalTags("")`. Reopening the view after upgrading
   the project rebuilds the player folder with history on.
 - Demo project: the chart component is not rendered at all when Embr Charts
