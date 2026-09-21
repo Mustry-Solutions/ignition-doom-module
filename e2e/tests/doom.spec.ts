@@ -318,7 +318,8 @@ test('launcher: every game has a card, the hubs list their sections, and the lin
     for (const game of ['DOOM', 'HERETIC', 'HEXEN', 'STRIFE']) {
         await expect(page.getByText(game, { exact: true })).toBeVisible();
     }
-    await expect(page.getByText('SHIPS', { exact: true })).toHaveCount(4);
+    await expect(page.getByText('SHIPS', { exact: true })).toHaveCount(2);
+    await expect(page.getByText('NEEDS YOUR WAD', { exact: true })).toHaveCount(2);
     await expect(page.getByText('PLANNED', { exact: true })).toHaveCount(0);
 
     // Card link -> the control room, whose DOOM title leads back to the launcher.

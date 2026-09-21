@@ -158,6 +158,35 @@ sessions running the component can fetch them; everyone else gets a 403.
 
 ---
 
+## Playing Hexen and Strife: bring your own WAD
+
+The module ships those two engines but not their data, so they show
+**NEEDS YOUR WAD** in the demo project until you supply it. Three steps:
+
+1. **Get the data.** Hexen: *Hexen: Beyond Heretic* on Steam or GOG installs
+   `hexen.wad`; the free 4-level demo works too (`hexndemo.zip` on the
+   idgames archive, `HEXEN.WAD` inside). Strife: *Strife: Veteran Edition*
+   on Steam or GOG installs `strife1.wad` and `voices.wad` under
+   `steamapps/common/Strife`. There is no free Strife data.
+2. **Put it on the gateway**, name unchanged, in
+   `data/modules/com.mustrysolutions.doom/wads/` (Docker image:
+   `/usr/local/bin/ignition/data/modules/com.mustrysolutions.doom/wads/`).
+   No restart: the component asks the gateway what is there every time it
+   starts. `voices.wad` is optional; without it Strife's dialogue is text.
+3. **Play.** Set `config.game` to `hexen` or `strife`, leave `config.iwad`
+   empty. The demo project's game page has the same steps and a Play button.
+
+| Game | File(s) | Where it comes from |
+|---|---|---|
+| Hexen | `hexen.wad` | Steam/GOG, or the free 4-level demo |
+| Strife | `strife1.wad`, `voices.wad` (optional) | Steam/GOG only |
+
+The data stays on your gateway, is never uploaded anywhere, and is served
+only to Perspective sessions running the component (ticketed; anyone else
+gets a 403).
+
+---
+
 ## Where the data lives
 
 | Data | Where |

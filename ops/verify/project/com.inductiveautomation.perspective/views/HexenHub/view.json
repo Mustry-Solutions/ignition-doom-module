@@ -84,26 +84,77 @@
             }
           },
           {
-            "type": "ia.display.label",
+            "type": "ia.container.flex",
             "version": 0,
             "props": {
-              "text": "HEXEN",
+              "direction": "row",
+              "wrap": "nowrap",
+              "justify": "flex-start",
+              "alignItems": "center",
+              "alignContent": "flex-start",
               "style": {
-                "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
-                "fontSize": "40px",
-                "fontWeight": "800",
-                "letterSpacing": "0.12em",
-                "color": "#7f9cff"
+                "gap": "16px"
               }
             },
             "meta": {
-              "name": "title"
+              "name": "titleRow"
             },
             "position": {
               "basis": "auto",
               "grow": 0,
               "shrink": 0
-            }
+            },
+            "custom": {},
+            "children": [
+              {
+                "type": "ia.display.label",
+                "version": 0,
+                "props": {
+                  "text": "HEXEN",
+                  "style": {
+                    "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+                    "fontSize": "40px",
+                    "fontWeight": "800",
+                    "letterSpacing": "0.12em",
+                    "color": "#7f9cff"
+                  }
+                },
+                "meta": {
+                  "name": "title"
+                },
+                "position": {
+                  "basis": "auto",
+                  "grow": 0,
+                  "shrink": 0
+                }
+              },
+              {
+                "type": "ia.display.label",
+                "version": 0,
+                "props": {
+                  "text": "NEEDS YOUR HEXEN.WAD",
+                  "style": {
+                    "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+                    "fontSize": "10px",
+                    "fontWeight": "700",
+                    "letterSpacing": "0.1em",
+                    "textAlign": "center",
+                    "borderRadius": "12px",
+                    "color": "#3a2a06",
+                    "backgroundColor": "#f1c40f",
+                    "padding": "4px 10px"
+                  }
+                },
+                "meta": {
+                  "name": "status"
+                },
+                "position": {
+                  "basis": "auto",
+                  "grow": 0,
+                  "shrink": 0
+                }
+              }
+            ]
           },
           {
             "type": "ia.display.label",
@@ -125,6 +176,417 @@
               "grow": 0,
               "shrink": 0
             }
+          }
+        ]
+      },
+      {
+        "type": "ia.container.flex",
+        "version": 0,
+        "props": {
+          "direction": "column",
+          "wrap": "nowrap",
+          "justify": "flex-start",
+          "alignItems": "stretch",
+          "alignContent": "flex-start",
+          "style": {
+            "backgroundColor": "#15130b",
+            "borderRadius": "14px",
+            "padding": "18px 20px 20px 20px",
+            "margin": "0 40px 16px 40px",
+            "border": "1px solid #3a2f0a"
+          }
+        },
+        "meta": {
+          "name": "howto"
+        },
+        "position": {
+          "basis": "auto",
+          "grow": 0,
+          "shrink": 0
+        },
+        "custom": {},
+        "children": [
+          {
+            "type": "ia.display.label",
+            "version": 0,
+            "props": {
+              "text": "HOW TO PLAY: THE MODULE SHIPS THE HEXEN ENGINE, YOU BRING HEXEN.WAD",
+              "style": {
+                "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+                "fontSize": "11px",
+                "fontWeight": "700",
+                "letterSpacing": "0.1em",
+                "color": "#f1c40f"
+              }
+            },
+            "meta": {
+              "name": "howtoTitle"
+            },
+            "position": {
+              "basis": "auto",
+              "grow": 0,
+              "shrink": 0
+            }
+          },
+          {
+            "type": "ia.container.flex",
+            "version": 0,
+            "props": {
+              "direction": "row",
+              "wrap": "nowrap",
+              "justify": "flex-start",
+              "alignItems": "flex-start",
+              "alignContent": "flex-start",
+              "style": {
+                "gap": "14px",
+                "marginTop": "10px"
+              }
+            },
+            "meta": {
+              "name": "step0"
+            },
+            "position": {
+              "basis": "auto",
+              "grow": 0,
+              "shrink": 0
+            },
+            "custom": {},
+            "children": [
+              {
+                "type": "ia.display.label",
+                "version": 0,
+                "props": {
+                  "text": "1",
+                  "style": {
+                    "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+                    "fontSize": "14px",
+                    "fontWeight": "800",
+                    "color": "#7f9cff",
+                    "textAlign": "center",
+                    "backgroundColor": "#1a2029",
+                    "borderRadius": "50%",
+                    "width": "26px",
+                    "height": "26px",
+                    "lineHeight": "26px"
+                  }
+                },
+                "meta": {
+                  "name": "n"
+                },
+                "position": {
+                  "basis": "26px",
+                  "grow": 0,
+                  "shrink": 0
+                }
+              },
+              {
+                "type": "ia.container.flex",
+                "version": 0,
+                "props": {
+                  "direction": "column",
+                  "wrap": "nowrap",
+                  "justify": "flex-start",
+                  "alignItems": "stretch",
+                  "alignContent": "flex-start",
+                  "style": {}
+                },
+                "meta": {
+                  "name": "t0"
+                },
+                "position": {
+                  "basis": "auto",
+                  "grow": 1,
+                  "shrink": 1
+                },
+                "custom": {},
+                "children": [
+                  {
+                    "type": "ia.display.label",
+                    "version": 0,
+                    "props": {
+                      "text": "Get the data",
+                      "style": {
+                        "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+                        "fontSize": "14px",
+                        "fontWeight": "700",
+                        "color": "#e6e9ef"
+                      }
+                    },
+                    "meta": {
+                      "name": "h"
+                    },
+                    "position": {
+                      "basis": "auto",
+                      "grow": 0,
+                      "shrink": 0
+                    }
+                  },
+                  {
+                    "type": "ia.display.label",
+                    "version": 0,
+                    "props": {
+                      "text": "Hexen: Beyond Heretic on Steam or GOG installs hexen.wad. The free 4-level demo works too: hexndemo.zip on the idgames archive, HEXEN.WAD inside.",
+                      "style": {
+                        "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+                        "fontSize": "13px",
+                        "color": "#8b95a5",
+                        "whiteSpace": "pre-wrap",
+                        "lineHeight": "1.45",
+                        "marginTop": "2px"
+                      }
+                    },
+                    "meta": {
+                      "name": "p"
+                    },
+                    "position": {
+                      "basis": "auto",
+                      "grow": 0,
+                      "shrink": 0
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "ia.container.flex",
+            "version": 0,
+            "props": {
+              "direction": "row",
+              "wrap": "nowrap",
+              "justify": "flex-start",
+              "alignItems": "flex-start",
+              "alignContent": "flex-start",
+              "style": {
+                "gap": "14px",
+                "marginTop": "10px"
+              }
+            },
+            "meta": {
+              "name": "step1"
+            },
+            "position": {
+              "basis": "auto",
+              "grow": 0,
+              "shrink": 0
+            },
+            "custom": {},
+            "children": [
+              {
+                "type": "ia.display.label",
+                "version": 0,
+                "props": {
+                  "text": "2",
+                  "style": {
+                    "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+                    "fontSize": "14px",
+                    "fontWeight": "800",
+                    "color": "#7f9cff",
+                    "textAlign": "center",
+                    "backgroundColor": "#1a2029",
+                    "borderRadius": "50%",
+                    "width": "26px",
+                    "height": "26px",
+                    "lineHeight": "26px"
+                  }
+                },
+                "meta": {
+                  "name": "n"
+                },
+                "position": {
+                  "basis": "26px",
+                  "grow": 0,
+                  "shrink": 0
+                }
+              },
+              {
+                "type": "ia.container.flex",
+                "version": 0,
+                "props": {
+                  "direction": "column",
+                  "wrap": "nowrap",
+                  "justify": "flex-start",
+                  "alignItems": "stretch",
+                  "alignContent": "flex-start",
+                  "style": {}
+                },
+                "meta": {
+                  "name": "t1"
+                },
+                "position": {
+                  "basis": "auto",
+                  "grow": 1,
+                  "shrink": 1
+                },
+                "custom": {},
+                "children": [
+                  {
+                    "type": "ia.display.label",
+                    "version": 0,
+                    "props": {
+                      "text": "Put it on the gateway",
+                      "style": {
+                        "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+                        "fontSize": "14px",
+                        "fontWeight": "700",
+                        "color": "#e6e9ef"
+                      }
+                    },
+                    "meta": {
+                      "name": "h"
+                    },
+                    "position": {
+                      "basis": "auto",
+                      "grow": 0,
+                      "shrink": 0
+                    }
+                  },
+                  {
+                    "type": "ia.display.label",
+                    "version": 0,
+                    "props": {
+                      "text": "Copy it, named exactly hexen.wad, into data/modules/com.mustrysolutions.doom/wads/ (Docker: /usr/local/bin/ignition/data/modules/com.mustrysolutions.doom/wads/). No restart: the component asks the gateway what is there every time it starts.",
+                      "style": {
+                        "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+                        "fontSize": "13px",
+                        "color": "#8b95a5",
+                        "whiteSpace": "pre-wrap",
+                        "lineHeight": "1.45",
+                        "marginTop": "2px"
+                      }
+                    },
+                    "meta": {
+                      "name": "p"
+                    },
+                    "position": {
+                      "basis": "auto",
+                      "grow": 0,
+                      "shrink": 0
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "ia.container.flex",
+            "version": 0,
+            "props": {
+              "direction": "row",
+              "wrap": "nowrap",
+              "justify": "flex-start",
+              "alignItems": "flex-start",
+              "alignContent": "flex-start",
+              "style": {
+                "gap": "14px",
+                "marginTop": "10px"
+              }
+            },
+            "meta": {
+              "name": "step2"
+            },
+            "position": {
+              "basis": "auto",
+              "grow": 0,
+              "shrink": 0
+            },
+            "custom": {},
+            "children": [
+              {
+                "type": "ia.display.label",
+                "version": 0,
+                "props": {
+                  "text": "3",
+                  "style": {
+                    "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+                    "fontSize": "14px",
+                    "fontWeight": "800",
+                    "color": "#7f9cff",
+                    "textAlign": "center",
+                    "backgroundColor": "#1a2029",
+                    "borderRadius": "50%",
+                    "width": "26px",
+                    "height": "26px",
+                    "lineHeight": "26px"
+                  }
+                },
+                "meta": {
+                  "name": "n"
+                },
+                "position": {
+                  "basis": "26px",
+                  "grow": 0,
+                  "shrink": 0
+                }
+              },
+              {
+                "type": "ia.container.flex",
+                "version": 0,
+                "props": {
+                  "direction": "column",
+                  "wrap": "nowrap",
+                  "justify": "flex-start",
+                  "alignItems": "stretch",
+                  "alignContent": "flex-start",
+                  "style": {}
+                },
+                "meta": {
+                  "name": "t2"
+                },
+                "position": {
+                  "basis": "auto",
+                  "grow": 1,
+                  "shrink": 1
+                },
+                "custom": {},
+                "children": [
+                  {
+                    "type": "ia.display.label",
+                    "version": 0,
+                    "props": {
+                      "text": "Play",
+                      "style": {
+                        "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+                        "fontSize": "14px",
+                        "fontWeight": "700",
+                        "color": "#e6e9ef"
+                      }
+                    },
+                    "meta": {
+                      "name": "h"
+                    },
+                    "position": {
+                      "basis": "auto",
+                      "grow": 0,
+                      "shrink": 0
+                    }
+                  },
+                  {
+                    "type": "ia.display.label",
+                    "version": 0,
+                    "props": {
+                      "text": "Open Play below. config.iwad stays empty; config.playerClass picks fighter, cleric or mage.",
+                      "style": {
+                        "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+                        "fontSize": "13px",
+                        "color": "#8b95a5",
+                        "whiteSpace": "pre-wrap",
+                        "lineHeight": "1.45",
+                        "marginTop": "2px"
+                      }
+                    },
+                    "meta": {
+                      "name": "p"
+                    },
+                    "position": {
+                      "basis": "auto",
+                      "grow": 0,
+                      "shrink": 0
+                    }
+                  }
+                ]
+              }
+            ]
           }
         ]
       },
