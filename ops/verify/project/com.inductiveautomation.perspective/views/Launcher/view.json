@@ -940,7 +940,7 @@
                     "type": "ia.display.label",
                     "version": 0,
                     "props": {
-                      "text": "SHIPS",
+                      "text": "NEEDS YOUR WAD",
                       "style": {
                         "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
                         "fontSize": "10px",
@@ -948,8 +948,8 @@
                         "letterSpacing": "0.1em",
                         "textAlign": "center",
                         "borderRadius": "12px",
-                        "color": "#04342c",
-                        "backgroundColor": "#2ecc71",
+                        "color": "#3a2a06",
+                        "backgroundColor": "#f1c40f",
                         "padding": "4px 10px"
                       }
                     },
@@ -1127,6 +1127,40 @@
                 "type": "ia.display.label",
                 "version": 0,
                 "props": {
+                  "text": "How to add hexen.wad \u2192",
+                  "style": {
+                    "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+                    "fontSize": "12px",
+                    "fontWeight": "600",
+                    "color": "#f1c40f",
+                    "marginTop": "12px",
+                    "cursor": "pointer"
+                  }
+                },
+                "meta": {
+                  "name": "howtoLink"
+                },
+                "position": {
+                  "basis": "auto",
+                  "grow": 0,
+                  "shrink": 0
+                },
+                "events": {
+                  "dom": {
+                    "onClick": {
+                      "type": "script",
+                      "scope": "G",
+                      "config": {
+                        "script": "\tsystem.perspective.navigate(page='/hexen')"
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "type": "ia.display.label",
+                "version": 0,
+                "props": {
                   "text": "Overview \u2192",
                   "style": {
                     "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
@@ -1257,7 +1291,7 @@
                     "type": "ia.display.label",
                     "version": 0,
                     "props": {
-                      "text": "SHIPS",
+                      "text": "NEEDS YOUR WAD",
                       "style": {
                         "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
                         "fontSize": "10px",
@@ -1265,8 +1299,8 @@
                         "letterSpacing": "0.1em",
                         "textAlign": "center",
                         "borderRadius": "12px",
-                        "color": "#04342c",
-                        "backgroundColor": "#2ecc71",
+                        "color": "#3a2a06",
+                        "backgroundColor": "#f1c40f",
                         "padding": "4px 10px"
                       }
                     },
@@ -1439,6 +1473,40 @@
                     }
                   }
                 ]
+              },
+              {
+                "type": "ia.display.label",
+                "version": 0,
+                "props": {
+                  "text": "How to add strife1.wad \u2192",
+                  "style": {
+                    "fontFamily": "Inter, 'Segoe UI', system-ui, sans-serif",
+                    "fontSize": "12px",
+                    "fontWeight": "600",
+                    "color": "#f1c40f",
+                    "marginTop": "12px",
+                    "cursor": "pointer"
+                  }
+                },
+                "meta": {
+                  "name": "howtoLink"
+                },
+                "position": {
+                  "basis": "auto",
+                  "grow": 0,
+                  "shrink": 0
+                },
+                "events": {
+                  "dom": {
+                    "onClick": {
+                      "type": "script",
+                      "scope": "G",
+                      "config": {
+                        "script": "\tsystem.perspective.navigate(page='/strife')"
+                      }
+                    }
+                  }
+                }
               },
               {
                 "type": "ia.display.label",

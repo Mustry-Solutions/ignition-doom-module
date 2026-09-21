@@ -68,6 +68,12 @@ GAMES = [
         "name": "HEXEN",
         "color": "#7f9cff",
         "ships": True,
+        "needs_wad": "hexen.wad",
+        "howto": [
+            ("Get the data", "Hexen: Beyond Heretic on Steam or GOG installs hexen.wad. The free 4-level demo works too: hexndemo.zip on the idgames archive, HEXEN.WAD inside."),
+            ("Put it on the gateway", "Copy it, named exactly hexen.wad, into data/modules/com.mustrysolutions.doom/wads/ (Docker: /usr/local/bin/ignition/data/modules/com.mustrysolutions.doom/wads/). No restart: the component asks the gateway what is there every time it starts."),
+            ("Play", "Open Play below. config.iwad stays empty; config.playerClass picks fighter, cleric or mage."),
+        ],
         "tagline": "Beyond Heretic. Three classes, hub maps, mana. Bring your own hexen.wad: the demo carries no licence to ship it.",
         "engine": "Chocolate Hexen → WebAssembly (same upstream)",
         "iwad": "none bundled: hexen.wad from the gateway's wads folder · saves in saves/<user>/game-hexen/",
@@ -85,6 +91,12 @@ GAMES = [
         "name": "STRIFE",
         "color": "#8fbf6a",
         "ships": True,
+        "needs_wad": "strife1.wad",
+        "howto": [
+            ("Get the data", "Strife: Veteran Edition on Steam or GOG installs strife1.wad and voices.wad (steamapps/common/Strife). There is no free Strife data: the 1996 demo is not supported by the engine."),
+            ("Put them on the gateway", "Copy both, names unchanged, into data/modules/com.mustrysolutions.doom/wads/ (Docker: /usr/local/bin/ignition/data/modules/com.mustrysolutions.doom/wads/). voices.wad is optional; without it the dialogue is text."),
+            ("Play", "Open Play below. config.iwad stays empty. Gold and quest flags show up in the outputs and the [Doom] tags."),
+        ],
         "tagline": "Quest for the Sigil. Rogue's 1996 talk-and-shoot. Bring your own strife1.wad (and voices.wad): no free data exists.",
         "engine": "Chocolate Strife → WebAssembly (same upstream)",
         "iwad": "none bundled: strife1.wad + voices.wad from the gateway's wads folder · saves in saves/<user>/game-strife1/",
@@ -153,15 +165,22 @@ def button(name, text, page, color, url=None):
     }, extra={"events": nav(page=page, url=url)})
 
 
-def header(title, title_color, subtitle, back=None):
+def header(title, title_color, subtitle, back=None, needs_wad=None):
     kids = []
     if back:
         kids.append(label("back", "← All games", {
             "fontSize": "12px", "color": MUTED, "cursor": "pointer", "marginBottom": "6px",
         }, extra={"events": nav(page="/")}))
-    kids.append(label("title", title, {
+    title_label = label("title", title, {
         "fontSize": "40px", "fontWeight": "800", "letterSpacing": "0.12em", "color": title_color,
-    }))
+    })
+    if needs_wad:
+        kids.append(flex("titleRow", "row", [
+            title_label,
+            pill("status", f"NEEDS YOUR {needs_wad.upper()}", "#3a2a06", "#f1c40f"),
+        ], align="center", style={"gap": "16px"}))
+    else:
+        kids.append(title_label)
     kids.append(label("subtitle", subtitle, {"fontSize": "14px", "color": MUTED, "marginTop": "2px"}))
     return flex("header", "column", kids, style={"padding": "36px 40px 20px 40px"})
 
@@ -178,8 +197,9 @@ def game_card(g):
         flex(f"{g['id']}Head", "row", [
             label("name", g["name"], {"fontSize": "26px", "fontWeight": "800", "letterSpacing": "0.1em", "color": color},
                   position={"basis": "auto", "grow": 1, "shrink": 1}),
-            pill("status", "SHIPS" if g["ships"] else "PLANNED",
-                 "#04342c" if g["ships"] else "#2b2f3a", "#2ecc71" if g["ships"] else "#8b95a5"),
+            (pill("status", "NEEDS YOUR WAD", "#3a2a06", "#f1c40f") if g.get("needs_wad")
+             else pill("status", "SHIPS" if g["ships"] else "PLANNED",
+                       "#04342c" if g["ships"] else "#2b2f3a", "#2ecc71" if g["ships"] else "#8b95a5")),
         ], align="center", justify="space-between"),
         label("tagline", g["tagline"], {"fontSize": "13px", "color": MUTED, "marginTop": "6px", "marginBottom": "14px",
                                          "whiteSpace": "pre-wrap"}),
@@ -188,6 +208,10 @@ def game_card(g):
         kids.append(flex("sections", "column", [
             button(f"s{i}", s["title"], s["route"], color) for i, s in enumerate(g["sections"])
         ], style={"gap": "8px"}))
+        if g.get("needs_wad"):
+            kids.append(label("howtoLink", f"How to add {g['needs_wad']} →", {
+                "fontSize": "12px", "fontWeight": "600", "color": "#f1c40f", "marginTop": "12px", "cursor": "pointer",
+            }, extra={"events": nav(page=f"/{g['id']}")}))
         kids.append(label("more", "Overview →", {
             "fontSize": "12px", "fontWeight": "600", "color": color, "marginTop": "14px", "cursor": "pointer",
         }, extra={"events": nav(page=f"/{g['id']}")}))
@@ -237,6 +261,26 @@ def section_card(g, s, i):
         extra={"events": nav(page=s["route"])})
 
 
+def howto_card(g):
+    steps = []
+    for i, (title, text) in enumerate(g["howto"]):
+        steps.append(flex(f"step{i}", "row", [
+            label("n", str(i + 1), {"fontSize": "14px", "fontWeight": "800", "color": g["color"], "textAlign": "center",
+                                     "backgroundColor": "#1a2029", "borderRadius": "50%", "width": "26px", "height": "26px",
+                                     "lineHeight": "26px"}, position={"basis": "26px", "grow": 0, "shrink": 0}),
+            flex(f"t{i}", "column", [
+                label("h", title, {"fontSize": "14px", "fontWeight": "700", "color": TEXT}),
+                label("p", text, {"fontSize": "13px", "color": MUTED, "whiteSpace": "pre-wrap", "lineHeight": "1.45", "marginTop": "2px"}),
+            ], position={"basis": "auto", "grow": 1, "shrink": 1}),
+        ], style={"gap": "14px", "marginTop": "10px"}, align="flex-start"))
+    return flex("howto", "column", [
+        label("howtoTitle", f"HOW TO PLAY: THE MODULE SHIPS THE {g['name']} ENGINE, YOU BRING {g['needs_wad'].upper()}",
+              {"fontSize": "11px", "fontWeight": "700", "letterSpacing": "0.1em", "color": "#f1c40f"}),
+        *steps,
+    ], style={"backgroundColor": "#15130b", "borderRadius": "14px", "padding": "18px 20px 20px 20px", "margin": "0 40px 16px 40px",
+              "border": "1px solid #3a2f0a"})
+
+
 def hub(g):
     def fact(name, key, value):
         return flex(name, "row", [
@@ -256,7 +300,8 @@ def hub(g):
     ], style={"backgroundColor": "#0f1318", "borderRadius": "14px", "padding": "18px 20px", "margin": "8px 40px 0 40px",
               "border": f"1px solid {CARD_EDGE}"})
     root = flex("root", "column", [
-        header(g["name"], g["color"], g["tagline"], back=True),
+        header(g["name"], g["color"], g["tagline"], back=True, needs_wad=g.get("needs_wad")),
+        *([howto_card(g)] if g.get("howto") else []),
         flex("sections", "row", [section_card(g, s, i) for i, s in enumerate(g["sections"])], wrap="wrap",
              style={"gap": "16px", "padding": "0 40px"}),
         facts,
