@@ -97,6 +97,10 @@ jobs:
       - name: Fetch the Hexen demo WAD (dev fixture)
         run: ops/fetch-hexen-demo.sh || echo "no Hexen demo; its e2e tests will skip"
 
+      # Freedoom (BSD) is the only IWAD the suite can load a PWAD onto.
+      - name: Fetch Freedoom (dev fixture)
+        run: ops/fetch-freedoom.sh || echo "no Freedoom; the PWAD test will skip"
+
       - name: Bring up gateway and run the suite
         run: ops/e2e.sh --fresh
         env:

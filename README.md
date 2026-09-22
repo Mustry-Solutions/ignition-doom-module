@@ -204,6 +204,14 @@ The module ships those two engines but not their data, so they show
 |---|---|---|
 | Hexen | `hexen.wad` | Steam/GOG, or the free 4-level demo |
 | Strife | `strife1.wad`, `voices.wad` (optional) | Steam/GOG only |
+| Doom, free and complete | `freedoom1.wad`, `freedoom2.wad` | [Freedoom](https://freedoom.github.io/) (BSD licence) |
+
+**Mods without buying Doom II.** The shareware episode refuses PWADs (the
+engine's "Register!" rule), and registered IWADs are not free. Freedoom is:
+a complete, free Doom-compatible game. Put `freedoom2.wad` in the wads
+folder, set `config.iwad` to `freedoom2` and `config.pwads` to your map
+pack, and it loads. `ops/fetch-freedoom.sh` gets the pinned release for the
+dev gateway; on a real gateway, download it from the Freedoom site.
 
 The data stays on your gateway, is never uploaded anywhere, and is served
 only to Perspective sessions running the component (ticketed; anyone else

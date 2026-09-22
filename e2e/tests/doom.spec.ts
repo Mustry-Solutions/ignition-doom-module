@@ -435,3 +435,24 @@ test('strife: deathmatch through the same relay, both reach the Sanctuary', asyn
         await joinCtx.close();
     }
 });
+
+// Freedoom (BSD, ops/fetch-freedoom.sh) is a registered-mode IWAD, so a PWAD
+// loads with -file; the shareware IWADs refuse it. This is the one test of
+// the whole operator-PWAD path: the engine must report adding our own tiny
+// PWAD (ops/verify/wads/mustry-test.wad). Skips without Freedoom.
+test('freedoom: a PWAD loads on a free registered IWAD (the -file path end to end)', async ({ page }) => {
+    const engine: string[] = [];
+    page.on('console', (m) => { if (m.text().startsWith('[doom] ')) engine.push(m.text().slice(7)); });
+    const root = await openRoute(page, '/wad/freedoom2/mustry-test', '.mustry-doom');
+    await root.locator('.mustry-doom__splash').click();
+    const listing = page.getByText(/output\.availableWads: \S/).first();
+    await expect(listing).toBeVisible({ timeout: 60_000 });
+    const wads = (/output\.availableWads: ([^\n]*)/.exec((await listing.textContent()) || '') || ['', ''])[1];
+    test.skip(!/\bfreedoom2\b/.test(wads), `no freedoom2.wad on the gateway (have: ${wads}); run ops/fetch-freedoom.sh before ops/fresh.sh`);
+    await expect(root).toHaveClass(/mustry-doom--running/, { timeout: 60_000 });
+    await expect(page.getByText(/output\.iwad: freedoom2/)).toBeVisible();
+    await expect(page.getByText(/output\.wadError:\s*output\.availableWads/)).toBeVisible();
+    await expect(page.getByText(/output\.inLevel: true/)).toBeVisible({ timeout: 30_000 });
+    await expect.poll(() => engine.some((l) => /adding mustry-test\.wad/.test(l)), { timeout: 10_000 }).toBe(true);
+    expect(engine.some((l) => /adding freedoom2\.wad/.test(l))).toBe(true);
+});

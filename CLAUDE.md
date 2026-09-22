@@ -102,7 +102,9 @@ in doomLogic; anything else is "Unknown or invalid IWAD file"), refuses
 IWADs (`wadGameMode()` sniffs the lump directory). Saves of a custom IWAD go
 to `saves/<user>/game-<iwad>/`. The e2e fixture is doom1.wad seeded as
 `wads/doom.wad` by `seed_verify_wads` (ops/lib.sh); a registered IWAD is
-never in the repo, so PWAD loading proper is untested by CI. Data routes on
+never in the repo; Freedoom (`ops/fetch-freedoom.sh`, BSD, gitignored) is
+the registered-mode IWAD the e2e suite loads `ops/verify/wads/mustry-test.wad`
+onto with `-file`, so the PWAD path IS tested in CI. Data routes on
 8.3 MUST set `.accessControl(...)` or `mount()` throws "Access control must be
 specified".
 
