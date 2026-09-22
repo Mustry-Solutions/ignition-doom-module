@@ -310,6 +310,19 @@ seed_verify_wads() {
       ok "Strife ${strife}.wad seeded (dev gateway only)."
     fi
   done
+  # Freedoom (BSD): a free registered-mode IWAD pair, so the suite can load a
+  # PWAD with -file (no shareware IWAD can). ops/fetch-freedoom.sh gets it.
+  local fd
+  for fd in freedoom1 freedoom2; do
+    if [[ -f "${PROJECT_ROOT}/engine/build/freedoom/${fd}.wad" ]]; then
+      docker cp "${PROJECT_ROOT}/engine/build/freedoom/${fd}.wad" "${CONTAINER_NAME}:${dst}/${fd}.wad"
+    fi
+  done
+  [[ -f "${PROJECT_ROOT}/engine/build/freedoom/freedoom2.wad" ]] \
+    && ok "Freedoom seeded (dev gateway only)." \
+    || warn "No engine/build/freedoom: run ops/fetch-freedoom.sh for the PWAD test; it will skip."
+  # Our own tiny PWAD (committed): the -file payload the e2e suite checks for.
+  docker cp "${OPS_DIR}/verify/wads/mustry-test.wad" "${CONTAINER_NAME}:${dst}/mustry-test.wad"
   "${COMPOSE[@]}" run --rm -u root --entrypoint sh gateway \
       -c "chown -R ignition:ignition '${dst}'"
   ok "Verify WAD fixture in place."

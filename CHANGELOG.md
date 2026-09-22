@@ -8,6 +8,12 @@ are semver. Ignition's module version is numeric only, so releases are plain
 
 ### Added
 
+- Freedoom as the dev gateway's free registered-mode IWAD:
+  `ops/fetch-freedoom.sh` (pinned, checksummed, never committed) plus a
+  56-byte PWAD of our own, and an e2e test that loads it with `-file` on
+  `freedoom2.wad`; the operator-PWAD path is exercised in CI for the first
+  time. README: "Mods without buying Doom II". (#17)
+
 - CI: the four committed engines are rebuilt from source and diffed
   (`Engines reproducible` workflow) on engine changes, weekly and on demand;
   the e2e suite also runs, informationally, against the latest 8.3 image

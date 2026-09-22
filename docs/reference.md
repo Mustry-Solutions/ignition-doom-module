@@ -198,6 +198,22 @@ Dev gateway: copy your `strife1.wad` and `voices.wad` into
 `engine/build/strife/` (gitignored); `ops/fresh.sh` seeds them and the two
 Strife e2e tests run; without them they skip, as in CI.
 
+### Freedoom and the PWAD path
+
+The engine refuses `-file` on shareware Doom data, so until Freedoom the
+suite could never load a PWAD. [Freedoom](https://freedoom.github.io/)
+(BSD-3-Clause) is a complete free Doom: `freedoom1.wad` is episodic and
+`freedoom2.wad` is `MAP01`-style, both names the engine knows, both treated
+as registered games. `ops/fetch-freedoom.sh` downloads the pinned release
+(SHA-256 from its signed CHECKSUM file) into `engine/build/` (gitignored,
+~57 MB unpacked, never committed or shipped) and `seed_verify_wads` puts it
+on the dev gateway with `ops/verify/wads/mustry-test.wad`, a 56-byte PWAD
+of our own (`make-test-pwad.py`, one marker lump). The e2e test opens
+`/wad/freedoom2/mustry-test` and requires the engine's stdout to say
+`adding mustry-test.wad`: the whole operator-PWAD path (folder, ticketed
+download, engine filesystem, `-file`, `W_AddFile`) in one assertion. CI
+fetches Freedoom best-effort; the test skips without it.
+
 ### Bring your own WAD
 
 The module ships the Doom and Heretic shareware episodes only and never will
