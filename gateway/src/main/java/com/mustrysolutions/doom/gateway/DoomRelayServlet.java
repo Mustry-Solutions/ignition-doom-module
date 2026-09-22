@@ -37,7 +37,7 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
  *
  * <p>Admission: the handshake must carry {@code ?ticket=<token>} issued by
  * the session's {@link DoomModelDelegate} for this arena (see
- * {@link DoomRelayTickets}); anything else is refused with 403. The engine
+ * {@link DoomTickets}); anything else is refused with 403. The engine
  * reconnects during a netgame, so a ticket stays valid for the session. The relay is
  * reachable at {@code /system/doom-relay/<arena>} on the gateway.
  *
@@ -132,14 +132,14 @@ public class DoomRelayServlet extends JettyWebSocketServlet {
                 arena = "default";
             }
             String token = req.getHttpServletRequest().getParameter("ticket");
-            DoomRelayTickets.Ticket ticket = DoomRelayTickets.redeem(token);
-            if (ticket != null && DoomRelayTickets.WAD_SCOPE.equals(ticket.arena)) {
+            DoomTickets.Ticket ticket = DoomTickets.redeem(token);
+            if (ticket != null && DoomTickets.WAD_SCOPE.equals(ticket.arena)) {
                 ticket = null; // a download ticket is not an arena admission
             }
             if (ticket == null) {
                 log.warnf("arena %s: refused a connection without a valid ticket from %s (ticket=%s, registry %s)", arena,
                     req.getHttpServletRequest().getRemoteAddr(), token == null ? "none" : token.substring(0, Math.min(8, token.length())) + "...",
-                    DoomRelayTickets.where());
+                    DoomTickets.where());
                 try {
                     resp.sendForbidden("a Doom relay ticket for this arena is required");
                 } catch (java.io.IOException e) {

@@ -6,6 +6,19 @@ are semver. Ignition's module version is numeric only, so releases are plain
 
 ## [Unreleased]
 
+### Added
+
+- CI: the four committed engines are rebuilt from source and diffed
+  (`Engines reproducible` workflow) on engine changes, weekly and on demand;
+  the e2e suite also runs, informationally, against the latest 8.3 image
+  (`IGNITION_IMAGE` in `docker-compose.yml`).
+
+### Changed
+
+- `DoomRelayTickets` is `DoomTickets` (it issues WAD download tickets too);
+  the operator-WAD resolution rules moved out of the component into
+  `resolveFetched()` in `doomLogic.ts`, unit-tested.
+
 ## [0.3.0] - 2026-09-21
 
 The whole Chocolate Doom family in one component. Doom and Heretic ship

@@ -339,7 +339,15 @@ cd web && npm test         # jest, pure-logic suites
 ```
 
 The compiled engines (all four) are committed, so the build never needs
-Emscripten. To rebuild them from source (new upstream commit, new patch):
+Emscripten. The **Engines reproducible** workflow
+(`.github/workflows/engines.yml`) rebuilds them in the emsdk image on every
+change to `engine/` or the committed binaries, weekly, and on demand, and
+fails if a byte differs: the committed engines are always what
+`engine/build.sh` produces. The e2e job runs against the pinned Ignition
+image and, informationally, against `inductiveautomation/ignition:latest`
+(`IGNITION_IMAGE` in `docker-compose.yml`), so a Jetty or data-route change
+in a new 8.3 shows up before anyone upgrades. To rebuild the engines from
+source (new upstream commit, new patch):
 
 ```bash
 engine/build.sh            # Docker, emscripten/emsdk image

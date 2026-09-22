@@ -11,9 +11,9 @@ import {
 } from '@inductiveautomation/perspective-client';
 import {
     base64ToBytes, buildArgs, bundledFiles, bytesToBase64, clampInt, CODE_ERROR, CODE_GAME_STARTED, DEFAULT_PLAY_LABEL, diffControls,
-    DoomControls, DoomStats, engineSize, GameDef, GameFiles, GameMode, GAMES, heldKeys, isBundledIwad, isFatalLine, isValidSlot, MAX_SAVE_BYTES, requestedIwad,
-    normGame, parseEngineLine, PAUSE_KEY, arenaKey, Phase, PixelSize, planWads, readStats, relayUrl, SAVE_DIR, saveDescription, saveSlotPath,
-    belongsToSlot, slotFileNames, statWrites, wadFileName, wadGameMode, wadKey, ZERO_STATS
+    DoomControls, DoomStats, engineSize, GameDef, GameFiles, GAMES, heldKeys, isBundledIwad, isFatalLine, isValidSlot, MAX_SAVE_BYTES, requestedIwad,
+    normGame, parseEngineLine, PAUSE_KEY, arenaKey, Phase, PixelSize, planWads, readStats, relayUrl, resolveFetched, SAVE_DIR, saveDescription,
+    saveSlotPath, belongsToSlot, slotFileNames, statWrites, wadFileName, wadKey, ZERO_STATS
 } from './doomLogic';
 import { DoomSavesState, DoomStoreDelegate, WadAccess } from './doomSaves';
 import {
@@ -444,54 +444,17 @@ export class Doom extends Component<ComponentProps<DoomProps, DoomSavesState>, D
                         return [k, null] as const;
                     }));
                 return Promise.all(fetched).then((got) => {
-                    let iwad = plan.iwad;
-                    let mode: GameMode = 'shareware';
-                    let pwads: string[] = [];
-                    const companions: string[] = [];
-                    const files: Array<[string, Uint8Array]> = [];
-                    for (const [k, bytes] of got) {
-                        if (!bytes) {
-                            if (k === plan.iwad) {
-                                problems.push(`${wadFileName(k)} is no longer on the gateway; playing ${game.bundledIwad}`);
-                                iwad = game.bundledIwad;
-                            } else if (!problems.some((p) => p.startsWith(wadFileName(k)))) {
-                                problems.push(`${wadFileName(k)} is no longer on the gateway; skipped`);
-                            }
-                            continue;
-                        }
-                        if (k === plan.iwad) {
-                            mode = wadGameMode(bytes);
-                            files.push([wadFileName(k), bytes]);
-                        } else if (plan.companions.includes(k)) {
-                            companions.push(k);
-                            files.push([wadFileName(k), bytes]);
-                        } else {
-                            pwads.push(k);
-                            files.push([wadFileName(k), bytes]);
-                        }
-                    }
-                    if (game.companions && game.companions.some((c) => !companions.includes(c))) {
-                        problems.push(`${game.companions.filter((c) => !companions.includes(c)).map(wadFileName).join(', ')} not in the gateway's wads folder; ${game.title} runs without it (${game.companionMissingArg || ''})`.trim());
-                    }
-                    if (iwad === game.bundledIwad) {
-                        mode = 'shareware';
-                    }
-                    if (mode === 'shareware' && game.sharewareRefusesPwads && pwads.length > 0) {
-                        // D_DoomMain: "You cannot -file with the shareware version. Register!"
-                        problems.push(`PWADs need a registered IWAD (the engine refuses -file with shareware data); ${pwads.map(wadFileName).join(', ')} skipped`);
-                        pwads = [];
-                    }
+                    const resolved = resolveFetched(plan, got, game, problems);
                     const prepared: PreparedWads = {
-                        game: { iwad, pwads, commercial: mode === 'commercial', companions },
-                        files: files.filter(([name]) => name === wadFileName(iwad) || pwads.some((k) => wadFileName(k) === name)
-                            || companions.some((k) => wadFileName(k) === name)),
+                        game: resolved.game,
+                        files: resolved.files,
                         available: a ? a.wads : [],
-                        error: problems.join('; ')
+                        error: resolved.problems.join('; ')
                     };
                     this.writeWadOutputs(prepared);
                     // The slots listed at mount were for the configured game; a
                     // fallback (or a binding that changed since) needs the right ones.
-                    const saveKey = this.saveGame(iwad, game);
+                    const saveKey = this.saveGame(resolved.game.iwad, game);
                     if (cfg.persistSaves && saves && saves.mapStateToProps().slotsIwad !== saveKey) {
                         return saves.loadSlots(saveKey).then(() => prepared);
                     }

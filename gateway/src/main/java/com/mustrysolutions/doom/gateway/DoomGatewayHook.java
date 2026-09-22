@@ -68,7 +68,7 @@ public class DoomGatewayHook extends AbstractGatewayModuleHook {
         if (ticket == null) {
             ticket = req.getParameter("ticket");
         }
-        return DoomRelayTickets.redeemWad(ticket) ? RouteAccess.GRANTED : RouteAccess.FORBIDDEN;
+        return DoomTickets.redeemWad(ticket) ? RouteAccess.GRANTED : RouteAccess.FORBIDDEN;
     };
 
     /**

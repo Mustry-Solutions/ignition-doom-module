@@ -1,0 +1,46 @@
+# The four engines under gateway/src/main/resources/mounted/<game>/ are
+# committed binaries. This job proves they are what engine/build.sh produces
+# from the pinned upstream commits and engine/patches/: it rebuilds all four
+# in the same emsdk image and fails if any byte differs. The bug this guards
+# against was real (a committed binary from a --local build that the Docker
+# build could not reproduce, 0.2.0 changelog).
+#
+# Runs on changes to engine/ or the committed engines, weekly, and by hand.
+# It is not part of the PR gate for ordinary changes: the emsdk pull plus four
+# builds take about ten minutes.
+name: Engines reproducible
+
+on:
+  push:
+    branches: [main]
+    paths: ['engine/**', 'gateway/src/main/resources/mounted/**']
+  pull_request:
+    paths: ['engine/**', 'gateway/src/main/resources/mounted/**']
+  schedule:
+    - cron: '17 4 * * 1'   # Mondays 04:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  rebuild:
+    name: Rebuild and diff
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Rebuild the engines from source
+        run: engine/build.sh
+
+      - name: Committed engines must equal the rebuild
+        run: |
+          git status --porcelain -- gateway/src/main/resources/mounted
+          if [ -n "$(git status --porcelain -- gateway/src/main/resources/mounted)" ]; then
+            echo "::error::engine/build.sh produced different binaries than the committed ones."
+            echo "Rebuild with engine/build.sh (Docker) and commit the outputs, or fix the patch."
+            git diff --stat -- gateway/src/main/resources/mounted
+            exit 1
+          fi
+          echo "All four engines reproduce byte for byte."
