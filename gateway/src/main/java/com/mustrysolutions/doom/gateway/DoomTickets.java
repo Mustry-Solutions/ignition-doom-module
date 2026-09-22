@@ -6,7 +6,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Admission control for the deathmatch relay. A Perspective session that runs
+ * Admission tickets: for the deathmatch relay and for operator WAD downloads.
+ *
+ * <p>Relay: a Perspective session that runs
  * the Doom component asks its gateway delegate for a ticket (over the already
  * authenticated component channel); the relay accepts a WebSocket only when
  * the handshake carries a ticket issued for that arena. Sessions that never
@@ -22,7 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * anyone who can reach the gateway's port. The two kinds never cross: a WAD
  * ticket is refused by the relay and vice versa.
  */
-public final class DoomRelayTickets {
+public final class DoomTickets {
 
     /** Pseudo-arena for WAD download tickets; unreachable as a real arena (arenaKey strips '#'). */
     static final String WAD_SCOPE = "#wads";
@@ -47,7 +49,7 @@ public final class DoomRelayTickets {
 
     private static final Map<String, Ticket> TICKETS = new ConcurrentHashMap<>();
 
-    private DoomRelayTickets() {
+    private DoomTickets() {
     }
 
     /**
@@ -116,7 +118,7 @@ public final class DoomRelayTickets {
 
     /** For diagnostics: which classloader owns this registry. */
     static String where() {
-        ClassLoader cl = DoomRelayTickets.class.getClassLoader();
+        ClassLoader cl = DoomTickets.class.getClassLoader();
         return (cl == null ? "bootstrap" : cl.getClass().getName() + "@" + Integer.toHexString(System.identityHashCode(cl)))
             + " tickets=" + TICKETS.size();
     }

@@ -57,7 +57,7 @@ public class DoomModelDelegate extends ComponentModelDelegate {
             tags.offline(player);
         }
         log.infof("delegate shutdown for %s (player %s): revoking its relay tickets", issuerId(), player);
-        DoomRelayTickets.revoke(issuerId());
+        DoomTickets.revoke(issuerId());
     }
 
     /** This delegate instance's identity for relay tickets: session + component. */
@@ -127,8 +127,8 @@ public class DoomModelDelegate extends ComponentModelDelegate {
                 String arena = DoomTagProvider.playerKey(
                     payload != null && payload.has("arena") ? payload.get("arena").getAsString() : "", "default");
                 String requested = payload != null && payload.has("player") ? payload.get("player").getAsString() : "";
-                String ticket = DoomRelayTickets.issue(arena, issuerId(), resolvePlayer(requested));
-                log.infof("issued relay ticket %s... for arena %s (registry %s)", ticket.substring(0, 8), arena, DoomRelayTickets.where());
+                String ticket = DoomTickets.issue(arena, issuerId(), resolvePlayer(requested));
+                log.infof("issued relay ticket %s... for arena %s (registry %s)", ticket.substring(0, 8), arena, DoomTickets.where());
                 JsonObject out = new JsonObject();
                 out.addProperty("arena", arena);
                 out.addProperty("ticket", ticket);
@@ -137,7 +137,7 @@ public class DoomModelDelegate extends ComponentModelDelegate {
                 // Admission to the WAD download route, plus what is there, so the
                 // page can fall back to shareware without a 404 round-trip.
                 JsonObject out = new JsonObject();
-                out.addProperty("ticket", DoomRelayTickets.issueWad(issuerId()));
+                out.addProperty("ticket", DoomTickets.issueWad(issuerId()));
                 JsonArray list = new JsonArray();
                 wads.list().forEach(list::add);
                 out.add("wads", list);

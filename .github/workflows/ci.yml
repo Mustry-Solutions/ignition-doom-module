@@ -43,10 +43,19 @@ jobs:
   # compose gateway unattended (headless commissioning, dev-signed module
   # pre-accepted via data/modules.json) and runs the Playwright smoke test.
   e2e:
-    name: E2E smoke (Playwright)
+    # The pinned image is the gate. The "latest" 8.3 image is informational
+    # (continue-on-error): it tells us early when Ignition moves the Jetty
+    # WebSocket upgrade or the data-route API under the relay, without
+    # blocking a merge on Inductive Automation's release day.
+    name: E2E smoke (Playwright, Ignition ${{ matrix.ignition }})
     runs-on: ubuntu-latest
     needs: [build]
     timeout-minutes: 30
+    continue-on-error: ${{ matrix.ignition != '8.3.6' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        ignition: ['8.3.6', 'latest']
     steps:
       - uses: actions/checkout@v7
 
@@ -90,12 +99,14 @@ jobs:
 
       - name: Bring up gateway and run the suite
         run: ops/e2e.sh --fresh
+        env:
+          IGNITION_IMAGE: ${{ matrix.ignition }}
 
       - name: Upload Playwright report
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: playwright-report
+          name: playwright-report-${{ matrix.ignition }}
           path: |
             e2e/playwright-report
             e2e/test-results

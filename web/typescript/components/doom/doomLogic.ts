@@ -486,6 +486,74 @@ export function wadIsCommercial(bytes: Uint8Array): boolean {
     return wadGameMode(bytes) === 'commercial';
 }
 
+/** A fetched WAD: the key and its bytes, or null when the gateway no longer had it. */
+export type FetchedWad = readonly [key: string, bytes: Uint8Array | null];
+
+/** What resolveFetched decides: the game files to run, the bytes to write, the complaints. */
+export interface ResolvedWads {
+    game: GameFiles;
+    /** [file name, bytes] to write into the engine's filesystem before main(). */
+    files: Array<[string, Uint8Array]>;
+    problems: string[];
+}
+
+/**
+ * Turn what actually arrived from the gateway into the engine's files and
+ * command line. Pure, so the rules live in one tested place: an IWAD that
+ * vanished falls back to the bundle (or nothing), companions are noted when
+ * missing, and PWADs are dropped when the IWAD in play is shareware data the
+ * engine refuses -file for. Problems already known from the plan come first.
+ */
+export function resolveFetched(plan: WadPlan, got: readonly FetchedWad[], game: GameDef, problems: string[] = []): ResolvedWads {
+    const out = [...problems];
+    let iwad = plan.iwad;
+    let mode: GameMode = 'shareware';
+    let pwads: string[] = [];
+    const companions: string[] = [];
+    const files: Array<[string, Uint8Array]> = [];
+    for (const [k, bytes] of got) {
+        if (!bytes) {
+            if (k === plan.iwad) {
+                out.push(game.bundledIwad
+                    ? `${wadFileName(k)} is no longer on the gateway; playing ${game.bundledIwad}`
+                    : `${wadFileName(k)} is no longer on the gateway; ${game.title} cannot start without it`);
+                iwad = game.bundledIwad;
+            } else if (!out.some((p) => p.startsWith(wadFileName(k)))) {
+                out.push(`${wadFileName(k)} is no longer on the gateway; skipped`);
+            }
+            continue;
+        }
+        if (k === plan.iwad) {
+            mode = wadGameMode(bytes);
+        } else if (plan.companions.includes(k)) {
+            companions.push(k);
+        } else {
+            pwads.push(k);
+        }
+        files.push([wadFileName(k), bytes]);
+    }
+    if (game.companions) {
+        const missing = game.companions.filter((c) => !companions.includes(c));
+        if (missing.length > 0) {
+            out.push(`${missing.map(wadFileName).join(', ')} not in the gateway's wads folder; ${game.title} runs without it (${game.companionMissingArg || ''})`.trim());
+        }
+    }
+    if (iwad === game.bundledIwad) {
+        mode = 'shareware';
+    }
+    if (mode === 'shareware' && game.sharewareRefusesPwads && pwads.length > 0) {
+        // D_DoomMain: "You cannot -file with the shareware version. Register!"
+        out.push(`PWADs need a registered IWAD (the engine refuses -file with shareware data); ${pwads.map(wadFileName).join(', ')} skipped`);
+        pwads = [];
+    }
+    const keep = new Set([wadFileName(iwad), ...pwads.map(wadFileName), ...companions.map(wadFileName)]);
+    return {
+        game: { iwad, pwads, commercial: mode === 'commercial', companions },
+        files: files.filter(([name]) => keep.has(name)),
+        problems: out
+    };
+}
+
 /** What buildArgs needs to know about the WADs that will be on the engine's filesystem. */
 export interface GameFiles {
     iwad: string;

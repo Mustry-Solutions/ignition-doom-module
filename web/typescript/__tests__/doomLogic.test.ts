@@ -1,5 +1,5 @@
 import {
-    arenaKey, base64ToBytes, buildArgs, belongsToSlot, BUNDLED_IWAD, bytesToBase64, GAMES, normGame, playerClassIndex, requestedIwad, slotFileNames, diffControls, EMPTY_CONTROLS, engineSize, heldKeys, isFatalLine, isValidSlot, parseEngineLine, planWads, readStats, relayUrl, saveDescription, saveSlotPath, splitArgs, STAT_IDS, statWrites, wadGameMode, wadIsCommercial, wadKey, wadUrl, weaponKey, ZERO_STATS
+    arenaKey, base64ToBytes, buildArgs, belongsToSlot, BUNDLED_IWAD, bytesToBase64, GAMES, normGame, playerClassIndex, requestedIwad, resolveFetched, slotFileNames, diffControls, EMPTY_CONTROLS, engineSize, heldKeys, isFatalLine, isValidSlot, parseEngineLine, planWads, readStats, relayUrl, saveDescription, saveSlotPath, splitArgs, STAT_IDS, statWrites, wadGameMode, wadIsCommercial, wadKey, wadUrl, weaponKey, ZERO_STATS
 } from '../components/doom/doomLogic';
 import { mapDoomProps, PropReader } from '../components/doom/doomProps';
 
@@ -136,6 +136,55 @@ describe('Strife', () => {
     it('a slot is a folder and saves are keyed per game', () => {
         expect(GAMES.strife.saveFile(1)).toBe('strfsav1.ssg/name');
         expect(normGame('strife')).toBe('strife');
+    });
+});
+
+describe('resolveFetched', () => {
+    // A minimal IWAD whose lump directory names decide the game mode.
+    const wad = (...lumps: string[]) => {
+        const dir = 12;
+        const bytes = new Uint8Array(dir + lumps.length * 16);
+        const view = new DataView(bytes.buffer);
+        bytes.set([0x49, 0x57, 0x41, 0x44], 0);
+        view.setInt32(4, lumps.length, true);
+        view.setInt32(8, dir, true);
+        lumps.forEach((name, i) => { for (let c = 0; c < name.length; c++) { bytes[dir + i * 16 + 8 + c] = name.charCodeAt(c); } });
+        return bytes;
+    };
+    const plan = (iwad: string, pwads: string[] = [], companions: string[] = []) =>
+        ({ iwad, pwads, companions, fetch: [iwad, ...pwads, ...companions].filter((k) => k !== ''), error: '' });
+
+    it('keeps what arrived, in engine file names, and reads the game mode from the IWAD', () => {
+        const r = resolveFetched(plan('doom2', ['av']), [['doom2', wad('MAP01')], ['av', wad('MAP01')]], GAMES.doom);
+        expect(r.game).toEqual({ iwad: 'doom2', pwads: ['av'], commercial: true, companions: [] });
+        expect(r.files.map(([n]) => n)).toEqual(['doom2.wad', 'av.wad']);
+        expect(r.problems).toEqual([]);
+    });
+    it('an IWAD that vanished falls back to the bundle and drops its PWADs on shareware', () => {
+        const r = resolveFetched(plan('doom2', ['av']), [['doom2', null], ['av', wad('MAP01')]], GAMES.doom, ['earlier problem']);
+        expect(r.game.iwad).toBe('doom1');
+        expect(r.game.pwads).toEqual([]);
+        expect(r.files).toEqual([]);
+        expect(r.problems[0]).toBe('earlier problem');
+        expect(r.problems[1]).toMatch(/doom2\.wad is no longer on the gateway; playing doom1/);
+        expect(r.problems[2]).toMatch(/PWADs need a registered IWAD.*av\.wad skipped/);
+    });
+    it('a registered IWAD keeps its PWADs; Heretic never refuses them', () => {
+        expect(resolveFetched(plan('doom', ['av']), [['doom', wad('E3M1')], ['av', wad('E1M1')]], GAMES.doom).game.pwads).toEqual(['av']);
+        expect(resolveFetched(plan('heretic', ['mod']), [['heretic', wad('E1M1')], ['mod', wad('E1M1')]], GAMES.heretic).game.pwads).toEqual(['mod']);
+    });
+    it('companions are kept apart from PWADs and their absence is a note, not a failure', () => {
+        const withVoices = resolveFetched(plan('strife1', [], ['voices']), [['strife1', wad('MAP01')], ['voices', wad()]], GAMES.strife);
+        expect(withVoices.game).toEqual({ iwad: 'strife1', pwads: [], commercial: true, companions: ['voices'] });
+        expect(withVoices.problems).toEqual([]);
+        const mute = resolveFetched(plan('strife1'), [['strife1', wad('MAP01')]], GAMES.strife);
+        expect(mute.game.companions).toEqual([]);
+        expect(mute.problems).toEqual(["voices.wad not in the gateway's wads folder; Strife runs without it (-novoice)"]);
+    });
+    it('a game without a bundle that loses its IWAD cannot start', () => {
+        const r = resolveFetched(plan('hexen'), [['hexen', null]], GAMES.hexen);
+        expect(r.game.iwad).toBe('');
+        expect(r.problems[0]).toMatch(/Hexen cannot start without it/);
     });
 });
 

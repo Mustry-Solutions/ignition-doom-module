@@ -26,7 +26,8 @@ is docs/reference.md. Keep new technical detail there, not in the README.
   + `src/heretic/` from the Chocolate Doom commit it forked from + patches +
   `build.sh`, Docker only: a `--local` build under a C23 clang hid the
   `boolean` ABI bug 0001 now fixes, and produced the irreproducible binary
-  the repo carried until Heretic). Outputs live in
+  the repo carried until Heretic; `.github/workflows/engines.yml` now rebuilds
+  and diffs, so commit exactly what `engine/build.sh` outputs). Outputs live in
   `gateway/src/main/resources/mounted/<game>/` next to the shareware IWAD and
   the cfg, served at `/res/mustry-doom/<game>/`. Everything per-game on the
   browser side is the `GAMES` table in `doomLogic.ts`; add a game there, not
@@ -81,7 +82,7 @@ The gateway's exact Jetty version (12.0.27) is a compile-only dependency in
 `gateway/build.gradle.kts`; bump it together with the Ignition image. Browser:
 `relayUrl()` derives `ws(s)://<page host>/system/doom-relay/<arena>`;
 `buildArgs()` emits `-wss <url> -server -nodes N [-deathmatch|-altdeath]` or
-`-wss <url> -connect 1`. The host auto-launches at `-nodes` (net_gui.c). Admission: `DoomRelayTickets`
+`-wss <url> -connect 1`. The host auto-launches at `-nodes` (net_gui.c). Admission: `DoomTickets`
 (per delegate instance = session@componentPath, + arena; reusable because the engine reconnects mid-game; 4 h TTL; revoked when THAT delegate shuts down, never per session: an older component instance dying must not kick a newer one); the store delegate's
 `requestTicket()` -> `doom-relay-ticket` -> `doom-relay-ticket-ok`; the servlet
 creator redeems `?ticket=` and returns null (403) otherwise. Saves: `owner()` is
@@ -91,7 +92,7 @@ null for unauthenticated sessions, the page then keeps slots in the tab.
 
 `DoomWadStore` reads `data/modules/com.mustrysolutions.doom/wads/`; the hook
 serves one file per `GET /data/mustry-doom/wads/<name>` behind a
-`DoomRelayTickets.issueWad` ticket (`X-Doom-Ticket`; the relay refuses WAD
+`DoomTickets.issueWad` ticket (`X-Doom-Ticket`; the relay refuses WAD
 tickets and vice versa). Browser: `planWads()` (doomLogic) decides what runs
 from the delegate's `doom-wads-ok` listing, `prepareWads()` (Doom.tsx)
 fetches and writes the files into the engine FS before main(). Engine facts
