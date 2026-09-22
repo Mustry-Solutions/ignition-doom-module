@@ -373,16 +373,24 @@ engine/build.sh --local    # or a local emsdk + automake/autoconf/pkg-config
 ## Dev gateway
 
 ```bash
-ops/fresh.sh     # build, sign with a throwaway dev cert, recreate the gateway unattended
-ops/deploy.sh    # rebuild + reload into the running gateway
-ops/e2e.sh       # deploy + Playwright smoke test (--fresh recreates the gateway first, what CI runs)
-ops/teardown.sh  # stop it (--purge to wipe the volume)
+ops/fresh.sh            # build, sign with a throwaway dev cert, recreate the gateway unattended
+ops/deploy.sh           # rebuild + reload into the running gateway
+ops/e2e.sh              # deploy + Playwright suite (--fresh recreates the gateway first, what CI runs)
+ops/teardown.sh         # stop it (--purge to wipe the volume)
+ops/fetch-hexen-demo.sh # the Hexen 4-level demo -> engine/build/ (gitignored), seeded by fresh.sh
+ops/fetch-freedoom.sh   # Freedoom 0.13.0 -> engine/build/ (gitignored), seeded by fresh.sh
 ```
 
-The smoke test in `e2e/` opens the verify project in headless Chromium, starts
-the game, checks the engine sized its canvas and reports `running`, drives the
-turn-left tag control and asserts the frame actually changed, and flips
-`state.paused`. It fails on any console error.
+`fresh.sh` also seeds `doom.wad` (the shareware data under a registered
+name, for the bring-your-own-WAD tests), our own `mustry-test.wad`, and
+whatever of the operator's data sits in `engine/build/strife/`. The suite
+in `e2e/` opens the verify project in headless Chromium and, in 20 tests,
+starts every game, drives the tag controls and the alarm pause, checks the
+save-game paths, refuses a ticketless relay socket, plays a deathmatch per
+game through the relay, exercises bring-your-own-WAD including a PWAD on
+Freedoom, and walks the launcher. Tests whose data is missing skip. It
+fails on any console error. `SCREENSHOTS=1 npx playwright test screenshots`
+regenerates the README pictures instead.
 
 The gateway comes up at http://localhost:9188 (admin / password) with a
 `verify` project mounted from `ops/verify/project`. Open
