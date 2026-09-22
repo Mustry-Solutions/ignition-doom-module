@@ -6,24 +6,36 @@ are semver. Ignition's module version is numeric only, so releases are plain
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-09-22
+
+Tooling and documentation; the module itself behaves as in 0.3.0. Freedoom
+gives the dev gateway a free registered-mode IWAD, so the bring-your-own-WAD
+path is now tested all the way to the engine loading a PWAD, and the four
+committed engines are proven reproducible on every change.
+
 ### Added
 
 - Freedoom as the dev gateway's free registered-mode IWAD:
-  `ops/fetch-freedoom.sh` (pinned, checksummed, never committed) plus a
-  56-byte PWAD of our own, and an e2e test that loads it with `-file` on
-  `freedoom2.wad`; the operator-PWAD path is exercised in CI for the first
-  time. README: "Mods without buying Doom II". (#17)
-
-- CI: the four committed engines are rebuilt from source and diffed
-  (`Engines reproducible` workflow) on engine changes, weekly and on demand;
-  the e2e suite also runs, informationally, against the latest 8.3 image
+  `ops/fetch-freedoom.sh` (pinned 0.13.0, checksummed against the release's
+  signed CHECKSUM, never committed or shipped) plus `mustry-test.wad`, a
+  56-byte PWAD of our own, and an e2e test that requires the engine to load
+  it with `-file` on `freedoom2.wad`. README: "Mods without buying Doom II"
+  and a Freedoom row in the bring-your-own-WAD table. (#17)
+- CI: the `Engines reproducible` workflow rebuilds the four committed engines
+  from the pinned sources in the emsdk image and fails on any byte of
+  difference (on engine changes, weekly, on demand). The e2e suite also runs,
+  informationally, against `inductiveautomation/ignition:latest`
   (`IGNITION_IMAGE` in `docker-compose.yml`).
+- Docs: four games throughout (README, reference, engine README, notices),
+  new pictures (launcher, Heretic, Hexen, Strife, the how-to page) from a
+  repeatable screenshot job, the dev-gateway section lists the fixture
+  scripts and what the suite covers.
 
 ### Changed
 
-- `DoomRelayTickets` is `DoomTickets` (it issues WAD download tickets too);
-  the operator-WAD resolution rules moved out of the component into
-  `resolveFetched()` in `doomLogic.ts`, unit-tested.
+- `DoomRelayTickets` is `DoomTickets` (it has issued WAD download tickets
+  since 0.2.0); the operator-WAD resolution rules moved out of the component
+  into `resolveFetched()` in `doomLogic.ts`, unit-tested. No behaviour change.
 
 ## [0.3.0] - 2026-09-21
 

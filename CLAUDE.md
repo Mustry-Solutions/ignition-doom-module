@@ -183,15 +183,19 @@ boot, so do not reintroduce it without confirming the 8.3 format.
 ## Build & verify
 
 ```bash
-./gradlew build                 # .modl + jest + Java (gateway JUnit: save store, relay tickets)
+./gradlew build                 # .modl + jest + Java (gateway JUnit: save store, tickets, WAD store, relay status)
 cd web && npx tsc --noEmit && npm test
 ops/fresh.sh                    # unattended dev gateway on :9188
 # A second checkout (worktree) beside it: CONTAINER_NAME=mdoom-b TIMESCALE_CONTAINER_NAME=mdoom-b-db
 #   GATEWAY_HTTP_PORT=9288 GATEWAY_HTTPS_PORT=9243 TIMESCALE_PORT=5588 ops/fresh.sh
 # Never tear down a container another checkout owns: `docker inspect <name>` shows its mounts.
 ops/deploy.sh                   # reload a new build
-ops/e2e.sh [--fresh|--no-deploy] # Playwright smoke test (e2e/), what CI runs
+ops/e2e.sh [--fresh|--no-deploy] # Playwright suite (e2e/), what CI runs on 8.3.6 and, informationally, :latest
+ops/fetch-hexen-demo.sh; ops/fetch-freedoom.sh   # dev fixtures into engine/build/ (gitignored); fresh.sh seeds them
 ```
+
+Engine binaries: commit exactly what `engine/build.sh` outputs; the
+`Engines reproducible` workflow rebuilds and diffs them.
 
 The verify project has no identity provider (8.3 sets that in the Designer,
 not in files), so the AUTHENTICATED save path is covered by DoomSaveStoreTest
