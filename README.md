@@ -315,8 +315,10 @@ with id Software, Raven Software, Rogue, Bethesda, Night Dive, Cloudflare or
 Inductive Automation.
 
 Questions and bugs about this module belong in
-[GitHub issues](https://github.com/Mustry-Solutions/ignition-doom-module/issues).
-For paid work beyond it, see
+[GitHub issues](https://github.com/Mustry-Solutions/ignition-doom-module/issues);
+security reports go through the private channels in [SECURITY.md](SECURITY.md).
+Pull requests are welcome — [CONTRIBUTING.md](CONTRIBUTING.md) has the build,
+the dev gateway and the house rules. For paid work beyond this module, see
 [Built by Mustry Solutions](#built-by-mustry-solutions).
 
 ---

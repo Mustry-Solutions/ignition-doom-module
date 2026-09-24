@@ -18,6 +18,9 @@ are semver. Ignition's module version is numeric only, so releases are plain
   independence notice. `ops/make-gif.py` rebuilds the animation from frames
   the screenshot job captures.
 - Release notes carry a short footer about who makes the module.
+- `CONTRIBUTING.md`, `SECURITY.md` and `CODE_OF_CONDUCT.md`. The security
+  policy states what is in scope on the gateway side: per-user save files,
+  the ticketed WAD route, the relay, the tag provider.
 
 ## [0.3.1] - 2026-09-22
 
