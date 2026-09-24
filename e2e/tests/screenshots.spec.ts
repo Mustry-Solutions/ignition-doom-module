@@ -33,6 +33,35 @@ async function play(page: Page, route: string, seconds: number) {
     return root;
 }
 
+// The README's animation: the joke in ten seconds. Frames are written as PNGs
+// and ops/make-gif.py assembles them (no ffmpeg needed).
+test('control room clip frames', async ({ page }) => {
+    const frames = `${OUT}/clip`;
+    const shot = (n: number) => page.screenshot({ path: `${frames}/${String(n).padStart(3, '0')}.png` });
+    const root = await openRoute(page, '/doom/control-room', '.mustry-doom');
+    await dismissSessionDialog(page);
+    await root.locator('.mustry-doom__splash').click();
+    await expect(root).toHaveClass(/mustry-doom--running/, { timeout: 60_000 });
+    await expect(page.getByText(/output\.inLevel: true/)).toBeVisible({ timeout: 60_000 });
+    await page.waitForTimeout(1500);
+
+    const toggle = (i: number) =>
+        page.locator('[data-component="ia.input.toggle-switch"]').nth(i).locator('.ia_toggleSwitch');
+    let n = 0;
+    const hold = async (index: number, ticks: number) => {
+        await toggle(index).click();
+        for (let i = 0; i < ticks; i++) { await page.waitForTimeout(200); await shot(n++); }
+        await toggle(index).click();
+    };
+    for (let i = 0; i < 4; i++) { await page.waitForTimeout(200); await shot(n++); }
+    await hold(2, 8);   // turnLeft: the view swings
+    await hold(0, 6);   // fire: the shotgun goes off
+    await hold(4, 14);  // lineRunning off: the alarm goes active and the game pauses
+    for (let i = 0; i < 6; i++) { await page.waitForTimeout(200); await shot(n++); }
+    // eslint-disable-next-line no-console
+    console.log(`clip frames: ${n} in ${frames}`);
+});
+
 test('launcher', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 620 }); // four cards in one row
     await openRoute(page, '/', '.flex-container');

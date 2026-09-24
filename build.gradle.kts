@@ -29,7 +29,7 @@ ignitionModule {
         if (v.contains("-") && preNumber != null) "$base.$preNumber" else base
     })
 
-    moduleDescription.set("Can it run Doom? Yes. A Perspective component that runs the shareware episode of Doom (1993) on the gateway, with tag-bindable controls. Free, GPL-2.0, and of no industrial value whatsoever.")
+    moduleDescription.set("Can it run Doom? Yes - and Heretic, Hexen and Strife. A Perspective component with tag-bindable controls, alarm-aware pause, its own tag provider, per-user save games and a deathmatch relay. Free, GPL-2.0, of no industrial value whatsoever. By Mustry Solutions (mustrysolutions.com).")
 
     requiredIgnitionVersion.set(sdk_version)
 

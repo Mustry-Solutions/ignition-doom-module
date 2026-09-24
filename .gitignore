@@ -49,3 +49,6 @@ bin/
 
 # --- engine rebuild workspace (engine/build.sh clones upstream here) ---
 engine/build/
+
+# Frames for the README animation (ops/make-gif.py assembles the committed GIF)
+docs/images/clip/
