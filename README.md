@@ -10,9 +10,12 @@ deathmatch each other through the gateway.
 
 It is of no industrial value whatsoever. That is the point.
 
-![Doom paused inside a Perspective view: the line stopped, the alarm is active, the marine waits.](docs/images/hero-paused.png)
+![The control room demo: the marine turns and fires from tag toggles, then the line stops, the alarm goes active and the game pauses.](docs/images/control-room.gif)
 
-*Line 3 stopped. The alarm is unacknowledged. The marine waits.*
+*Ten seconds of the demo project. A tag toggle turns the marine and fires the
+shotgun; stopping the line raises an alarm, and `state.paused` freezes the
+game until someone acknowledges it. The trend is the marine's health, in a
+real historian.*
 
 - Ignition **8.3.6+**, Perspective
 - One component: `Doom`, under the `Mustry Solutions` palette category.
@@ -20,6 +23,10 @@ It is of no industrial value whatsoever. That is the point.
 - Doom and Heretic ship with their shareware episodes; Hexen and Strife ship
   as engines for the `hexen.wad` / `strife1.wad` you own ([how](#playing-hexen-and-strife-bring-your-own-wad)).
 - Free, no trial, no activation. GPL-2.0.
+
+Made by [Mustry Solutions](https://mustrysolutions.com?utm_source=github&utm_medium=readme&utm_campaign=doom),
+a Belgian IT/OT consultancy that builds Ignition systems and modules. See
+[Built by Mustry Solutions](#built-by-mustry-solutions).
 
 ---
 
@@ -70,6 +77,10 @@ the file is there, and show how to get it.
 The demo project from the releases page, running on a plain 8.3.6 gateway
 with the Mustry TimescaleDB Historian and Embr Charts installed. The module
 provides the game and the tags; the screen around them is this project.
+
+![Doom paused inside a Perspective view: the line stopped, the alarm is active, the marine waits.](docs/images/hero-paused.png)
+
+*Line 3 stopped. The alarm is unacknowledged. The marine waits.*
 
 ![The control room: the game, health/armor/ammo/kills tiles fed by the [Doom] tag provider, the line alarm table, tag-bound controls and a five-minute health trend from the historian.](docs/images/control-room.png)
 
@@ -236,19 +247,77 @@ ever reach its own.
 
 ---
 
+## Built by Mustry Solutions
+
+Mustry Doom is made and maintained by
+[Mustry Solutions](https://mustrysolutions.com?utm_source=github&utm_medium=readme&utm_campaign=doom),
+an IT/OT consultancy in Belgium. We design and build Ignition systems for
+manufacturers, and we write Ignition modules, both as products and to order.
+
+**This repository is a working answer to "what can a module actually do?"**
+It is a joke on the surface and a full tour of the 8.3 SDK underneath: a
+Perspective component with a gateway-side model delegate, a managed tag
+provider that creates its own tags, a Jetty WebSocket servlet mounted through
+`WebResourceManager`, access-controlled data routes, per-user file storage in
+the gateway's data directory, module signing, tag-driven signed releases, and
+an end-to-end test suite that boots a real gateway in Docker. If you are
+reading the source to learn the SDK, start with
+[docs/ignition-8.3-sdk-notes.md](docs/ignition-8.3-sdk-notes.md) — the facts
+that cost us the most time, written down.
+
+Our commercial modules for Ignition 8.3. Each one runs in full under
+Ignition's standard module trial, so you can try it before you buy:
+
+- **[TimescaleDB](https://mustrysolutions.com/ignition-modules/timescaledb?utm_source=github&utm_medium=readme&utm_campaign=doom)**:
+  a tag historian that stores and queries history in TimescaleDB. (The trend
+  in the control-room demo above runs on it.)
+- **[AMQP](https://mustrysolutions.com/ignition-modules/amqp?utm_source=github&utm_medium=readme&utm_campaign=doom)**: RabbitMQ
+  connectivity, with broker connections, an Event Stream source and handler,
+  and `system.amqp` scripting.
+- **[Observability](https://mustrysolutions.com/ignition-modules/observability?utm_source=github&utm_medium=readme&utm_campaign=doom)**:
+  gateway metrics and logs exported over OpenTelemetry and Prometheus, with a
+  Grafana dashboard pack.
+- **[Secrets](https://mustrysolutions.com/ignition-modules/secrets?utm_source=github&utm_medium=readme&utm_campaign=doom)**: gateway
+  secrets resolved from HashiCorp Vault, Azure Key Vault, AWS Secrets Manager
+  and Google Secret Manager.
+
+Also free and open source:
+**[Perspective Components](https://mustrysolutions.com/ignition-modules/perspective-components?utm_source=github&utm_medium=readme&utm_campaign=doom)**,
+fourteen components that fill gaps in Perspective, including a scheduler, an
+editable data grid and user and roster management, and
+**[Designer Dark Mode](https://github.com/Mustry-Solutions/ignition-designer-dark-mode-module)**,
+the dark theme for the Ignition Designer.
+
+If you need a module that does not exist yet, help with an Ignition project, or
+a review of an existing architecture,
+[get in touch](https://mustrysolutions.com/contact-us?utm_source=github&utm_medium=readme&utm_campaign=doom)
+or write to [hello@mustrysolutions.com](mailto:hello@mustrysolutions.com).
+
 ## Licensing
 
-The engines are [Chocolate Doom](https://www.chocolate-doom.org/) and
-Chocolate Heretic, GPL-2.0, so the module is GPL-2.0. The shareware episodes
-are id Software's and Raven's and may only be redistributed complete, free of
-charge and without commercial use, which is why this module is free and
-always will be. Registered Doom, Doom II, Heretic and other IWADs are not
-included and must not be added; the module plays the ones you own from the
-gateway's wads folder. See [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+The engines are [Chocolate Doom](https://www.chocolate-doom.org/), Chocolate
+Heretic, Hexen and Strife, GPL-2.0, so the module is GPL-2.0. The Doom and
+Heretic shareware episodes may only be redistributed complete, free of charge
+and without commercial use, which is why this module is free and always will
+be: no trial, no activation, no per-gateway fee, install it on as many
+gateways as you like. Registered Doom, Doom II, Heretic, Hexen, Strife and
+other IWADs are not included and must not be added; the module plays the ones
+you own from the gateway's wads folder. See
+[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
 
-DOOM is a trademark of id Software LLC; Heretic of Raven Software / id
-Software. Mustry Solutions is not affiliated with id Software, Raven
-Software, Bethesda, Cloudflare or Inductive Automation.
+Mustry Doom is an independent third-party module. It is not produced,
+endorsed, supported or certified by Inductive Automation, LLC. "Ignition" and
+"Perspective" are trademarks of Inductive Automation, LLC, used here only to
+identify the software this module interoperates with. DOOM is a trademark of
+id Software LLC; Heretic and Hexen of Raven Software / id Software; Strife of
+Rogue Entertainment / Night Dive Studios. Mustry Solutions is not affiliated
+with id Software, Raven Software, Rogue, Bethesda, Night Dive, Cloudflare or
+Inductive Automation.
+
+Questions and bugs about this module belong in
+[GitHub issues](https://github.com/Mustry-Solutions/ignition-doom-module/issues).
+For paid work beyond it, see
+[Built by Mustry Solutions](#built-by-mustry-solutions).
 
 ---
 

@@ -6,6 +6,19 @@ are semver. Ignition's module version is numeric only, so releases are plain
 
 ## [Unreleased]
 
+### Added
+
+- `docs/ignition-8.3-sdk-notes.md`: the 8.3 SDK facts this module paid for —
+  data routes needing access control, WebSocket servlets through
+  `WebResourceManager`, managed tag providers, config resources and their UI,
+  the reused-component-store race, signing and unattended acceptance, and the
+  Emscripten `boolean` ABI trap.
+- README: an animation of the control room (tag toggles turn and fire, the
+  line alarm pauses the game), a "Built by Mustry Solutions" section, and an
+  independence notice. `ops/make-gif.py` rebuilds the animation from frames
+  the screenshot job captures.
+- Release notes carry a short footer about who makes the module.
+
 ## [0.3.1] - 2026-09-22
 
 Tooling and documentation; the module itself behaves as in 0.3.0. Freedoom

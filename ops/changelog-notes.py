@@ -27,6 +27,16 @@ def section(changelog: str, version: str) -> str:
     return "\n".join(out).strip()
 
 
+# Every release page carries the same footer: the README's download link lands
+# here, so this is where a reader who arrived for the joke learns who made it.
+FOOTER = """
+
+---
+
+Mustry Doom is free and made by [Mustry Solutions](https://mustrysolutions.com?utm_source=github&utm_medium=release&utm_campaign=doom), an IT/OT consultancy that builds Ignition systems and modules. We also sell [Ignition 8.3 modules](https://mustrysolutions.com/ignition-modules?utm_source=github&utm_medium=release&utm_campaign=doom) (TimescaleDB, AMQP, Observability, Secrets) and build modules to order. [Get in touch](https://mustrysolutions.com/contact-us?utm_source=github&utm_medium=release&utm_campaign=doom).
+"""
+
+
 def main() -> int:
     if len(sys.argv) < 2:
         print("usage: changelog-notes.py <version> [changelog]", file=sys.stderr)
@@ -35,7 +45,7 @@ def main() -> int:
     path = sys.argv[2] if len(sys.argv) > 2 else "CHANGELOG.md"
     with open(path, encoding="utf-8") as f:
         body = section(f.read(), version)
-    print(body if body else f"Release {version}. See CHANGELOG.md for details.")
+    print((body if body else f"Release {version}. See CHANGELOG.md for details.") + FOOTER)
     return 0
 
 
