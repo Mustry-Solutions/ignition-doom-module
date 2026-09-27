@@ -18,6 +18,19 @@ are semver. Ignition's module version is numeric only, so releases are plain
   independence notice. `ops/make-gif.py` rebuilds the animation from frames
   the screenshot job captures.
 - Release notes carry a short footer about who makes the module.
+- Dependabot: weekly grouped updates for GitHub Actions, Gradle and the
+  `web/` and `e2e/` npm projects. The Ignition SDK, Jetty and the Ignition
+  image stay manual (they track the tested gateway), as do React 16 and
+  `@types/node` majors. (#22)
+
+### Changed
+
+- Build tooling: TypeScript 6 (the last JavaScript-based release; ts-jest
+  does not support 7), Jest 30, webpack-cli 7, css-loader 7, sass-loader 17,
+  css-minimizer-webpack-plugin 8, JUnit 6, `@types/node` 22 to match the
+  build's Node. The web build now compiles to ES modules with `bundler`
+  resolution (TypeScript 6 deprecates `node10`), so webpack can concatenate
+  modules: the bundle is ~12% smaller, the CSS byte-identical.
 
 ## [0.3.1] - 2026-09-22
 
