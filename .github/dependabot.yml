@@ -1,0 +1,62 @@
+# Dependabot: weekly, grouped, so the queue stays reviewable.
+#
+# Deliberately NOT managed here (bump by hand, together):
+# - The Ignition SDK (`sdk_version` in build.gradle.kts), the Jetty compile-only
+#   dependency in gateway/build.gradle.kts and the `inductiveautomation/ignition`
+#   image in docker-compose.yml / CI all track the gateway version the module is
+#   built and tested against. Jetty must equal what that gateway ships.
+# - React 16: Perspective hosts components on React 16; a newer React breaks them.
+# - The engine toolchain (EMSDK image, pinned doom-wasm commit in engine/build.sh):
+#   Dependabot cannot see them, and a bump means rebuilding and committing the
+#   engine binaries (see the Engines reproducible workflow).
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
+
+  - package-ecosystem: gradle
+    directory: /
+    schedule:
+      interval: weekly
+    ignore:
+      - dependency-name: "com.inductiveautomation.ignitionsdk:*"
+      - dependency-name: "org.eclipse.jetty*"
+    groups:
+      gradle:
+        patterns: ["*"]
+        update-types: [minor, patch]
+
+  - package-ecosystem: npm
+    directory: /web
+    schedule:
+      interval: weekly
+    ignore:
+      - dependency-name: react
+        update-types: [version-update:semver-major]
+      - dependency-name: react-dom
+        update-types: [version-update:semver-major]
+      - dependency-name: "@types/react"
+        update-types: [version-update:semver-major]
+      - dependency-name: "@types/react-dom"
+        update-types: [version-update:semver-major]
+      # Follows the Node version pinned in web/build.gradle.kts, not npm's latest.
+      - dependency-name: "@types/node"
+        update-types: [version-update:semver-major]
+    groups:
+      web:
+        patterns: ["*"]
+        update-types: [minor, patch]
+
+  - package-ecosystem: npm
+    directory: /e2e
+    schedule:
+      interval: weekly
+    groups:
+      e2e:
+        patterns: ["*"]
+        update-types: [minor, patch]
