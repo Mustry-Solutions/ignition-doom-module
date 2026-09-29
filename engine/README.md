@@ -39,6 +39,8 @@ the corresponding source the GPL asks us to make available:
   the game". A `--local` build under a C23-default clang never showed it,
   which is why the binary committed before this fix was not reproducible
   from the Docker build.
+  Offered upstream as
+  [cloudflare/doom-wasm#15](https://github.com/cloudflare/doom-wasm/pull/15).
 - `0003` does the same for Hexen (`src/hexen/` from the same commit), adds a
   `{hexen, shareware}` row to `d_mode.c`'s netgame table so the 4-level demo
   can host and join, and defaults `graphical_startup` off (its separate SDL

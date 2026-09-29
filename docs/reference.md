@@ -251,8 +251,10 @@ Perspective sessions running the component and by nobody else who happens
 to know the URL. Save games of a custom IWAD live in their own
 `saves/<user>/game-<iwad>/` folder: a Doom II save loaded into shareware is
 a crash, so slots never mix. Verified on the dev gateway with the shareware
-data under the name `doom.wad` (`ops/lib.sh` seeds it for the e2e suite);
-a registered IWAD with PWADs has not been exercised by the test suite.
+data under the name `doom.wad` (`ops/lib.sh` seeds it for the e2e suite).
+The registered-mode path with a PWAD is covered too: the suite loads
+`mustry-test.wad` with `-file` onto Freedoom's `freedoom2.wad`
+(`ops/fetch-freedoom.sh`).
 
 ### Deathmatch over the gateway
 
