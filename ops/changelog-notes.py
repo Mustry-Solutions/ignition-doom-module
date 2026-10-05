@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Print the CHANGELOG.md section for a given version, for use as GitHub Release
 notes. Matches the Keep-a-Changelog heading `## [<version>]...` and emits every
-line up to (but not including) the next `## ` heading.
+line up to (but not including) the next `## ` heading, with each `### `
+subsection folded into a <details> block.
 
 Usage: ops/changelog-notes.py 0.2.0 [path/to/CHANGELOG.md]
 Exit 0 with the section on stdout; exit 0 with a short fallback if not found
@@ -27,6 +28,34 @@ def section(changelog: str, version: str) -> str:
     return "\n".join(out).strip()
 
 
+def fold(body: str) -> str:
+    """Keep the summary above the first `### ` heading in view and fold each
+    `### Added` / `### Changed` / ... subsection into a <details> block titled
+    with its entry count, so the release page opens short and the detail is
+    one click away. GitHub needs a blank line after </summary> and before
+    </details> to render the Markdown inside."""
+    out, title, sub = [], None, []
+
+    def flush():
+        if title is None:
+            return
+        text = "\n".join(sub).strip("\n")
+        n = sum(1 for line in sub if line.startswith("- "))
+        count = f" ({n})" if n else ""
+        out.append(f"<details>\n<summary><b>{title}</b>{count}</summary>\n\n{text}\n\n</details>\n")
+
+    for line in body.splitlines():
+        if line.startswith("### "):
+            flush()
+            title, sub = line[4:].strip(), []
+        elif title is None:
+            out.append(line)
+        else:
+            sub.append(line)
+    flush()
+    return "\n".join(out).strip()
+
+
 # Every release page carries the same footer: the README's download link lands
 # here, so this is where a reader who arrived for the joke learns who made it.
 FOOTER = """
@@ -45,7 +74,7 @@ def main() -> int:
     path = sys.argv[2] if len(sys.argv) > 2 else "CHANGELOG.md"
     with open(path, encoding="utf-8") as f:
         body = section(f.read(), version)
-    print((body if body else f"Release {version}. See CHANGELOG.md for details.") + FOOTER)
+    print((fold(body) if body else f"Release {version}. See CHANGELOG.md for details.") + FOOTER)
     return 0
 
 

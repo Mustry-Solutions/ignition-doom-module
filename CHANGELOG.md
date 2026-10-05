@@ -17,7 +17,9 @@ are semver. Ignition's module version is numeric only, so releases are plain
   line alarm pauses the game), a "Built by Mustry Solutions" section, and an
   independence notice. `ops/make-gif.py` rebuilds the animation from frames
   the screenshot job captures.
-- Release notes carry a short footer about who makes the module.
+- Release notes carry a short footer about who makes the module, and fold
+  each Added / Changed / Fixed section into a collapsible block with its
+  entry count; the summary above them stays in view.
 - Dependabot: weekly grouped updates for GitHub Actions, Gradle and the
   `web/` and `e2e/` npm projects. The Ignition SDK, Jetty and the Ignition
   image stay manual (they track the tested gateway), as do React 16 and
